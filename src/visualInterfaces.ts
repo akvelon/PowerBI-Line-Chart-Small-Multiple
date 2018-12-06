@@ -63,6 +63,7 @@ module powerbi.extensibility.visual {
         name: string;
         color: string;
         showMarkers: boolean;
+        lineKey: string;
     }
     export class XAxisData {
         x: any;
@@ -95,6 +96,7 @@ module powerbi.extensibility.visual {
         x: PrimitiveValue;
         y: number;
         tooltips?: VisualTooltipDataItem[];
+        lineKey?: string;
     }
 
     export interface VisualDataPoint extends SimplePoint, SelectableDataPoint {

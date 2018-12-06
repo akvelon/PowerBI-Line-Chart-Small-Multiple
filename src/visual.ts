@@ -396,9 +396,10 @@ module powerbi.extensibility.visual {
                                     .withMeasure(dataValue.source.queryName)
                                     .createSelectionId();
                             let dataPoint: VisualDataPoint = {
-                                "x": xValue,
-                                "y": value,
-                                "tooltips": tooltips,
+                                x: xValue,
+                                y: value,
+                                tooltips: tooltips,
+                                lineKey: lineKey + displayName,
                                 selected: false,
                                 identity: dataPointIdentity,
                             };
@@ -1079,9 +1080,9 @@ module powerbi.extensibility.visual {
             this.interactivityService.bind(this.model.dataPoints, this.behavior, behaviorOptions);
 
             let clearContainer: Selection<any> = lassoContainer.selectAll('.clearCatcher,'+ Visual.SmallMultipleNameSelector.selectorName);
-            let is: IInteractivityService = this.interactivityService;
+            let behavior: WebBehavior = this.behavior;
             clearContainer.on('click', function() {
-                is.clearSelection();
+                behavior.clearCather();
             });
             //lasso
             let lassoColor: string = this.model.settings.selectionColor.fill;
@@ -1090,6 +1091,7 @@ module powerbi.extensibility.visual {
             //start legend changing by click
             let legendBehavior = this.legendBehavior;
             let legendPosition: string = this.model.settings.legend.position;
+            let is: IInteractivityService = this.interactivityService;
             if (legendPosition == "Top" || legendPosition == "TopCenter" || legendPosition == "Bottom" || legendPosition == "BottomCenter") {
                 legendBehavior.leftOrRightClick(true, legendBehavior);
                 let hasSelection: boolean = is.hasSelection();

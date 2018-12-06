@@ -59,8 +59,9 @@ module powerbi.extensibility.visual {
                 lassoContainer.data([lassoData]);
             } else {
                 let hasLasso: boolean = behavior.hasLassoSelection();
-                if (hasLasso)
+                if (hasLasso && dp)
                     behavior.customLassoSelect(dp);
+                    dp = null;
             }
         });
         lassoContainer.on('mousedown', function() {
@@ -181,7 +182,8 @@ module powerbi.extensibility.visual {
                         let point: SimplePoint = {x: x, y: y};
                         points.push({
                             x: verticalLineDataItem.tooltips[0].header,
-                            y: +linePoint.value
+                            y: +linePoint.value,
+                            lineKey: linePoint.lineKey
                         });
                         pushPointToLines(point, lineKey + name, lines);
                     }
@@ -189,11 +191,11 @@ module powerbi.extensibility.visual {
             }
         }
         let newDataPoints: VisualDataPoint[] = [];
-        for(let i=0;i<dataPoints.length;i++) {
-            let dataPoint: VisualDataPoint = dataPoints[i];
-            for(let j=0;j<points.length;j++) {
-                let point: SimplePoint = points[j];
-                if (dataPoint.x == point.x && dataPoint.y == point.y) {
+        for(let j=0;j<points.length;j++) {
+            let point: SimplePoint = points[j];
+            for(let i=0;i<dataPoints.length;i++) {
+                let dataPoint: VisualDataPoint = dataPoints[i];
+                if (dataPoint.x == point.x && dataPoint.y == point.y && dataPoint.lineKey == point.lineKey) {
                     dataPoint.selected = true;
                     newDataPoints.push({
                         x: dataPoints[i].x,
@@ -202,6 +204,7 @@ module powerbi.extensibility.visual {
                         selected: true,
                         identity: dataPoints[i].identity
                     });
+                    break;
                 }
             }
         }

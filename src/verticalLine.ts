@@ -11,7 +11,8 @@ module powerbi.extensibility.visual {
             let points: LinePoint[] = [];
             let tooltips: VisualTooltipDataItem[] = [];
             for(let j=0;j<lines.length;j++) {
-                let linePoints: SimplePoint[] = lines[j].points;
+                let linesJ: LineDataPoint = lines[j];
+                let linePoints: SimplePoint[] = linesJ.points;
                 if (linePoints) {
                     for(let k=0;k<linePoints.length;k++) {
                         let simplePoint: any = linePoints[k];
@@ -22,15 +23,14 @@ module powerbi.extensibility.visual {
                             xValue = +values[0];
                             let yValue: number = +values[1];
                             let value: string = tooltipFormatter.format(+simplePoint.y);
-                            let name: string = lines[j].name;
-                            let color: string = lines[j].color;
-                            let showMarkers: boolean = (lines[j].showMarkers == undefined) ? shapesShowMarkers : lines[j].showMarkers;
+                            let showMarkers: boolean = (linesJ.showMarkers == undefined) ? shapesShowMarkers : linesJ.showMarkers;
                             let linePoint: LinePoint = {
                                 y: yValue,
                                 value: value,
-                                name: name,
-                                color: color,
-                                showMarkers: showMarkers
+                                name: linesJ.name,
+                                color: linesJ.color,
+                                showMarkers: showMarkers,
+                                lineKey: linesJ.lineKey,
                             };
                             points.push(linePoint);
                             if (simplePoint.tooltips) {

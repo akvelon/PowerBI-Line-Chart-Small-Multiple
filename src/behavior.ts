@@ -81,8 +81,7 @@ module powerbi.extensibility.visual {
                     if (options.selectionLines[index].selected) {
                         let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-                        let selectedDataPoints: VisualDataPoint[] = WebBehavior.retrieveLineDataPoints(lineDataPoint.points, options.dataPoints);
-                        selectionHandler.handleSelection(selectedDataPoints, false);
+                        selectionHandler.handleSelection(lineDataPoint, false);
                         options.legendBehavior.renderLassoSelection([legendName], true, false);
                     } else {
                         selectionHandler.handleClearSelection();
@@ -102,8 +101,7 @@ module powerbi.extensibility.visual {
                     if (options.selectionLines[index].selected) {
                         let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-                        let selectedDataPoints: VisualDataPoint[] = WebBehavior.retrieveLineDataPoints(lineDataPoint.points, options.dataPoints);
-                        selectionHandler.handleSelection(selectedDataPoints, false);
+                        selectionHandler.handleSelection(lineDataPoint, false);
                         options.legendBehavior.renderLassoSelection([legendName], true, false);
                     } else {
                         selectionHandler.handleClearSelection();
@@ -119,35 +117,6 @@ module powerbi.extensibility.visual {
                     true);
                 this.selectionHandler = selectionHandler;
                 this.hasLasso = false;
-        }
-
-        public static retrieveLineDataPoints(points: SimplePoint[], dataPoints: VisualDataPoint[]): VisualDataPoint[] {
-            if (!points)
-                points = [];
-            let resultDataPoints: VisualDataPoint[] = [];
-            for(let i=0;i<points.length;i++) {
-                let point: SimplePoint = points[i];
-                let pointTooltipName: string = point.tooltips && point.tooltips.length>0 ? point.tooltips[0].displayName : "";
-                for(let j=0;j<dataPoints.length;j++) {
-                    let dataPoint: VisualDataPoint = dataPoints[j];
-                    let dataPointTooltipName: string = dataPoint.tooltips && dataPoint.tooltips.length>0 ? dataPoint.tooltips[0].displayName : "";
-                    if (dataPoint.x == point.x && dataPoint.y == point.y && pointTooltipName == dataPointTooltipName) {
-                        resultDataPoints.push(dataPoint);
-                    }
-                }
-            }
-            return resultDataPoints;
-        }
-
-        public static isLineDataPointSelected(lineDataPoint: LineDataPoint, dataPoints: VisualDataPoint[]): boolean {
-            let dp: VisualDataPoint[] = WebBehavior.retrieveLineDataPoints(lineDataPoint.points, dataPoints);
-            let isSelected: boolean = dp.length > 0;
-            for(let i=0;i<dp.length;i++) {
-                isSelected = isSelected && dp[i].selected;
-                if (!isSelected)
-                    break;
-            }
-            return isSelected;
         }
 
         private retrieveTooltipFromArgument(args: TooltipEventArgs<LineDataPoint>, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
@@ -225,6 +194,11 @@ module powerbi.extensibility.visual {
                 selectedLegendNames.push(dataPoints[i].tooltips[0].displayName);
             }
             this.legendBehavior.renderLassoSelection(selectedLegendNames, true, false);
+        }
+
+        public clearCather() {
+            this.selectionHandler.handleClearSelection();
+            this.legendBehavior.renderLassoSelection([], false, false);
         }
     }
 
