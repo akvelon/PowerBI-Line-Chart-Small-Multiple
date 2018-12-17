@@ -2,9 +2,9 @@
   "visual": {
     "name": "LineChartByAkvelon",
     "displayName": "Line Chart by Akvelon",
-    "guid": "LineChartByAkvelon555E1FCA110843C7A6E66458BA0A3FAD",
+    "guid": "PBILineChartByAkvelon555E1FCA110843C7A6E66458BA0A3FAD",
     "visualClassName": "Visual",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Small Multiple Line Chart By Akvelon",
     "supportUrl": "http://akvelon.com/feedback",
     "gitHubUrl": ""

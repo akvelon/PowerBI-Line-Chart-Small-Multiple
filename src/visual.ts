@@ -329,7 +329,7 @@ module powerbi.extensibility.visual {
                             let xValue: PrimitiveValue;
                             switch (category.length) {
                                 case 0: {
-                                    xValue = displayName;
+                                    xValue = "";
                                     break;
                                 }
                                 case 1: {
@@ -459,61 +459,11 @@ module powerbi.extensibility.visual {
             legendDataPoint = newLegendDataPoint;
 
             if (lines.length > 0 && categoryData.length == 0) {
-                let categoryIsBoolean: boolean = false;
-                if (legendDataPoint.length > 0) {
-                    if (legendDataPoint.length == 2) {
-                        let labels: string[] = [legendDataPoint[0].tooltip.toLowerCase(), legendDataPoint[1].tooltip.toLowerCase()];
-                        if (labels.indexOf("false") != -1 && labels.indexOf("true") != -1) {
-                            categoryIsBoolean = true;
-                        }
-                    }
-                    if (!categoryIsBoolean) {
-                        let item: string = legendDataPoint[0].tooltip;
-                        categoryIsScalar = !isNaN(+item);
-                        if (!categoryIsScalar) {
-                            categoryIsDate = !isNaN(+Date.parse(item));
-                            if (categoryIsDate)
-                                categorySourceType = CategoryType.Date;
-                        }
-                    }
-                }
-                categorySourceType = retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean);
-                switch (categorySourceType) {
-                    case CategoryType.Number: {
-                        for(let i=0;i<legendDataPoint.length;i++) {
-                            let item: PrimitiveValue = +legendDataPoint[i].tooltip;
-                            categoryData.push(item);
-                        }
-                        break;
-                    }
-                    case CategoryType.Date: {
-                        for(let i=0;i<legendDataPoint.length;i++) {
-                            let d: Date = new Date(legendDataPoint[i].tooltip);
-                            categoryData.push(d);
-                        }
-                        for(let i=0;i<lines.length;i++) {
-                            let dateString: string = lines[i].points[0].x.toString();
-                            lines[i].points[0].x = new Date(dateString);
-                        }
-                        break;
-                    }
-                    case CategoryType.Boolean: {
-                        settings.xAxis.axisType = "categorical";
-                        for(let i=0;i<legendDataPoint.length;i++) {
-                            let item: PrimitiveValue = legendDataPoint[i].tooltip;
-                            categoryData.push(item);
-                        }
-                        break;
-                    }
-                    case CategoryType.String: {
-                        settings.xAxis.axisType = "categorical";
-                        for(let i=0;i<legendDataPoint.length;i++) {
-                            let item: PrimitiveValue = legendDataPoint[i].tooltip;
-                            categoryData.push(item);
-                        }
-                        break;
-                    }
-                }
+                settings.xAxis.axisType = "categorical";
+                categoryIsScalar = false;
+                categoryIsDate = false;
+                categorySourceType = CategoryType.String;
+                categoryData = [""];
             }
             if (settings.xAxis.axisType == "continuous") {
                 switch (categorySourceType) {

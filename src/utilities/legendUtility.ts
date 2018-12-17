@@ -463,8 +463,7 @@ module powerbi.extensibility.visual {
             "line" : LegendIcon.Line
         };
         let legendIcon: LegendIcon = legendIcons[legend.style];
-
-        if (isLegendFilled || dataView.categorical.categories == null) {
+        if (isLegendFilled) {
             legendData = buildLegendData(dataView,
                 host,
                 legend,
@@ -482,6 +481,10 @@ module powerbi.extensibility.visual {
             if (column.roles["Legend"]) {
                 return true;
             }
+        }
+        if (dataView.categorical.categories == null) {
+            const grouped: DataViewValueColumnGroup[] = dataView.categorical.values.grouped();
+            return grouped.length > 1;
         }
         return false;
     }
