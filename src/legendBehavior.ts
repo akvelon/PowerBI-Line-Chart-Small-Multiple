@@ -1,20 +1,45 @@
-module powerbi.extensibility.visual {
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
 
-    import IInteractiveBehavior = utils.interactivity.IInteractiveBehavior;
-    import ISelectionHandler = utils.interactivity.ISelectionHandler;
-    import LegendDataPoint = utils.chart.legend.LegendDataPoint;
+    import powerbi from 'powerbi-visuals-api';
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+
+    import { interactivityBaseService } from 'powerbi-visuals-utils-interactivityutils';
+    import IInteractiveBehavior = interactivityBaseService.IInteractiveBehavior;
+    import ISelectionHandler = interactivityBaseService.ISelectionHandler;
+    import { legendInterfaces } from 'powerbi-visuals-utils-chartutils';
+    import LegendDataPoint = legendInterfaces.LegendDataPoint;
+    import { legendBehavior} from 'powerbi-visuals-utils-chartutils';
+    import LegendBehaviorOptions  = legendBehavior.LegendBehaviorOptions;
+
+    import { legendSettings } from './settings';
+    import { Visual } from './visual';
+    import { MarkersUtility } from './utilities/markersUtility';
+    import { calculateItemWidth, drawCustomLegendIcons, generateLegendItemsForLeftOrRightClick } from './utilities/legendUtility';
+    import {
+        VerticalLineDataItemsGlobalWithKey,
+        VisualViewModel,
+        VisualDomain,
+        VisualDataPoint,
+        LegendDataPointExtended,
+        LineDataPoint,
+        LineKeyIndex,
+        CategoryType,
+        LegendDataExtended,
+        VerticalLineDataItemsGlobal
+    } from './visualInterfaces';
 
     export class LegendBehavior implements IInteractiveBehavior {
         public static dimmedLegendColor: string = "#A6A6A6";
         public static dimmedLegendMarkerSuffix: string = "grey";
         public static legendMarkerSuffix: string = "legend";
 
-        private static clearCatcher: Selection<any>;
+        private static clearCatcher: Selection<any, any, any, any>;
         private static selectionHandler: ISelectionHandler;
 
-        private legendItems: Selection<any>;
-        private legendIcons: Selection<any>;
+        private legendItems: Selection<any, any, any, any>;
+        private legendIcons: Selection<any, any, any, any>;
 
         private legendSettings: legendSettings;
         private dataPoints: LegendDataPointExtended[];
@@ -35,16 +60,16 @@ module powerbi.extensibility.visual {
         }
 
         public leftOrRightClick(isLeft: boolean, legendBehavior: LegendBehavior) {
-            let legendItems: Selection<any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);
+            let legendItems: Selection<any, any, any, any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);
             if (legendItems) {
                 let data = legendItems.data();
-                let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-                let legendIcons: Selection<any> = legendGroup.selectAll('circle').data(data);
+                let legendGroup: Selection<any, any, any, any> = d3.select(legendItems.node().parentElement);
+                let legendIcons: Selection<any, any, any, any> = legendGroup.selectAll('circle').data(data);
                 let newOptions: LegendBehaviorOptions = {
                     legendItems: legendItems,
                     legendIcons: legendIcons,
                     clearCatcher: LegendBehavior.clearCatcher
-                }
+                } as LegendBehaviorOptions;
                 legendBehavior.bindEvents(newOptions, LegendBehavior.selectionHandler);
             }
         }
@@ -86,12 +111,13 @@ module powerbi.extensibility.visual {
 
             });
 
-            let markers: Selection<any> = d3.selectAll('svg.legend  marker');
-            let markersLen: number = markers && markers.length > 0 && markers[0] ? markers[0].length : 0;
+            let markers/*: Selection<any, any, any, any>*/ = d3.selectAll('svg.legend  marker');
+            //let markersLen: number = markers && markers.length > 0 && markers[0] ? markers[0].length : 0;
+            let markersLen = markers && markers[0] ? [...markers[0].children].length : 0;
             this.markerIds = [];
             for(let i=0;i<markersLen;i++) {
-                let item: EventTarget = markers[0][i];
-                let marker: Selection<any> = d3.select(item);
+                let item/*: EventTarget*/ = markers[0][i];
+                let marker: Selection<any, any, any, any> = d3.select(item);
                 let markerId: string = marker.attr('id');
                 this.markerIds.push(markerId);
             }
@@ -99,19 +125,19 @@ module powerbi.extensibility.visual {
 
             options.clearCatcher.on("click", () => {
                 selectionHandler.handleClearSelection();
-                let legendItems: Selection<LegendDataPoint> = this.legendItems;
+                let legendItems: Selection<any, any, any, any> = this.legendItems;
                 options.legendIcons.each((d: LegendDataPoint, index: number) => {
-                    let item: Selection<any> = d3.select(legendItems[0][index]);
+                    let item: Selection<any, any, any, any> = d3.select(legendItems[0][index]);
                     setCustomLegendIcon(item, d.color, d.label, markerIds);
                 });
             });
         }
 
-        private setCustomLegendIcon(item: Selection<any>, fill: string, label: string, markerIds: string[]) {
-            let itemLegendLine: Selection<LegendDataPoint> = item.select('.legend-item-line');
+        private setCustomLegendIcon(item: Selection<any, any, any, any>, fill: string, label: string, markerIds: string[]) {
+            let itemLegendLine: Selection<any, any, any, any> = item.select('.legend-item-line');
             itemLegendLine.style('fill', fill);
             itemLegendLine.style('stroke', fill);
-            let itemLegendMarker: Selection<LegendDataPoint> = item.select('.legend-item-marker');
+            let itemLegendMarker: Selection<any, any, any, any> = item.select('.legend-item-marker');
             let markerId: string = itemLegendMarker && itemLegendMarker[0] && itemLegendMarker[0][0] ? itemLegendMarker.style('marker-start') : null;
             if (markerId) {
                 let labelText: string = MarkersUtility.retrieveMarkerName(label + LegendBehavior.legendMarkerSuffix, "");
@@ -152,11 +178,11 @@ module powerbi.extensibility.visual {
             }
             this.selectedLegendNames = selectedLegendNames;
 
-            let legendItems: Selection<LegendDataPoint> = this.legendItems;
+            let legendItems: Selection<any, any, any, any> = this.legendItems;
             let markerIds: string[] = this.markerIds;
             let setCustomLegendIcon = this.setCustomLegendIcon;
-            this.legendIcons.style({
-                "fill": (d: LegendDataPoint, index: number) => {
+            this.legendIcons.style(
+                "fill", (d: LegendDataPoint, index: number) => {
                     let fill: string = d.color;
                     if (hasSelection && selectedLegendNames.length > 0) {
                         let isSelected: boolean = selectedLegendNames.indexOf(d.label) != -1;
@@ -169,11 +195,10 @@ module powerbi.extensibility.visual {
                     } else {
                         d.selected = false;
                     }
-                    let item: Selection<any> = d3.select(legendItems[0][index]);
+                    let item: Selection<any, any, any, any> = d3.select(legendItems[0] && legendItems[0][index] || (<any>legendItems)._groups[0][index]);
                     setCustomLegendIcon(item, fill, d.label, markerIds);
                     return fill;
                 }
-            });
+            );
         }
     }
-}

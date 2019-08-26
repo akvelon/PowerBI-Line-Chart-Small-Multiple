@@ -1,23 +1,45 @@
-module powerbi.extensibility.visual {
-    // d3
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
-    import Update = d3.selection.Update;
 
-    import IValueFormatter = utils.formatting.IValueFormatter;
+    import powerbi from 'powerbi-visuals-api';
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+    
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
+    import { ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
 
-    // powerbi.visuals
-    import IInteractiveBehavior = utils.interactivity.IInteractiveBehavior;
-    import ISelectionHandler = utils.interactivity.ISelectionHandler;
-    import ITooltipServiceWrapper = utils.tooltip.ITooltipServiceWrapper;
-    import TooltipEventArgs = utils.tooltip.TooltipEventArgs;
+    import { interactivityBaseService } from 'powerbi-visuals-utils-interactivityutils';
+    import ISelectionHandler = interactivityBaseService.ISelectionHandler;
+    import IInteractiveBehavior = interactivityBaseService.IInteractiveBehavior;
+    import { TooltipEventArgs } from 'powerbi-visuals-utils-tooltiputils';
 
-    export class WebBehaviorOptions {
+    import { LegendBehavior} from './legendBehavior';
+    import { Visual } from './visual';
+    import { shapes, DimmedOpacity, DefaultOpacity } from './settings';
+    import { MarkersUtility } from './utilities/markersUtility';
+    import {
+        LassoData,
+        LineDataPointForLasso,
+        SimplePoint,
+        LinePoint,
+        VerticalLineDataItem,
+        CategoryType,
+        VisualDomain,
+        LineDataPoint,
+        VisualDataPoint,
+        VerticalLineDataItemsGlobalWithKey,
+        LegendDataPointExtended,
+        VerticalLineDataItemsGlobal
+    } from './visualInterfaces';
+
+    export class WebBehaviorOptions implements interactivityBaseService.IBehaviorOptions<interactivityBaseService.BaseDataPoint> {
         dataPoints: VisualDataPoint[];
         selectionLines: LineDataPoint[];
-        lineGroupSelection: Update<LineDataPoint>;
-        interactiveLineGroupSelection: Update<LineDataPoint>;
-        dotsSelection: Update<LineDataPoint>;
-        container: Selection<any>;
+        lineGroupSelection/*: Update<LineDataPoint>*/;
+        interactiveLineGroupSelection/*: Update<LineDataPoint>*/;
+        dotsSelection/*: Update<LineDataPoint>*/;
+        container: Selection<any, any, any, any>;
         tooltipServiceWrapper: ITooltipServiceWrapper;
         verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey;
         legendBehavior: LegendBehavior;
@@ -25,10 +47,11 @@ module powerbi.extensibility.visual {
         legendFormatter: IValueFormatter;
         legendType: CategoryType;
         shapes: shapes;
+        behavior: IInteractiveBehavior;
 
-        constructor(container: Selection<any>, dataPoints: VisualDataPoint[], selectionLines: LineDataPoint[], dots: LineDataPoint[], tooltipServiceWrapper: ITooltipServiceWrapper,
+        constructor(container: Selection<any, any, any, any>, dataPoints: VisualDataPoint[], selectionLines: LineDataPoint[], dots: LineDataPoint[], tooltipServiceWrapper: ITooltipServiceWrapper,
             verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey, legendBehavior: LegendBehavior, legendDataPoints: LegendDataPointExtended[],
-            legendFormatter: IValueFormatter, legendType: CategoryType, shapes: shapes) {
+            legendFormatter: IValueFormatter, legendType: CategoryType, shapes: shapes, behavior: IInteractiveBehavior) {
 
             this.dataPoints = dataPoints;
             this.selectionLines = selectionLines;
@@ -43,15 +66,16 @@ module powerbi.extensibility.visual {
             this.legendFormatter = legendFormatter;
             this.legendType = legendType;
             this.shapes = shapes;
+            this.behavior = behavior;
         }
     }
 
     export class WebBehavior implements IInteractiveBehavior {
         private dataPoints: VisualDataPoint[];
-        private lineGroupSelection: Update<LineDataPoint>;
-        private interactiveLineGroupSelection: Update<LineDataPoint>;
-        private dotsSelection: Update<LineDataPoint>;
-        private container: Selection<any>;
+        private lineGroupSelection/*: Update<LineDataPoint>*/;
+        private interactiveLineGroupSelection/*: Update<LineDataPoint>*/;
+        private dotsSelection/*: Update<LineDataPoint>*/;
+        private container: Selection<any, any, any, any>;
         private shapes: shapes;
         private hasLasso: boolean;
         private selectionHandler: ISelectionHandler;
@@ -125,7 +149,7 @@ module powerbi.extensibility.visual {
             let data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
             let tooltips: VisualTooltipDataItem[] = null;
             if (data) {
-                let hoverLineData: Update<number> = data.hoverLineData;
+                let hoverLineData/*: Update<number>*/ = data.hoverLineData;
                 let verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
                 let index: number = hoverLineData.data()[0];
                 tooltips = verticalLineDataItems[index].tooltips;
@@ -208,4 +232,3 @@ module powerbi.extensibility.visual {
         }
         return DefaultOpacity;
     }
-}

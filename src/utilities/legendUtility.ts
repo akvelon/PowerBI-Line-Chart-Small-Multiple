@@ -1,11 +1,30 @@
-module powerbi.extensibility.visual {    
+    import powerbi from 'powerbi-visuals-api';
+    import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+    import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+    import ISelectionId = powerbi.extensibility.ISelectionId;
+    import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
+    import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
+    import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+    import DataViewObjects = powerbi.DataViewObjects;
+    import DataViewValueColumns = powerbi.DataViewValueColumns;
+    import DataView = powerbi.DataView;
+    import IViewport = powerbi.IViewport;
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
 
-    import ILegend = utils.chart.legend.ILegend;
-    import LegendPosition = utils.chart.legend.LegendPosition;
-    import LegendData = utils.chart.legend.LegendData;
-    import LegendIcon = utils.chart.legend.LegendIcon;
-    import ColorHelper = utils.color.ColorHelper;
+    import { legendPosition, legendInterfaces } from 'powerbi-visuals-utils-chartutils';
+
+    import ILegend = legendInterfaces.ILegend;
+    import LegendPosition = legendInterfaces.LegendPosition;
+    import LegendData = legendInterfaces.LegendData;
+    import { ColorHelper } from 'powerbi-visuals-utils-colorutils';
+
+    import { legendSettings, LegendIcon } from '../settings';
+    import { Visual } from '../visual';
+    import { LegendBehavior} from '../legendBehavior';
+    import { LegendDataPointExtended, LegendDataExtended } from '../visualInterfaces';
+    import { TextProperties, PixelConverter, TextUtility } from './textUtility';
+    import { MarkersUtility } from './markersUtility';
 
     const paddingText: number = 10;
     const arrowWidth: number = 7.5;
@@ -46,14 +65,14 @@ module powerbi.extensibility.visual {
         };
         legend.drawLegend(legendData, options.viewport);
 
-        let legendItems: Selection<LegendDataPointExtended> = d3.selectAll('svg.legend g.legendItem');
+        let legendItems: Selection<any, any, any, any> = d3.selectAll('svg.legend g.legendItem');
         drawCustomLegendIcons(legendItems, legendSettings, dataPoints);
         appendLegendMargins(legend, margin);
     }
 
-    export function drawCustomLegendIcons(legendItems: Selection<any>, legendSettings: legendSettings, dataPoints: LegendDataPointExtended[]) {
+    export function drawCustomLegendIcons(legendItems/*: Selection<any, any, any, any>*/, legendSettings: legendSettings, dataPoints: LegendDataPointExtended[]) {
         if (!dataPoints || dataPoints.length == 0) return;
-        let legendIcon: LegendIcon = dataPoints[0].icon;
+        let legendIcon/*: LegendIcon*/ = dataPoints[0].icon;
         let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
         if (legendItemsLen == 0) return;
 
@@ -61,8 +80,8 @@ module powerbi.extensibility.visual {
         let isTopOrBottomLegend: boolean = legendSettings.position == "Top" || legendSettings.position == "TopCenter"
             || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter";
 
-        let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-        let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
+        let legendGroup: Selection<any, any, any, any> = d3.select(legendItems.node().parentElement);
+        let legend: Selection<any, any, any, any> = d3.select(legendGroup.node().parentElement);
 
         let markerSize: number = 6;
         let padding: number = legendSettings.fontSize/4;
@@ -71,7 +90,7 @@ module powerbi.extensibility.visual {
         let svgLegendWidth: number = +legend.attr('width');
         let svgLegendHeight: number = +legend.attr('height');
 
-        let parent: Selection<any> = d3.select(legendItems[0][0]);
+        let parent: Selection<any, any, any, any> = d3.select(legendItems[0][0]);
         let firstName: string = parent.select('title').text();
         parent = d3.select(legendItems[0][legendItemsLen-1]);
         let lastName: string = parent.select('title').text();
@@ -88,7 +107,7 @@ module powerbi.extensibility.visual {
         }
         let isLastData: boolean = legendItemsLastIndex == dataPoints.length - 1;
 
-        let titleElement: Selection<any> = legendGroup.select('.legendTitle');
+        let titleElement: Selection<any, any, any, any> = legendGroup.select('.legendTitle');
         let titleWidth: number = 0;
         if (titleElement && titleElement[0] && titleElement[0][0]) {
             let maxTitleWidth: number = isTopOrBottomLegend ? svgLegendWidth/3 : svgLegendWidth;
@@ -106,9 +125,9 @@ module powerbi.extensibility.visual {
             titleWidth = PixelConverter.fromPointToPixel(TextUtility.measureTextWidth(textProp));
         }
         let arrowCount: number = 0;
-        let defaultArrows: Selection<any> = legendGroup.selectAll(Visual.NavigationArrow.selectorName);
-        let arrowLeft: Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomLeft.selectorName);
-        let arrowRight: Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomRight.selectorName);
+        let defaultArrows: Selection<any, any, any, any> = legendGroup.selectAll(Visual.NavigationArrow.selectorName);
+        let arrowLeft: Selection<any, any, any, any> = legendGroup.selectAll(Visual.NavigationArrowCustomLeft.selectorName);
+        let arrowRight: Selection<any, any, any, any> = legendGroup.selectAll(Visual.NavigationArrowCustomRight.selectorName);
 
         let defaultTranslateXForTopOrBottomCenter: number = 5;
         let defaultTranslateYForTopOrBottomCenter: number = 0;
@@ -116,10 +135,9 @@ module powerbi.extensibility.visual {
 
         if (isTopOrBottomLegend && legendItemsLen<dataPoints.length) {
             let arrowY: number = (svgLegendHeight - arrowHeight)/2;
-            defaultArrows.attr({
-                'transform': 'translate(' + svgLegendWidth + ',' + arrowY + ')',
-                'opacity': 0
-            });
+            defaultArrows
+                .attr('transform', 'translate(' + svgLegendWidth + ',' + arrowY + ')')
+                .attr('opacity', 0);
             if (legendSettings.position == "TopCenter" || legendSettings.position == "BottomCenter") {
                 translateLegendGroupX = defaultTranslateXForTopOrBottomCenter;
                 let transform: string = 'translate(' + defaultTranslateXForTopOrBottomCenter + ',' + defaultTranslateYForTopOrBottomCenter + ')';
@@ -135,10 +153,8 @@ module powerbi.extensibility.visual {
                     .classed(Visual.NavigationArrowCustomLeft.className, true)
                     .attr('transform','translate(' + leftArrowX + ',' + arrowY + ')');
                 arrowLeft.append('path')
-                    .attr({
-                        "d": "M0 0L0 15L7.5 7.5 Z",
-                        "transform": "rotate(180 3.75 7.5)"
-                    });
+                    .attr("d", "M0 0L0 15L7.5 7.5 Z")
+                    .attr("transform", "rotate(180 3.75 7.5)");
             } else {
                 arrowLeft.attr('transform','translate(' + leftArrowX + ',' + arrowY + ')');
             }
@@ -152,10 +168,8 @@ module powerbi.extensibility.visual {
                     .classed(Visual.NavigationArrowCustomRight.className, true)
                     .attr('transform','translate(' + rightArrowX + ',' + arrowY + ')');
                 arrowRight.append('path')
-                    .attr({
-                        "d": "M0 0L0 15L7.5 7.5 Z",
-                        "transform": "rotate(0 3.75 7.5)"
-                    });
+                    .attr("d", "M0 0L0 15L7.5 7.5 Z")
+                    .attr("transform", "rotate(0 3.75 7.5)");
             } else {
                 arrowRight.attr('transform','translate(' + rightArrowX + ',' + arrowY + ')');
             }
@@ -166,15 +180,15 @@ module powerbi.extensibility.visual {
         }
 
         legend.selectAll('defs').remove();
-        let defs: Selection<any> = legend.append("defs");
+        let defs: Selection<any, any, any, any> = legend.append("defs");
         let prefixForArrow: number = legendItemsFirstIndex == 0 ? 0 : arrowWidth;
         let cx0: number = isTopOrBottomLegend ? translateLegendGroupX + titleWidth + paddingText + prefixForArrow : minCx;
         let cx1: number = cx0;
         let currentItemWidth: number = (svgLegendWidth - arrowWidth - cx0)/legendItemsLen - padding;
         currentItemWidth = currentItemWidth < 0 ? 0 : currentItemWidth;
         for(let i=0;i<legendItemsLen;i++) {
-            let parent: Selection<any> = d3.select(legendItems[0][i]);
-            let circle: Selection<any> = parent.select('circle');
+            let parent: Selection<any, any, any, any> = d3.select(legendItems[0][i]);
+            let circle: Selection<any, any, any, any> = parent.select('circle');
             let cx: number = isTopOrBottomLegend
                 ? ((isLastData)
                     ? cx1
@@ -182,7 +196,7 @@ module powerbi.extensibility.visual {
                 : minCx;
             circle.attr('cx', cx);
             let cy: string = circle.attr('cy');
-            let text: Selection<any> = parent.select('text');
+            let text: Selection<any, any, any, any> = parent.select('text');
             let name: string = parent.select('title').text();
 
             let dataPointIndex: number;
@@ -225,8 +239,8 @@ module powerbi.extensibility.visual {
             parent.selectAll('.legend-item-line').remove();
             parent.selectAll('.legend-item-marker').remove();
             circle.attr('opacity', 1);
-            let customLegendLine: Selection<any> = parent.insert("path", ":first-child").classed("legend-item-line", true);
-            let customLegendMarker: Selection<any> = parent.insert("path", "circle").classed("legend-item-marker", true);
+            let customLegendLine: Selection<any, any, any, any> = parent.insert("path", ":first-child").classed("legend-item-line", true);
+            let customLegendMarker: Selection<any, any, any, any> = parent.insert("path", "circle").classed("legend-item-marker", true);
 
             switch (legendIcon) {
                 case LegendIcon.Circle: {
@@ -238,26 +252,25 @@ module powerbi.extensibility.visual {
                         let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
                         let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
                         if (markerId) {
-                            customLegendMarker.attr({
-                                'd': "M" + cx + "," + cy + "Z",
-                                'stroke-width': "2",
-                                'fill': "none",
-                                'marker-start': 'url(#' + markerId + ')'
-                            }).append('title').text(dataPoint.label);
+                            customLegendMarker
+                                .attr('d', "M" + cx + "," + cy + "Z")
+                                .attr('stroke-width', "2")
+                                .attr('fill', "none")
+                                .attr('marker-start', 'url(#' + markerId + ')')
+                                .append('title').text(dataPoint.label);
                             circle.attr('opacity', 0);
                         }
                     } else {
                         if (legendSettings.circleDefaultIcon != true) {
                             //draw short line
-                            customLegendLine.attr({
-                                    'transform': "translate(" + cx + "," + cy +")",
-                                    'd': "M0 0 m -5 0 l 10 0",
-                                    'stroke-width': "2"
-                                }).style({
-                                'fill': dataPoint.color,
-                                'stroke': dataPoint.color,
-                                'stroke-linejoin': 'round'
-                                }).append('title').text(dataPoint.label);
+                            customLegendLine
+                                .attr('transform', "translate(" + cx + "," + cy +")")
+                                .attr('d', "M0 0 m -5 0 l 10 0")
+                                .attr('stroke-width', "2")
+                                .style('fill', dataPoint.color)
+                                .style('stroke', dataPoint.color)
+                                .style('stroke-linejoin', 'round')
+                                .append('title').text(dataPoint.label);
                             circle.attr('opacity', 0);
                         }
                     }
@@ -269,14 +282,13 @@ module powerbi.extensibility.visual {
                     text.attr('x', textX);
                     let lineStart: number = -lineLen - padding;
                     let lineEnd: number = -padding;
-                    customLegendLine.attr({
-                        'transform': "translate(" + textX + "," + cy +")",
-                        'd': "M" + lineStart + ",0L" + lineEnd + ",0",
-                        'stroke-width': "2",
-                        'fill': "none"
-                    }).style({
-                        'stroke': dataPoint.color
-                    }).append('title').text(dataPoint.label);
+                    customLegendLine
+                        .attr('transform', "translate(" + textX + "," + cy +")")
+                        .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                        .attr('stroke-width', "2")
+                        .attr('fill', "none")
+                        .style('stroke', dataPoint.color)
+                        .append('title').text(dataPoint.label);
 
                     circle.attr('opacity', 0);
                     circle.attr('r', lineLen/2);
@@ -285,12 +297,12 @@ module powerbi.extensibility.visual {
                         MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
                         let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
                         if (markerId) {
-                            customLegendMarker.attr({
-                                'd': "M" + cx + "," + cy + "Z",
-                                'stroke-width': "2",
-                                'fill': "none",
-                                'marker-start': 'url(#' + markerId + ')'
-                            }).append('title').text(dataPoint.label);
+                            customLegendMarker
+                                .attr('d', "M" + cx + "," + cy + "Z")
+                                .attr('stroke-width', "2")
+                                .attr('fill', "none")
+                                .attr('marker-start', 'url(#' + markerId + ')')
+                                .append('title').text(dataPoint.label);
                         }
                     }
                     break;
@@ -302,14 +314,13 @@ module powerbi.extensibility.visual {
                     text.attr('x', textX);
                     let lineStart: number = -lineLen - padding;
                     let lineEnd: number = -padding;
-                    customLegendLine.attr({
-                        'transform': "translate(" + textX + "," + cy +")",
-                        'd': "M" + lineStart + ",0L" + lineEnd + ",0",
-                        'stroke-width': "2",
-                        'fill': 'none'
-                    }).style({
-                        'stroke': dataPoint.color
-                    }).append('title').text(dataPoint.label);
+                    customLegendLine
+                        .attr('transform', "translate(" + textX + "," + cy +")")
+                        .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                        .attr('stroke-width', "2")
+                        .attr('fill', 'none')
+                        .style('stroke', dataPoint.color)
+                        .append('title').text(dataPoint.label);
                     circle.attr('opacity', 0);
                     circle.attr('r', lineLen/2);
                 }
@@ -346,16 +357,16 @@ module powerbi.extensibility.visual {
         return itemWidth;
     }
 
-    export function generateLegendItemsForLeftOrRightClick(legendItems: Selection<any>, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): Selection<any> {
+    export function generateLegendItemsForLeftOrRightClick(legendItems/*: Selection<any, any, any, any>*/, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): Selection<any, any, any, any> {
         if (!legendItems || !dataPoints || itemWidth == 0) return;
         let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
         if (legendItemsLen < 1) return;
-        let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-        let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
+        let legendGroup: Selection<any, any, any, any> = d3.select(legendItems.node().parentElement);
+        let legend: Selection<any, any, any, any> = d3.select(legendGroup.node().parentElement);
 
-        let titleElement: Selection<any> = legendGroup.select('.legendTitle');
+        let titleElement: Selection<any, any, any, any> = legendGroup.select('.legendTitle');
         let titleWidth: number = 0;
-        let simpleTextElement: Selection<any> = legendGroup.select('text');
+        let simpleTextElement: Selection<any, any, any, any> = legendGroup.select('text');
         let fontFamily: string = simpleTextElement.style('font-family');
         let fontSize: string = simpleTextElement.style('font-size');
         if (titleElement && titleElement[0] && titleElement[0][0]) {
@@ -379,7 +390,7 @@ module powerbi.extensibility.visual {
 
         let start: number;
         let end: number;
-        let parent: Selection<any>;
+        let parent: Selection<any, any, any, any>;
         if (isLeft) {
             parent = d3.select(legendItems[0][0]);
             let firstName: string = parent.select('title').text();
@@ -415,34 +426,30 @@ module powerbi.extensibility.visual {
         return legendItems;
     }
 
-    function generateLegendItems(legendItems: Selection<any>, newDataPoints: LegendDataPointExtended[]): Selection<any> {
+    function generateLegendItems(legendItems: Selection<any, any, any, any>, newDataPoints: LegendDataPointExtended[]): Selection<any, any, any, any> {
         let circleY: string = legendItems.select('circle').attr('cy');
-        let text: Selection<any> = legendItems.select('text');
+        let text: Selection<any, any, any, any> = legendItems.select('text');
         let textY: string = text.attr('y');
         let textFill: string = text.style('fill');
         let textFontSize: string = text.style('font-size');
 
-        let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
+        let legendGroup: Selection<any, any, any, any> = d3.select(legendItems.node().parentElement);
         legendItems.remove();
         for(let i=0; i<newDataPoints.length; i++) {
             let dataPoint: LegendDataPointExtended = newDataPoints[i];
-            let legendItem: Selection<any> = legendGroup.append("g").classed('legendItem', true);
+            let legendItem: Selection<any, any, any, any> = legendGroup.append("g").classed('legendItem', true);
             legendItem.append('circle')
                 .classed('legendIcon', true)
-                .attr({
-                    cx:0,
-                    cy: circleY,
-                    r: 5
-                }).style('fill', LegendBehavior.dimmedLegendColor);
+                .attr('cx', 0)
+                .attr('cy', circleY)
+                .attr('r', 5)
+                .style('fill', LegendBehavior.dimmedLegendColor);
             legendItem.append('text')
                 .classed('legendText', true)
-                .attr({
-                    x: 0,
-                    y: textY
-                }).style({
-                    'fill': textFill,
-                    'font-size': textFontSize
-                })
+                .attr('x', 0)
+                .attr('y', textY)
+                .style('fill', textFill)
+                .style('font-size', textFontSize)
                 .text(dataPoint.label);
             legendItem.append('title').text(dataPoint.label);
         }
@@ -681,7 +688,7 @@ module powerbi.extensibility.visual {
         if (legend) {
             let legendViewPort: IViewport = legend.getMargins();
             let legendOrientation: LegendPosition = legend.getOrientation();
-            let svgLegend: Selection<any> = d3.select('svg.legend');
+            let svgLegend: Selection<any, any, any, any> = d3.select('svg.legend');
             let width: number = +svgLegend.attr('width');
 
             if (legend.isVisible()) {
@@ -699,7 +706,7 @@ module powerbi.extensibility.visual {
         return margins;
     }
 
-    export function positionChartArea(container: Selection<any>, legend: ILegend) {
+    export function positionChartArea(container: Selection<any, any, any, any>, legend: ILegend) {
         let margin = {top: 0, left: 0, bottom: 0, right: 0};
         appendLegendMargins(legend, margin);
         if (margin.top)
@@ -711,4 +718,3 @@ module powerbi.extensibility.visual {
         if (margin.right)
             container.style('margin-right', margin.right + 'px');
     }
-}

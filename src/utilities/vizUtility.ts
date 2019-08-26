@@ -1,7 +1,8 @@
-module powerbi.extensibility.visual {
-    import ValueFormatter = utils.formatting.valueFormatter;
-    import IValueFormatter = utils.formatting.IValueFormatter;
-    import ValueFormatterOptions = utils.formatting.ValueFormatterOptions;
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import ValueFormatter = valueFormatter;
+    import IValueFormatter = valueFormatter.IValueFormatter;
+    import ValueFormatterOptions = valueFormatter.ValueFormatterOptions;
+
     export module VizUtility {
         
          export class Formatter {
@@ -96,4 +97,3 @@ module powerbi.extensibility.visual {
             return returnName;
         }
     }
-}

@@ -1,7 +1,9 @@
-module powerbi.extensibility.visual {
-    "use strict";
+    import * as d3 from 'd3';
+    import Selection = d3.Selection;
+    import { Visual } from '../visual';
+
     export class MarkersUtility {
-        public static initMarker(container: d3.Selection<any>, uniqueName: string, markerShape: string, markerSize: number, markerColor:string): string {
+        public static initMarker(container: Selection<any, any, any, any>, uniqueName: string, markerShape: string, markerSize: number, markerColor:string): string {
             //set markerD and strokeWidth from markerShape
             let markerD: string = "";
             let strokeWidth: number = 0;
@@ -122,7 +124,7 @@ module powerbi.extensibility.visual {
             return newDataLine;
         }
 
-        public static drawMarkersForSteppedLineChart(container: d3.Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
+        public static drawMarkersForSteppedLineChart(container: Selection<SVGElement, any, any, any>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
             let markerAttr = 'url(#' + markerId + ')';
             container.append("path")
                 .classed(Visual.MarkerLineSelector.className, true)
@@ -135,4 +137,3 @@ module powerbi.extensibility.visual {
                 .attr('marker-end', markerAttr);
         }
     }
-}

@@ -1,20 +1,54 @@
-module powerbi.extensibility.visual {
-    // d3
+    import powerbi from 'powerbi-visuals-api';
+    import VisualUpdateType = powerbi.VisualUpdateType;
+    import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+    import DataViewValueColumn = powerbi.DataViewValueColumn;
+    import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
+    import ISelectionId = powerbi.extensibility.ISelectionId;
+    import DataViewObjects = powerbi.DataViewObjects;
+    import PrimitiveValue = powerbi.PrimitiveValue;
+
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
-    import Update = d3.selection.Update;
 
-    import IValueFormatter = utils.formatting.IValueFormatter;
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
 
-    import IInteractivityService = utils.interactivity.IInteractivityService;
-    import BoundingRect = utils.svg.shapes.BoundingRect;
+    import { interactivityBaseService } from 'powerbi-visuals-utils-interactivityutils';
+    import IInteractivityService = interactivityBaseService.IInteractivityService;
+    import { shapesInterfaces } from 'powerbi-visuals-utils-svgutils';
+    import BoundingRect = shapesInterfaces.BoundingRect;
 
-    export function implementLassoSelection(mainCont: Selection<any>, lassoContainer: Selection<any>, dataPoints: VisualDataPoint[], globalLines: LineDataPoint[], matrixFlowIndex: number, lassoColor: string,
-        legend: Selection<any>, is: IInteractivityService, behavior: WebBehavior,
+    import { Visual } from './visual';
+    import { getLegendData } from './utilities/legendUtility';
+    import { VizUtility } from './utilities/vizUtility';
+    import { WebBehavior } from './behavior';
+    import { MarkersUtility } from './utilities/markersUtility';
+    import { renderVisual } from './renderVisual';
+    import { shapes, DimmedOpacity } from './settings';
+    import {
+        LassoData,
+        LineDataPointForLasso,
+        SimplePoint,
+        LinePoint,
+        VerticalLineDataItem,
+        CategoryType,
+        VisualDomain,
+        LineDataPoint,
+        VisualDataPoint,
+        VerticalLineDataItemsGlobalWithKey,
+        LegendDataPointExtended,
+        VerticalLineDataItemsGlobal,
+        VisualViewModel,
+        LegendDataExtended
+    } from './visualInterfaces';
+
+    export function implementLassoSelection(mainCont: Selection<any, any, any, any>, lassoContainer: Selection<any, any, any, any>, dataPoints: VisualDataPoint[], globalLines: LineDataPoint[], matrixFlowIndex: number, lassoColor: string,
+        legend: Selection<any, any, any, any>, is: IInteractivityService<any>, behavior: WebBehavior,
         verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey, shapes: shapes, legendFormatter: IValueFormatter, legendType: CategoryType) {
 
         let mainRect: BoundingRect = null;
         if (matrixFlowIndex == 0) {
-            let lineChartRect: Selection<any> = lassoContainer.select(Visual.LineChartRectSelector.selectorName);
+            let lineChartRect: Selection<any, any, any, any> = lassoContainer.select(Visual.LineChartRectSelector.selectorName);
             let rectX: number = +lineChartRect.attr('x');
             let rectY: number = +lineChartRect.attr('y');
             let rectW: number = +lineChartRect.attr('width');
@@ -52,7 +86,7 @@ module powerbi.extensibility.visual {
                 behavior.renderLassoSelection(true);
                 let lassoData: LassoData = generateLassoData(currentLassoData.startX, currentLassoData.startY, mouseX, mouseY, []);
 
-                let childLassoContainer: Selection<any> = lassoContainer.select('#'+Visual.LassoDataSelectorId).append("svg").classed(Visual.LassoSvgSelector.className, true);
+                let childLassoContainer: Selection<any, any, any, any> = lassoContainer.select('#'+Visual.LassoDataSelectorId).append("svg").classed(Visual.LassoSvgSelector.className, true);
 
                 dp = drawLassoRect(globalLines, lassoData, lassoColor, childLassoContainer, dataPoints, verticalLineDataItemsGlobal, shapes, legendFormatter, legendType);
                 behavior.customLassoSelect(dp);
@@ -147,20 +181,19 @@ module powerbi.extensibility.visual {
         return result;
     }
     
-    function drawLassoRect(globalLines: LineDataPoint[], data: LassoData, lassoColor: string, cont: Selection<any>, dataPoints: VisualDataPoint[],
+    function drawLassoRect(globalLines: LineDataPoint[], data: LassoData, lassoColor: string, cont: Selection<any, any, any, any>, dataPoints: VisualDataPoint[],
         verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey, shapes: shapes, legendFormatter: IValueFormatter, legendType: CategoryType): VisualDataPoint[] {
         if (!data)
             return;
 
         cont.append("rect")
             .classed(Visual.LassoRectSelector.className, true)
-            .attr({
-                'width': data.lassoData.right - data.lassoData.left,
-                'height': data.lassoData.bottom - data.lassoData.top,
-                'x': data.lassoData.left,
-                'y': data.lassoData.top,
-                'fill': lassoColor
-        }).style('opacity', DimmedOpacity);
+            .attr('width', data.lassoData.right - data.lassoData.left)
+            .attr('height', data.lassoData.bottom - data.lassoData.top)
+            .attr('x', data.lassoData.left)
+            .attr('y', data.lassoData.top)
+            .attr('fill', lassoColor)
+            .style('opacity', DimmedOpacity);
 
         let selectedLegendNames: string[] = [];
         let lines: LineDataPointForLasso[] = [];
@@ -212,7 +245,7 @@ module powerbi.extensibility.visual {
         return newDataPoints;
     }
 
-    function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], globalLines: LineDataPoint[], shapes: shapes) {
+    function drawLines(cont: Selection<any, any, any, any>, lines: LineDataPointForLasso[], globalLines: LineDataPoint[], shapes: shapes) {
         let newLines: LineDataPoint[] = [];
         let lineDD: string[] = [];
         let dots: LineDataPoint[] = [];
@@ -249,8 +282,8 @@ module powerbi.extensibility.visual {
                 lineDD.push(lineD);
             }
         }
-        let linesCont: Selection<any> = cont.append("svg");
-        let lineGroupSelection: Update<LineDataPoint> = linesCont
+        let linesCont: Selection<any, any, any, any> = cont.append("svg");
+        let lineGroupSelection/*: Update<LineDataPoint>*/ = linesCont
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(newLines);
 
@@ -260,48 +293,47 @@ module powerbi.extensibility.visual {
             .classed(Visual.SimpleLineSelector.className, true);
 
         lineGroupSelection
-            .attr({
-                "d": (dataPoint: LineDataPoint, index: number) => {
-                    let lineD: string = lineDD[index];
-                    let stepped: boolean = (dataPoint.stepped == undefined) ? shapes.stepped : dataPoint.stepped;
-                    let dataLine: string = (stepped)
-                        ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                        : lineD;
-                    return dataLine;
-                },
-                "stroke": (dataPoint: LineDataPoint) => {
-                    return dataPoint.color;
-                },
-                'stroke-width': (dataPoint: LineDataPoint) => {
-                    let strokeWidth: number = (dataPoint.strokeWidth == undefined) ? shapes.strokeWidth : dataPoint.strokeWidth;
-                    return strokeWidth;
-                },
-                "stroke-linejoin": (dataPoint: LineDataPoint) => {
-                    let strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? shapes.strokeLineJoin : dataPoint.strokeLineJoin;
-                    return strokeLineJoin;
-                },
-                "stroke-dasharray": (dataPoint: LineDataPoint) => {
-                    let strokeDasharray: string = (dataPoint.lineStyle == undefined)
-                        ? VizUtility.getLineStyleParam(shapes.lineStyle)
-                        : VizUtility.getLineStyleParam(dataPoint.lineStyle);
-                    return strokeDasharray;
-                },
-                'fill': 'none'
-            }).style('opacity', 1);
+            .attr("d", (dataPoint: LineDataPoint, index: number) => {
+                let lineD: string = lineDD[index];
+                let stepped: boolean = (dataPoint.stepped == undefined) ? shapes.stepped : dataPoint.stepped;
+                let dataLine: string = (stepped)
+                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                    : lineD;
+                return dataLine;
+            })
+            .attr("stroke", (dataPoint: LineDataPoint) => {
+                return dataPoint.color;
+            })
+            .attr('stroke-width', (dataPoint: LineDataPoint) => {
+                let strokeWidth: number = (dataPoint.strokeWidth == undefined) ? shapes.strokeWidth : dataPoint.strokeWidth;
+                return strokeWidth;
+            })
+            .attr("stroke-linejoin", (dataPoint: LineDataPoint) => {
+                let strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? shapes.strokeLineJoin : dataPoint.strokeLineJoin;
+                return strokeLineJoin;
+            })
+            .attr("stroke-dasharray", (dataPoint: LineDataPoint) => {
+                let strokeDasharray: string = (dataPoint.lineStyle == undefined)
+                    ? VizUtility.getLineStyleParam(shapes.lineStyle)
+                    : VizUtility.getLineStyleParam(dataPoint.lineStyle);
+                return strokeDasharray;
+            })
+            .attr('fill', 'none')
+            .style('opacity', 1);
 
         let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
         for(let i=0;i<newLines.length;i++) {
             let ldp: LineDataPoint = newLines[i];
             let marker: string = lineNamesWithMarkers[ldp.name];
             if (marker) {
-                let item: Selection<any> = d3.select(lineGroupSelection[0][i]);
+                let item: Selection<any, any, any, any> = d3.select(lineGroupSelection[0][i]);
                 item.attr('marker-start', marker);
                 item.attr('marker-mid', marker);
                 item.attr('marker-end', marker);
             }
         }
 
-        let dotsGroupSelection: Update<LineDataPoint> = linesCont
+        let dotsGroupSelection/*: Update<LineDataPoint>*/ = linesCont
             .append("g")
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(dots);
@@ -312,25 +344,22 @@ module powerbi.extensibility.visual {
             .classed(Visual.DotSelector.className, true);
 
         dotsGroupSelection
-            .attr({
-                'cx': (dataPoint: LineDataPoint) => {
-                    return +dataPoint.points[0].x;
-                },
-                'cy': (dataPoint: LineDataPoint) => {
-                    return dataPoint.points[0].y;
-                },
-                'r': (dataPoint: LineDataPoint) => {
-                    let strokeWidth: number = dataPoint.strokeWidth == undefined
-                        ? shapes.strokeWidth
-                        : dataPoint.strokeWidth;
-                    return 2.5 + 0.5*strokeWidth;
-                }
+            .attr('cx', (dataPoint: LineDataPoint) => {
+                return +dataPoint.points[0].x;
             })
-            .style({
-                'fill': (dataPoint: LineDataPoint) => {
-                    return dataPoint.color;
-                }
-            }).style('opacity', 1);
+            .attr('cy', (dataPoint: LineDataPoint) => {
+                return dataPoint.points[0].y;
+            })
+            .attr('r', (dataPoint: LineDataPoint) => {
+                let strokeWidth: number = dataPoint.strokeWidth == undefined
+                    ? shapes.strokeWidth
+                    : dataPoint.strokeWidth;
+                return 2.5 + 0.5*strokeWidth;
+            })
+            .style('fill', (dataPoint: LineDataPoint) => {
+                return dataPoint.color;
+            })
+            .style('opacity', 1);
     }
 
     function retrieveLineDForLasso(points: SimplePoint[]) {
@@ -359,4 +388,3 @@ module powerbi.extensibility.visual {
             lines[lineKeyIndex].points.push(point);
         }
     }
-}

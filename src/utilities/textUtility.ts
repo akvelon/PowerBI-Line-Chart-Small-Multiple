@@ -1,4 +1,5 @@
-module powerbi.extensibility.visual {
+    import * as d3 from 'd3';
+
     export interface TextProperties {
         text?: string;
         fontFamily: string;
@@ -148,4 +149,3 @@ module powerbi.extensibility.visual {
             return px / PxPtRatio;
         }
     }
-}

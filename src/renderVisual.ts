@@ -1,13 +1,56 @@
-module powerbi.extensibility.visual {    
-    "use strict";
+    import powerbi from 'powerbi-visuals-api';
+    import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
-    import UpdateSelection = d3.selection.Update;
+    import { interactivityBaseService } from 'powerbi-visuals-utils-interactivityutils';
+    import { ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils'
+    
+    import IInteractivityService = interactivityBaseService.IInteractivityService;
+    import { valueFormatter, displayUnitSystemType } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
+    import ValueFormatterOptions = valueFormatter.ValueFormatterOptions;
+    import { VizUtility } from './utilities/vizUtility';
+    import { TextUtility, TextProperties, PixelConverter } from './utilities/textUtility';
+    import {
+        VerticalLineDataItem,
+        SimplePoint,
+        Coordinates
+    } from './visualInterfaces';
+    import { MarkersUtility } from './utilities/markersUtility';
+    import { Visual } from './visual';
+    import {
+        VerticalLineDataItemsGlobalWithKey,
+        VisualViewModel,
+        VisualDomain,
+        VisualDataPoint,
+        LegendDataPointExtended,
+        LineDataPoint,
+        LineKeyIndex,
+        CategoryType,
+        LegendDataExtended,
+        XAxisData,
+        LabelsAction
+    } from './visualInterfaces';
+    import {
+        VisualSettings,
+        NiceDateFormat,
+        AxisPosition,
+        dataLabelsSettings,
+        DataLabelR,
+        DataLabelEps,
+        shapes
+    } from './settings';
+    import { getOpacity } from './behavior';
+    import { generateVerticalLineData, drawPointsForVerticalLine, findNearestVerticalLineIndex } from './verticalLine';
 
-    import IInteractivityService = utils.interactivity.IInteractivityService;
-    import ITooltipServiceWrapper = utils.tooltip.ITooltipServiceWrapper;
-    import IValueFormatter = utils.formatting.IValueFormatter;
-    import ValueFormatterOptions = utils.formatting.ValueFormatterOptions;
-    import DisplayUnitSystemType = utils.formatting.DisplayUnitSystemType;
+    enum DisplayUnitSystemType {
+        Default = 0,
+        Verbose = 1,
+        WholeUnits = 2,
+        DataLabels = 3
+    }
 
     export class renderVisual {
 
@@ -27,7 +70,7 @@ module powerbi.extensibility.visual {
 
         private domainY: VisualDomain;
         private isSeparateDomainY: boolean;
-        private interactivityService: IInteractivityService;
+        private interactivityService: IInteractivityService<any>;
         private hasSelection: boolean;
 
         private ResponsiveMinWidth: number = 50;
@@ -36,7 +79,7 @@ module powerbi.extensibility.visual {
         private MaxLogScaleDivider: number = 10;
 
 
-        constructor(host: IVisualHost, container: Selection<any>, model: VisualViewModel, domainY: VisualDomain, interactivityService: IInteractivityService, tooltipServiceWrapper: ITooltipServiceWrapper)
+        constructor(host: IVisualHost, container: Selection<any, any, any, any>, model: VisualViewModel, domainY: VisualDomain, interactivityService: IInteractivityService<any>, tooltipServiceWrapper: ITooltipServiceWrapper)
         {
             this.categories = model.categories;
             this.categoryIsDate = model.categoryIsDate;
@@ -93,24 +136,21 @@ module powerbi.extensibility.visual {
             container.selectAll(Visual.SmallMultipleSelector.selectorName).remove();
         }
 
-        public renderSmallMultipleWithTitle(itemContainer: Selection<SVGElement>, itemWidth: number, itemHeight: number,
+        public renderSmallMultipleWithTitle(itemContainer: Selection<SVGElement, any, any, any>, itemWidth: number, itemHeight: number,
             titleHeight: number, title: string,
             lines: LineDataPoint[], lineKey: string,
             rectGlobalX: number, rectGlobalY: number)
         {
             itemContainer.classed(Visual.SmallMultipleSelector.className, true);
             if (this.settings.smallMultiple.showChartTitle) {
-                let textContainer: Selection<SVGElement> = itemContainer.append("g")
-                    .attr({
-                        'width':  itemWidth,
-                        'height': titleHeight
-                    });
+                let textContainer: Selection<SVGElement, any, any, any> = itemContainer.append("g")
+                    .attr('width',  itemWidth)
+                    .attr('height', titleHeight)
+                
                 textContainer.append('rect')
                     .classed('clearCatcher', true)
-                    .attr({
-                        'width':  itemWidth,
-                        'height': titleHeight
-                    });
+                    .attr('width',  itemWidth)
+                    .attr('height', titleHeight);
 
                 let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
                 let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
@@ -125,31 +165,27 @@ module powerbi.extensibility.visual {
 
                 textContainer.append("text")
                     .classed(Visual.SmallMultipleNameSelector.className, true)
-                    .attr({
-                        "font-family": titleFontFamily,
-                        "font-size" : titleFontSize,
-                        "fill" : this.settings.smallMultiple.smColor,
-                        'height': titleHeight,
-                        "x": titleX,
-                        "y" : titleHeight*2/3
-                    })
+                    .attr("font-family", titleFontFamily)
+                    .attr("font-size" , titleFontSize)
+                    .attr("fill", this.settings.smallMultiple.smColor)
+                    .attr('height', titleHeight)
+                    .attr("x", titleX)
+                    .attr("y", titleHeight*2/3)
                     .text(shortTitle);
                 textContainer.append("title").text(title);
 
-                let svgContainer: Selection<SVGElement> = itemContainer
+                let svgContainer: Selection<SVGElement, any, any, any> = itemContainer
                     .append('g')
-                    .attr({
-                        'width':  itemWidth,
-                        'height': itemHeight,
-                        'transform': 'translate(0,' + titleHeight + ')'
-                    });
+                    .attr('width',  itemWidth)
+                    .attr('height', itemHeight)
+                    .attr('transform', 'translate(0,' + titleHeight + ')');
                 this.renderSmallMultiple(svgContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY + titleHeight);
             } else {
                 this.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY);
             }
         }
 
-        public retrieveNewLegendPosition(svgContainer: Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, legendPosition: string, legendHeight: number): string {
+        public retrieveNewLegendPosition(svgContainer: Selection<SVGElement, any, any, any>, lines: LineDataPoint[], width: number, height: number, legendPosition: string, legendHeight: number): string {
             if (!this.settings.general.responsive || legendPosition == "None")
                 return legendPosition;
             let resultLegendPosition: string = legendPosition;
@@ -223,13 +259,13 @@ module powerbi.extensibility.visual {
             return axisMargin;
         }
 
-        private retrieveYAxisWidth(lines: LineDataPoint[], svgContainer: Selection<SVGElement>): number {
+        private retrieveYAxisWidth(lines: LineDataPoint[], svgContainer: Selection<SVGElement, any, any, any>): number {
             let yAxisWidth = 0;
             if (this.settings.yAxis.show) {
                 let yAxisFontSize = this.settings.yAxis.fontSize + "px";
 
                 let domainY: VisualDomain = this.retrieveDomainY(lines);
-                let yScale: number[] = d3.scale.linear()
+                let yScale: number[] = d3.scaleLinear()
                     .domain([domainY.end, domainY.start]).nice()
                     .ticks();
                 for(let i=0;i<yScale.length;i++) {
@@ -251,15 +287,13 @@ module powerbi.extensibility.visual {
             return yAxisWidth;
         }
 
-        private retrieveYAxisTitleHeight(svgContainer: Selection<SVGElement>): number {
-            let titleCont: Selection<any> = svgContainer.append("g");
+        private retrieveYAxisTitleHeight(svgContainer: Selection<SVGElement, any, any, any>): number {
+            let titleCont: Selection<any, any, any, any> = svgContainer.append("g");
             let titleText: string = this.retrieveYAxisTitleText();
             titleCont.append("text")
-                .attr({
-                    'font-family': this.settings.yAxis.titleFontFamily,
-                    'font-size': this.settings.yAxis.titleFontSize + "px",
-                    'fill' : this.settings.yAxis.axisTitleColor
-                })
+                .attr('font-family', this.settings.yAxis.titleFontFamily)
+                .attr('font-size', this.settings.yAxis.titleFontSize + "px")
+                .attr('fill', this.settings.yAxis.axisTitleColor)
                 .text(titleText);
             let n = <any>titleCont.node();
             let titleHeight: number = n.getBBox().height;
@@ -342,10 +376,10 @@ module powerbi.extensibility.visual {
                     xAxisDataPoints = newxAxisDataPoints;
                 }
                 if (xIsCategorical) {
-                    x = d3.scale.ordinal().rangePoints(<any>xRange)
+                    x = d3.scaleOrdinal().range(<any>xRange)
                         .domain(xAxisDataPoints);
                 } else {
-                    x = d3.time.scale().domain([minDate, maxDate]).range(xRange);
+                    x = d3.scaleTime().domain([minDate, maxDate]).range(xRange);
                 }
             } else {
                 if (this.categoryIsScalar) {
@@ -416,26 +450,26 @@ module powerbi.extensibility.visual {
                     xAxisDataPoints = newxAxisDataPoints;
                 }
                 if (xIsCategorical) {
-                    x = d3.scale.ordinal().rangePoints(<any>xRange)
+                    x = d3.scaleOrdinal().range(<any>xRange)
                         .domain(xAxisDataPoints);
                 } else {
                     if (start <= 0)
                         this.settings.xAxis.axisScale = "linear";
                     if (this.settings.xAxis.axisScale == "linear") {
-                        x = d3.scale.linear()
+                        x = d3.scaleLinear()
                             .domain([start, end])
                             .range(xRange);
                     } else {
                         if (chartRangeType != "custom" && end/this.MaxLogScaleDivider <= start)
                             start = start/this.MaxLogScaleDivider;
-                        x = d3.scale.log()
+                        x = d3.scaleLog()
                             .domain([start, end])
                             .range(xRange);
                     }
                 }
             }
             if (xAxisDataPoints.length == 1) {
-                x = d3.scale.ordinal().rangePoints(<any>xRange)
+                x = d3.scaleOrdinal().range(<any>xRange)
                         .domain(xAxisDataPoints);
             }
             let xAxisData: XAxisData = {
@@ -448,14 +482,12 @@ module powerbi.extensibility.visual {
             return xAxisData;
         }
 
-        private retrieveResponsiveIcon(svgContainer: Selection<SVGElement>) {
-            let svgAxisContainer: Selection<SVGElement> = svgContainer
+        private retrieveResponsiveIcon(svgContainer: Selection<SVGElement, any, any, any>) {
+            let svgAxisContainer: Selection<SVGElement, any, any, any> = svgContainer
                 .append('svg')
-                .attr({
-                    width: "100%",
-                    height: "100%",
-                    viewBox: "0 0 24 24"
-                });
+                .attr('width', "100%")
+                .attr('height', "100%")
+                .attr('viewBox', "0 0 24 24")
                 let g = svgAxisContainer.append('g').attr('fill', '#333');
                 g.append("path")
                     .attr("d", "M12,16.5703125 L13.140625,16.5703125 L13.140625,10.859375 L12,10.859375 L12,16.5703125 Z M10.8515625,9.7109375 L14.28125,9.7109375 L14.28125,17.7109375 L10.8515625,17.7109375 L10.8515625,9.7109375 Z M7.421875,16.5703125 L8.5703125,16.5703125 L8.5703125,8.5703125 L7.421875,8.5703125 L7.421875,16.5703125 Z M6.28125,7.4296875 L9.7109375,7.4296875 L9.7109375,17.7109375 L6.28125,17.7109375 L6.28125,7.4296875 Z M16.5703125,16.5703125 L17.7109375,16.5703125 L17.7109375,6.28125 L16.5703125,6.28125 L16.5703125,16.5703125 Z M15.421875,5.140625 L18.8515625,5.140625 L18.8515625,17.7109375 L15.421875,17.7109375 L15.421875,5.140625 Z M5.140625,4 L5.140625,18.859375 L20,18.859375 L20,20 L4,20 L4,4 L5.140625,4 Z");
@@ -466,7 +498,7 @@ module powerbi.extensibility.visual {
             return xAxisData.xAxisDataPoints.length;
         }
 
-        public renderSmallMultiple(svgContainer: Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
+        public renderSmallMultiple(svgContainer: Selection<SVGElement, any, any, any>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
             isResponsive: boolean, legendHeight: number, isLegendHidden: boolean, rectGlobalX: number, rectGlobalY: number) {
             svgContainer.classed(Visual.SmallMultipleSelector.className, true);
             svgContainer = svgContainer.append("svg");
@@ -536,13 +568,13 @@ module powerbi.extensibility.visual {
 
             let yRange: number[] = [axisPadding,  yRangeMax];
             let domainY: VisualDomain = this.retrieveDomainY(lines);
-            let y: d3.scale.Linear<number, number>;
+            let y/*: d3.scale.Linear<number, number>*/;
             if (this.settings.yAxis.axisScale == "linear") {
-                y = d3.scale.linear()
+                y = d3.scaleLinear()
                     .domain([domainY.end, domainY.start])
                     .range(yRange).nice().nice();
             } else {
-                y = d3.scale.log()
+                y = d3.scaleLog()
                     .domain([domainY.end, domainY.start])
                     .range(yRange);
             }
@@ -558,16 +590,16 @@ module powerbi.extensibility.visual {
             //Draw line
             if (lines.length == 0)
                 return;
-            let line: d3.svg.Line<[number,number]> = d3.svg.line()
+            let line/*: d3.svg.Line<[number,number]>*/ = d3.line()
                     .x(function(d: any) { return x(d.x); })
                     .y(function(d: any) { return y(d.y); })
-                    .interpolate("linear");
+                    .curve(d3.curveLinear);
             //prepare vertical line
             let showVerticalLine: boolean = (tickMaxWidth > 1);
             let xMouseMin: number;
             let xMouseMax: number;
-            let hoverContainer: Selection<SVGElement>;
-            let tooltipRect: Selection<SVGElement>;
+            let hoverContainer: Selection<SVGElement, any, any, any>;
+            let tooltipRect: Selection<SVGElement, any, any, any>;
 
             if (showVerticalLine) {
                 xMouseMin = xRange[0]-axisMargin;
@@ -576,14 +608,13 @@ module powerbi.extensibility.visual {
                 tooltipRect = hoverContainer.append('rect')
                     .classed('clearCatcher', true)
                     .classed(Visual.LineChartRectSelector.className, true)
-                    .attr({
-                        'width': xMouseMax - xMouseMin,
-                        'height': yRangeMax,
-                        'x': xMouseMin,
-                        'y': 0,
-                        'opacity': '1e-06',
-                        'fill': '#fff'
-                    });
+                    .attr('width', xMouseMax - xMouseMin)
+                    .attr('height', yRangeMax)
+                    .attr('x', xMouseMin)
+                    .attr('y', 0)
+                    .attr('opacity', '1e-06')
+                    .attr('fill', '#fff');
+                    
             }
             //Render lines
             this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
@@ -592,10 +623,10 @@ module powerbi.extensibility.visual {
             //Render vertical line
             if (!showVerticalLine) return;
 
-            let hoverLine: Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
+            let hoverLine: Selection<SVGElement, any, any, any> = hoverContainer.append("path") // this is the vertical line to follow mouse
                 .classed(Visual.HoverLineSelector.className, true)
                 .style("opacity", 0);
-            let hoverLineData: UpdateSelection<number> = hoverLine.data([0]);
+            let hoverLineData/*: UpdateSelection<number>*/ = hoverLine.data([0]);
 
             let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
             let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
@@ -612,9 +643,9 @@ module powerbi.extensibility.visual {
                 hoverLine.style("opacity", 0);
                 hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
             });
-            let is: IInteractivityService = this.interactivityService;
+            let is: IInteractivityService<any> = this.interactivityService;
             svgContainer.on('click', function() {
-                let mouse = d3.mouse(this);
+                let mouse = d3.mouse(this as SVGAElement);
                 let mouseX: number = mouse[0];
                 let mouseY: number = mouse[1];
                 if (mouseX<xMouseMin || xMouseMax<mouseX || mouseY > yRangeMax) {
@@ -622,7 +653,7 @@ module powerbi.extensibility.visual {
                 }
             });
             svgContainer.on('mousemove', function() {
-                let mouse = d3.mouse(this);
+                let mouse = d3.mouse(this as SVGAElement);
                 let mouseX: number = mouse[0];
                 let mouseY: number = mouse[1];
                 if (mouseX<xMouseMin || xMouseMax<mouseX || mouseY > yRangeMax) {
@@ -653,10 +684,10 @@ module powerbi.extensibility.visual {
                 true);
         };
 
-        private renderXAxis(svgContainer: Selection<SVGElement>, plotSize: any, x: any, xIsCategorical: boolean, xAxisDataPoints: any[],
+        private renderXAxis(svgContainer: Selection<SVGElement, any, any, any>, plotSize: any, x: any, xIsCategorical: boolean, xAxisDataPoints: any[],
             tickMaxWidth: number, xRange: number[], axisPadding: number, start: number, end: number): number {
             if (!this.settings.xAxis.show) return 0;
-            let svgAxisContainer: Selection<SVGElement> = svgContainer
+            let svgAxisContainer: Selection<SVGElement, any, any, any> = svgContainer
                 .append('svg');
 
             let axis = svgAxisContainer.selectAll("g.axis").data([0]);
@@ -689,7 +720,7 @@ module powerbi.extensibility.visual {
                 if (tickMaxWidth < fontWidth) {
                     actionWithLabels = LabelsAction.Rotate90;
                     numTicks = xAxisDataPoints.length;
-                    xSpecial = d3.scale.ordinal().rangePoints(<any>xRange)
+                    xSpecial = d3.scaleOrdinal().range(<any>xRange)
                         .domain(xAxisDataPoints);
                 } else if (tickMaxWidth < 1.9*fontWidth) {
                     actionWithLabels = LabelsAction.Rotate90;
@@ -705,14 +736,14 @@ module powerbi.extensibility.visual {
                 if (numTicks > xAxisDataPoints.length)
                     numTicks = xAxisDataPoints.length;
                 if (numTicks == 1 && this.settings.xAxis.axisScale == "linear")
-                    xSpecial = d3.scale.ordinal().rangePoints(<any>xRange).domain(xAxisDataPoints);
+                    xSpecial = d3.scaleOrdinal().range(<any>xRange).domain(xAxisDataPoints);
             }
 
-            let xAxis: d3.svg.Axis = (this.categoryIsDate)
-                ? d3.svg.axis().ticks(numTicks).outerTickSize(0).orient("bottom").scale(xSpecial)
-                : ((this.settings.xAxis.axisScale == "log")
-                    ? d3.svg.axis().orient('bottom')
-                    : d3.svg.axis().ticks(numTicks).outerTickSize(0).orient('bottom'));
+            let xAxis = this.categoryIsDate
+                ? d3.axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0)
+                : (this.settings.xAxis.axisScale == "log"
+                    ? d3.axisBottom(xSpecial)
+                    : d3.axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0))
 
             if (this.categoryIsDate) {
                 if (xIsCategorical) {
@@ -723,17 +754,16 @@ module powerbi.extensibility.visual {
                 if (this.categoryIsScalar) {
                     xAxis.tickFormat(d => this.xFormatter.format(d));
                 }
-                axis.call(xAxis.scale(xSpecial));
+                axis.call(xAxis);
             }
 
             axis.selectAll('.domain').remove();
 
             let labels = axis.selectAll('text')
-                .style({
-                    'fill': this.settings.xAxis.axisColor,
-                    'font-family': this.settings.xAxis.fontFamily,
-                    'font-size': xAxisFontSize
-                });
+                .style('fill', this.settings.xAxis.axisColor)
+                .style('font-family', this.settings.xAxis.fontFamily)
+                .style('font-size', xAxisFontSize);
+                
             switch(actionWithLabels) {
                 case LabelsAction.Simple: {
                     let count: number = (labels.data().length == 0)
@@ -745,8 +775,8 @@ module powerbi.extensibility.visual {
                     } else {
                         let labelXArray: number[] = [];
                         labels.each((number: any, index: number)=> {
-                            let item: Selection<any> = d3.select(labels[0][index]);
-                            let parent: Selection<any> = d3.select(item.node().parentElement);
+                            let item: Selection<any, any, any, any> = d3.select(labels[0][index]);
+                            let parent: Selection<any, any, any, any> = d3.select(item.node().parentElement);
                             let numberValue: number = number;
                             if (numberValue < 1) {
                                 while(numberValue<1) {
@@ -773,7 +803,7 @@ module powerbi.extensibility.visual {
                         labelXArray[labelXArray.length-1] = plotSize.width - labelXArray[labelXArray.length-1];
                         let labelIndex: number = 0;
                         labels.each((number: any, index: number)=> {
-                            let item: Selection<any> = d3.select(labels[0][index]);
+                            let item: Selection<any, any, any, any> = d3.select(labels[0][index]);
                             let textTitle: string = item.text();
                             if (textTitle) {
                                 let textProp: TextProperties = {
@@ -792,7 +822,7 @@ module powerbi.extensibility.visual {
                 }
                 case LabelsAction.Rotate35: {
                     labels.attr("transform", function(d) {
-                            return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-35)";
+                            return "translate(" + (<any>this).getBBox().height*-2 + "," + (<any>this).getBBox().height + ")rotate(-35)";
                         }).attr('dy', '0').attr('dx', '2.5em').style("text-anchor", "end")
                         .call(TextUtility.truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {fontFamily: this.settings.xAxis.fontFamily, fontSize: xAxisFontSize});
                     break;
@@ -803,8 +833,8 @@ module powerbi.extensibility.visual {
                     let labelStartX: number = null;
                     let removedIndexes: number[] = [];
                     labels.each((number: any, index: number)=> {
-                        let item: Selection<any> = d3.select(labels[0][index]);
-                        let parent: Selection<any> = d3.select(item.node().parentElement);
+                        let item: Selection<any, any, any, any> = d3.select(labels[0][index]);
+                        let parent: Selection<any, any, any, any> = d3.select(item.node().parentElement);
                         let transform: string = parent.attr('transform');
                         let labelX: number = +transform.replace('translate(','').split(',')[0];
                         if (labelStartX == null) {
@@ -818,7 +848,7 @@ module powerbi.extensibility.visual {
                     });
                     for(let i=0;i<removedIndexes.length;i++) {
                         let index = removedIndexes[i];
-                        let item: Selection<any> = d3.select(labels[0][index]);
+                        let item: Selection<any, any, any, any> = d3.select(labels[0][index]);
                         item.remove();
                     }
                     break;
@@ -826,7 +856,7 @@ module powerbi.extensibility.visual {
             }
 
             let n = <any>axis.node();
-            let xAxisHeight: number = n.getBBox().height;
+            let xAxisHeight: number = n && n.getBBox && n.getBBox().height || 0;
 
             if (this.settings.xAxis.showTitle) {
                 let titleTextFull: string = this.settings.xAxis.axisTitle ? this.settings.xAxis.axisTitle : this.categoryName;
@@ -853,14 +883,12 @@ module powerbi.extensibility.visual {
                     fontSize: titleFontSize,
                 };
                 let titleText: string = TextUtility.getTailoredTextOrDefault(textProp, xRange[1] - xRange[0]);
-                let titleCont: Selection<any> = axis.append("g");
+                let titleCont: Selection<any, any, any, any> = axis.append("g");
                 titleCont.append("text")
-                    .attr({
-                        'font-family': this.settings.xAxis.titleFontFamily,
-                        'font-size': titleFontSize,
-                        'fill' : this.settings.xAxis.axisTitleColor,
-                        'text-anchor': 'middle'
-                    })
+                    .attr('font-family', this.settings.xAxis.titleFontFamily)
+                    .attr('font-size', titleFontSize)
+                    .attr('fill', this.settings.xAxis.axisTitleColor)
+                    .attr('text-anchor', 'middle')
                     .text(titleText)
                     .append('title').text(titleTextFull);
 
@@ -879,33 +907,31 @@ module powerbi.extensibility.visual {
                 let grid = svgAxisContainer.selectAll("g.x.axis").data([0]);
                 let strokeDasharray = VizUtility.getLineStyleParam(this.settings.xAxis.lineStyle);
                 grid.selectAll('line').attr("y2", - plotSize.height + xAxisHeight + axisPadding)
-                    .style({
-                        "stroke" : this.settings.xAxis.gridlinesColor,
-                        "stroke-width": this.settings.xAxis.strokeWidth,
-                        "stroke-dasharray": strokeDasharray
-                    });
+                    .style("stroke", this.settings.xAxis.gridlinesColor)
+                    .style("stroke-width", this.settings.xAxis.strokeWidth)
+                    .style("stroke-dasharray", strokeDasharray);
             }
             return xAxisHeight;
         }
 
-        private renderYAxis(svgContainer: Selection<SVGElement>, plotSize: any, y: any, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
+        private renderYAxis(svgContainer: Selection<SVGElement, any, any, any>, plotSize: any, y: any, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
             if (!this.settings.yAxis.show) return;
-            let yAxis: d3.svg.Axis;
+            let yAxis/*: d3.svg.Axis*/;
             //format axis for its' position
             if (this.settings.yAxis.position == AxisPosition.Left) {
-                yAxis = d3.svg.axis().tickPadding(axisPadding)
-                    .innerTickSize(plotSize.width - yAxisWidth - axisPadding)
-                    .ticks(Math.max(Math.floor(plotSize.height / 80), 2)).orient("left");
+                yAxis = d3.axisLeft(y).tickPadding(axisPadding)
+                    .tickSizeInner (plotSize.width - yAxisWidth - axisPadding)
+                    .ticks(Math.max(Math.floor(plotSize.height / 80), 2));
             } else {
-                yAxis = d3.svg.axis().tickPadding(axisPadding)
-                    .innerTickSize(plotSize.width)
-                    .outerTickSize(yAxisWidth + axisPadding)
-                    .ticks(Math.max(Math.floor(plotSize.height / 80), 2)).orient("left");
+                yAxis = d3.axisLeft(y).tickPadding(axisPadding)
+                    .tickSizeInner (plotSize.width)
+                    .tickSizeOuter(yAxisWidth + axisPadding)
+                    .ticks(Math.max(Math.floor(plotSize.height / 80), 2));
             }
             let yFormatter = this.yFormatter;
             if (yFormatter) yAxis.tickFormat(function (d) { return yFormatter.format(d); });
 
-            let svgAxisContainer: Selection<SVGElement> = svgContainer
+            let svgAxisContainer: Selection<SVGElement, any, any, any> = svgContainer
                 .append('svg')
                 .attr('width', plotSize.width );
 
@@ -915,20 +941,20 @@ module powerbi.extensibility.visual {
                 .attr("class", "y axis")
                 .attr('transform', 'translate(' + plotSize.width + ',0)');
 
-            axis.call(yAxis.scale(y));
+            axis.call(yAxis);
             svgAxisContainer.selectAll(".domain").remove();
-            let labels: UpdateSelection<number> = axis.selectAll('text').style({
-                'fill': this.settings.yAxis.axisColor,
-                'font-family': this.settings.yAxis.fontFamily,
-                'font-size': yAxisFontSize
-            });
+            let labels/*: UpdateSelection<number>*/ = axis.selectAll('text')
+                .style('fill', this.settings.yAxis.axisColor)
+                .style('font-family', this.settings.yAxis.fontFamily)
+                .style('font-size', yAxisFontSize);
+            
             if (this.settings.yAxis.axisScale == "linear") {
                 labels.call(TextUtility.wrapAxis, yAxisWidth, {fontFamily: this.settings.xAxis.fontFamily, fontSize: yAxisFontSize});
             } else {
                 if (domainY.end/domainY.start > this.MaxYLogScaleShowDivider) {
                     labels.each((number: any, index: number)=> {
-                        let item: Selection<any> = d3.select(labels[0][index]);
-                        let parent: Selection<any> = d3.select(item.node().parentElement);
+                        let item: Selection<any, any, any, any> = d3.select(labels[0][index]);
+                        let parent: Selection<any, any, any, any> = d3.select(item.node().parentElement);
                         let numberValue: number = number;
                         if (numberValue < 1) {
                             while(numberValue<1) {
@@ -950,10 +976,10 @@ module powerbi.extensibility.visual {
             //format gridlines
             let yAxisGridlinesStrokeWidth = (this.settings.yAxis.showGridlines) ? this.settings.yAxis.strokeWidth : 0;
             let strokeDasharray = VizUtility.getLineStyleParam(this.settings.yAxis.lineStyle);
-            axis.selectAll('line').style({
-                "stroke" : this.settings.yAxis.gridlinesColor,
-                "stroke-width": yAxisGridlinesStrokeWidth,
-                "stroke-dasharray": strokeDasharray});
+            axis.selectAll('line')
+                .style("stroke", this.settings.yAxis.gridlinesColor)
+                .style("stroke-width", yAxisGridlinesStrokeWidth)
+                .style("stroke-dasharray", strokeDasharray);
 
             //format axis for its' position
             let titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
@@ -986,13 +1012,11 @@ module powerbi.extensibility.visual {
                 let translateY: number = plotSize.height/2;
                 svgAxisContainer.append("g").attr('transform', 'translate('+ translateX +','+ translateY +')')
                     .append("text")
-                    .attr({
-                        'transform': transform,
-                        'font-family': this.settings.yAxis.titleFontFamily,
-                        'font-size': titleFontSize,
-                        'fill' : this.settings.yAxis.axisTitleColor,
-                        'text-anchor': 'middle'
-                    })
+                    .attr('transform', transform)
+                    .attr('font-family', this.settings.yAxis.titleFontFamily)
+                    .attr('font-size', titleFontSize)
+                    .attr('fill', this.settings.yAxis.axisTitleColor)
+                    .attr('text-anchor', 'middle')
                     .text(titleText)
                     .append('title').text(titleTextFull);
             }
@@ -1107,13 +1131,13 @@ module powerbi.extensibility.visual {
             return domainY;
         }
 
-        private renderLines(svgContainer: Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3.svg.Line<[number,number]>) {
+        private renderLines(svgContainer: Selection<SVGElement, any, any, any>, lines: LineDataPoint[], width: number, height: number, line/*: d3.svg.Line<[number,number]>*/) {
             //Trend lines
-            let svgLinesContainer: Selection<SVGElement> = svgContainer
+            let svgLinesContainer: Selection<SVGElement, any, any, any> = svgContainer
                     .append('svg')
                     .attr('width', width)
                     .attr('height', height);
-            let lineGroupSelection: UpdateSelection<LineDataPoint> = svgLinesContainer
+            let lineGroupSelection/*: UpdateSelection<LineDataPoint>*/ = svgLinesContainer
                 .selectAll(Visual.SimpleLineSelector.selectorName)
                 .data(lines);
 
@@ -1133,34 +1157,32 @@ module powerbi.extensibility.visual {
             }
             let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
             lineGroupSelection
-                    .attr({
-                        "d": (dataPoint: LineDataPoint, index: number) => {
-                            let lineD = lineDD[index];
-                            let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                            let dataLine: string = (stepped)
-                                ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                                : lineD
-                            return dataLine;
-                        },
-                        "stroke": (dataPoint: LineDataPoint) => {
-                            return dataPoint.color;
-                        },
-                        'stroke-width': (dataPoint: LineDataPoint) => {
-                            let strokeWidth: number = (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth;
-                            return strokeWidth;
-                        },
-                        "stroke-linejoin": (dataPoint: LineDataPoint) => {
-                            let strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
-                            return strokeLineJoin;
-                        },
-                        "stroke-dasharray": (dataPoint: LineDataPoint) => {
-                            let strokeDasharray: string = (dataPoint.lineStyle == undefined) ?
-                                VizUtility.getLineStyleParam(this.settings.shapes.lineStyle) :
-                                VizUtility.getLineStyleParam(dataPoint.lineStyle);
-                            return strokeDasharray;
-                        },
-                        'fill': 'none'
+                    .attr("d", (dataPoint: LineDataPoint, index: number) => {
+                        let lineD = lineDD[index];
+                        let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                        let dataLine: string = (stepped)
+                            ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                            : lineD
+                        return dataLine;
                     })
+                    .attr("stroke", (dataPoint: LineDataPoint) => {
+                        return dataPoint.color;
+                    })
+                    .attr('stroke-width', (dataPoint: LineDataPoint) => {
+                        let strokeWidth: number = (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth;
+                        return strokeWidth;
+                    })
+                    .attr("stroke-linejoin", (dataPoint: LineDataPoint) => {
+                        let strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
+                        return strokeLineJoin;
+                    })
+                    .attr("stroke-dasharray", (dataPoint: LineDataPoint) => {
+                        let strokeDasharray: string = (dataPoint.lineStyle == undefined) ?
+                            VizUtility.getLineStyleParam(this.settings.shapes.lineStyle) :
+                            VizUtility.getLineStyleParam(dataPoint.lineStyle);
+                        return strokeDasharray;
+                    })
+                    .attr('fill', 'none')
                     .style("opacity", (dataPoint: LineDataPoint) => {
                         let opacity: number = getOpacity(dataPoint.selected, hasSelection);
                         let showMarkers: boolean = dataPoint.showMarkers != null
@@ -1179,7 +1201,7 @@ module powerbi.extensibility.visual {
                 let dataPoint: LineDataPoint = lines[i];
                 let marker: string = lineNamesWithMarkers[dataPoint.name];
                 if (marker) {
-                    let item: Selection<any> = d3.select(lineGroupSelection[0][i]);
+                    let item: Selection<any, any, any, any> = d3.select(lineGroupSelection[0][i]);
                     item.attr('marker-start', marker);
                     item.attr('marker-mid', marker);
                     item.attr('marker-end', marker);
@@ -1191,7 +1213,7 @@ module powerbi.extensibility.visual {
                 if (lines[i].points && lines[i].points.length == 1)
                     dots.push(lines[i]);
             }
-            let dotsGroupSelection: UpdateSelection<LineDataPoint> = svgLinesContainer
+            let dotsGroupSelection/*: UpdateSelection<LineDataPoint>*/ = svgLinesContainer
                 .append("g")
                 .selectAll(Visual.SimpleLineSelector.selectorName)
                 .data(dots);
@@ -1202,38 +1224,34 @@ module powerbi.extensibility.visual {
                 .classed(Visual.DotSelector.className, true);
 
             dotsGroupSelection
-                .attr({
-                    'cx': (dataPoint: LineDataPoint) => {
-                        let points: any = dataPoint.points;
-                        let lineD: string = line(points);
-                        let data: string[] = lineD.replace("M","").replace("Z","").split(",");
-                        return data[0];
-                    },
-                    'cy': (dataPoint: LineDataPoint) => {
-                        let points: any = dataPoint.points;
-                        let lineD: string = line(points);
-                        let data: string[] = lineD.replace("M","").replace("Z","").split(",");
-                        return data[1];
-                    },
-                    'r': (dataPoint: LineDataPoint) => {
-                        let strokeWidth: number = dataPoint.strokeWidth == undefined
-                            ? shapes.strokeWidth
-                            : dataPoint.strokeWidth;
-                        return 2.5 + 0.5*strokeWidth;
-                    }
+                .attr('cx', (dataPoint: LineDataPoint) => {
+                    let points: any = dataPoint.points;
+                    let lineD: string = line(points);
+                    let data: string[] = lineD.replace("M","").replace("Z","").split(",");
+                    return data[0];
                 })
-                .style({
-                    'fill': (dataPoint: LineDataPoint) => {
-                        return dataPoint.color;
-                    },
-                    'fill-opacity': (dataPoint: LineDataPoint) => {
-                        let showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
-                        return showMarkers ? 0 : 1;
-                    },
-                    'opacity': (dataPoint: LineDataPoint) => {
-                        let opacity: number = getOpacity(dataPoint.selected, hasSelection);
-                        return opacity;
-                    }
+                .attr('cy', (dataPoint: LineDataPoint) => {
+                    let points: any = dataPoint.points;
+                    let lineD: string = line(points);
+                    let data: string[] = lineD.replace("M","").replace("Z","").split(",");
+                    return data[1];
+                })
+                .attr('r', (dataPoint: LineDataPoint) => {
+                    let strokeWidth: number = dataPoint.strokeWidth == undefined
+                        ? shapes.strokeWidth
+                        : dataPoint.strokeWidth;
+                    return 2.5 + 0.5*strokeWidth;
+                })
+                .style('fill', (dataPoint: LineDataPoint) => {
+                    return dataPoint.color;
+                })
+                .style('fill-opacity', (dataPoint: LineDataPoint) => {
+                    let showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
+                    return showMarkers ? 0 : 1;
+                })
+                .style('opacity', (dataPoint: LineDataPoint) => {
+                    let opacity: number = getOpacity(dataPoint.selected, hasSelection);
+                    return opacity;
                 });
 
             dotsGroupSelection.exit().remove();
@@ -1248,32 +1266,30 @@ module powerbi.extensibility.visual {
                 .classed(Visual.InteractivityLineSelector.className, true);
 
             interactiveLineGroupSelection
-                    .attr({
-                        "d": (dataPoint: LineDataPoint) => {
-                            let points: any = dataPoint.points;
-                            let lineD: string = line(points);
-                            let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                            let dataLine: string = (stepped)
-                                ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                                : lineD
-                            return dataLine;
-                        },
-                        'stroke-width': '10',
-                        "stroke-linejoin": "round",
-                        'stroke': 'red',
-                        'stroke-opacity': '0',
-                        'fill': 'none',
-                    });
+                    .attr("d", (dataPoint: LineDataPoint) => {
+                        let points: any = dataPoint.points;
+                        let lineD: string = line(points);
+                        let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                        let dataLine: string = (stepped)
+                            ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                            : lineD
+                        return dataLine;
+                    })
+                    .attr('stroke-width', '10')
+                    .attr("stroke-linejoin", "round")
+                    .attr('stroke', 'red')
+                    .attr('stroke-opacity', '0')
+                    .attr('fill', 'none')
             interactiveLineGroupSelection.exit().remove();
         }
 
-        private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3.svg.Line<[number,number]>, svgContainer: Selection<any>): void {
+        private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line/*: d3.svg.Line<[number,number]>*/, svgContainer: Selection<any, any, any, any>): void {
 
-            let dataLabelsBackgroundContext: Selection<any> = svgContainer.append('g').classed("labelBackgroundGraphicsContext", true);
+            let dataLabelsBackgroundContext: Selection<any, any, any, any> = svgContainer.append('g').classed("labelBackgroundGraphicsContext", true);
             dataLabelsBackgroundContext.selectAll("*").remove();
             dataLabelsBackgroundContext.selectAll("*").remove();
 
-            let dataLabelsContext: Selection<any> = svgContainer.append('g').classed("labelGraphicsContext", true);
+            let dataLabelsContext: Selection<any, any, any, any> = svgContainer.append('g').classed("labelGraphicsContext", true);
             dataLabelsContext.selectAll("*").remove();
 
             let labelSettings: dataLabelsSettings = this.settings.dataLabels;
@@ -1372,7 +1388,7 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            let labelSelection: UpdateSelection<Coordinates> = dataLabelsContext
+            let labelSelection/*: UpdateSelection<Coordinates>*/ = dataLabelsContext
                 .selectAll(Visual.Label.selectorName)
                 .data(newCoords);
 
@@ -1382,19 +1398,15 @@ module powerbi.extensibility.visual {
 
             labelSelection
                 .classed('label', true)
-                .attr({
-                    'transform': (c: Coordinates) => {
+                .attr('transform', (c: Coordinates) => {
                     return 'translate(' + c.x + ',' + c.y + ')';
-                },
-                    'text-anchor': 'middle'
                 })
-                .style({
-                    "fill": labelSettings.color,
-                    "font-size": fontSizeInPx,
-                    "font-family": fontFamily,
-                    "pointer-events": "none",
-                    "white-space": "nowrap"
-                })
+                .attr('text-anchor', 'middle')
+                .style("fill", labelSettings.color)
+                .style("font-size", fontSizeInPx)
+                .style("font-family", fontFamily)
+                .style("pointer-events", "none")
+                .style("white-space", "nowrap")
                 .text((c: Coordinates) => c.value);
 
             labelSelection
@@ -1403,7 +1415,7 @@ module powerbi.extensibility.visual {
 
             if (!labelSettings.showBackground) return;
 
-            let backgroundSelection: UpdateSelection<Coordinates> = dataLabelsBackgroundContext
+            let backgroundSelection/*: UpdateSelection<Coordinates>*/ = dataLabelsBackgroundContext
                 .selectAll(Visual.Label.selectorName)
                 .data(newCoords);
 
@@ -1414,21 +1426,18 @@ module powerbi.extensibility.visual {
             let backgroundColor: string = this.settings.dataLabels.backgroundColor;
 
             backgroundSelection
-                .attr({
-                    height: d => { return d.bgHeight; },
-                    width: d => { return d.bgWidth; },
-                    x: d => { return d.bgX; },
-                    y: d => { return d.bgY; },
-                    rx: DataLabelR,
-                    ry: DataLabelR,
-                    fill: backgroundColor
-                });
+                   .attr('height', d => { return d.bgHeight; })
+                    .attr('width', d => { return d.bgWidth; })
+                    .attr('x', d => { return d.bgX; })
+                    .attr('y', d => { return d.bgY; })
+                    .attr('rx', DataLabelR)
+                    .attr('ry', DataLabelR)
+                    .attr('fill', backgroundColor);
 
             let transparency: number = this.settings.dataLabels.transparency;
-            backgroundSelection.style({
-                "fill-opacity": (100 - transparency) / 100,
-                "pointer-events": "none"
-            });
+            backgroundSelection
+                .style("fill-opacity", (100 - transparency) / 100)
+                .style("pointer-events", "none")
 
             backgroundSelection
                 .exit()
@@ -1441,7 +1450,7 @@ module powerbi.extensibility.visual {
             return result;
         }
 
-        public static retrieveLineNamesWithMarkers(container: Selection<any>, svgLinesContainer: Selection<any>, lineDD: string[], shapes: shapes, lines: LineDataPoint[]) : {} {
+        public static retrieveLineNamesWithMarkers(container: Selection<any, any, any, any>, svgLinesContainer: Selection<any, any, any, any>, lineDD: string[], shapes: shapes, lines: LineDataPoint[]) : {} {
             //init markers
             let lineNamesWithMarkers = {};
             let defsContainer = container.append('defs');
@@ -1475,19 +1484,17 @@ module powerbi.extensibility.visual {
             return lineNamesWithMarkers;
         }
 
-        public renderRowTitleForMatrixView(rowContainer: Selection<any>, titleHeight: number, maxTextWidth: number, separatorSize: number, titleX: string, i: number, separatorIndex: number) {
-            let rowText: Selection<any> = rowContainer.append("g");
-            rowText.attr({
-                'width':  titleHeight,
-                'height': maxTextWidth,
-                'transform': 'translate(0,0)'
-            });
+        public renderRowTitleForMatrixView(rowContainer: Selection<any, any, any, any>, titleHeight: number, maxTextWidth: number, separatorSize: number, titleX: string, i: number, separatorIndex: number) {
+            let rowText: Selection<any, any, any, any> = rowContainer.append("g");
+            rowText
+                .attr('width',  titleHeight)
+                .attr('height', maxTextWidth)
+                .attr('transform', 'translate(0,0)');
+
             rowText.append('rect')
                     .classed('clearCatcher', true)
-                    .attr({
-                        'width':  titleHeight,
-                        'height': maxTextWidth
-                    });
+                    .attr('width',  titleHeight)
+                    .attr('height', maxTextWidth);
             let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
             let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
             let titleTextProp: TextProperties = {
@@ -1500,29 +1507,25 @@ module powerbi.extensibility.visual {
             let titleWidth: number = TextUtility.measureTextWidth(titleTextProp);
             rowText.append("text")
                 .classed(Visual.SmallMultipleNameSelector.className, true)
-                .attr({
-                    "font-family": titleFontFamily,
-                    "font-size" : titleFontSize,
-                    "fill" : this.settings.smallMultiple.smColor,
-                    'width': titleHeight,
-                    "x" : -maxTextWidth/2 + separatorSize/2 - titleWidth/2,
-                    "y" : titleHeight*2/3,
-                    "transform" : "rotate(-90)"
-                })
+                .attr("font-family", titleFontFamily)
+                .attr("font-size", titleFontSize)
+                .attr("fill", this.settings.smallMultiple.smColor)
+                .attr('width', titleHeight)
+                .attr("x", -maxTextWidth/2 + separatorSize/2 - titleWidth/2)
+                .attr("y", titleHeight*2/3)
+                .attr("transform", "rotate(-90)")
                 .text(shortTitle);
             rowText.append("title").text(titleX);
             if (i>0)
                 renderVisual.renderSeparatorLine(rowText, 0, -separatorSize/2, titleHeight, -separatorSize/2, separatorIndex);
         }
 
-        public static renderSeparatorLine(separatorItem: Selection<any>, x1: number, y1: number, x2: number, y2: number, separatorIndex: number) {
-            let separatorLine: Selection<any> = separatorItem.append('line')
-                .attr({
-                    'x1':  x1,
-                    'y1' : y1,
-                    'x2':  x2,
-                    'y2' : y2
-                })
+        public static renderSeparatorLine(separatorItem: Selection<any, any, any, any>, x1: number, y1: number, x2: number, y2: number, separatorIndex: number) {
+            let separatorLine: Selection<any, any, any, any> = separatorItem.append('line')
+                .attr('x1',  x1)
+                .attr('y1', y1)
+                .attr('x2',  x2)
+                .attr('y2', y2)
                 .style('stroke-width', 1);
             if (separatorIndex) {
                 separatorLine.style('stroke', "#aaa");
@@ -1539,4 +1542,3 @@ module powerbi.extensibility.visual {
             return category;
         }
     }
-}

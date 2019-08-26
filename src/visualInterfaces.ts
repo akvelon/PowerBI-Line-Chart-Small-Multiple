@@ -1,9 +1,18 @@
-module powerbi.extensibility.visual {
+    import powerbi from 'powerbi-visuals-api';
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+    import DataViewObjects = powerbi.DataViewObjects;
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
-    import IValueFormatter = utils.formatting.IValueFormatter;
-    import SelectableDataPoint = utils.interactivity.SelectableDataPoint;
-    import LegendDataPoint = utils.chart.legend.LegendDataPoint;
-    import BoundingRect = utils.svg.shapes.BoundingRect;
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
+    import { interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
+    import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
+    import { legendInterfaces } from 'powerbi-visuals-utils-chartutils';
+    import LegendDataPoint = legendInterfaces.LegendDataPoint;
+    import { shapesInterfaces } from 'powerbi-visuals-utils-svgutils';
+    import BoundingRect = shapesInterfaces.BoundingRect;
+    import { VisualSettings } from './settings';
 
     export interface VisualViewModel {
         rows: PrimitiveValue[];
@@ -30,6 +39,7 @@ module powerbi.extensibility.visual {
         title: string;
         dataPoints: LegendDataPointExtended[];
     }
+
     export enum CategoryType {
         Error = 0,
         String = 1,
@@ -40,16 +50,17 @@ module powerbi.extensibility.visual {
     export interface  LegendDataPointExtended extends LegendDataPoint {
         markerColor: string;
         showMarkers?: boolean;
-        markerShape?: string;
+        markerShape?: legendInterfaces.MarkerShape;
         object: DataViewObjects;
+        icon: any;
     }
     export interface LineKeyIndex {
         [lineKey: string]: number;
     }
     export interface LegendBehaviorOptions {
-        legendItems: Selection<any>;
-        legendIcons: Selection<any>;
-        clearCatcher: Selection<any>;
+        legendItems: Selection<any, any, any, any>;
+        legendIcons: Selection<any, any, any, any>;
+        clearCatcher: Selection<any, any, any, any>;
     }
     export interface LassoData {
         lassoData: BoundingRect;
@@ -84,7 +95,7 @@ module powerbi.extensibility.visual {
     }
     export class VerticalLineDataItemsGlobal {
         verticalLineDataItems: VerticalLineDataItem[];
-        hoverLineData: d3.selection.Update<number>;
+        hoverLineData/*: d3.selection.Update<number>*/;
     }
     export enum LabelsAction {
         Simple = 1,
@@ -140,4 +151,3 @@ module powerbi.extensibility.visual {
         startForced: boolean;
         endForced: boolean;
     }
-}

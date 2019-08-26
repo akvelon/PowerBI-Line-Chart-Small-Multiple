@@ -1,6 +1,4 @@
-module powerbi.extensibility.visual {
-    "use strict";
-    import DataViewObjectsParser = utils.dataview.DataViewObjectsParser;
+    import { dataViewObjectsParser } from 'powerbi-visuals-utils-dataviewutils'
   
     export const DefaultFontFamily: string = "\"Segoe UI\", wf_segoe-ui_normal, helvetica, arial, sans-serif";
     const DataLabelsFontFamily: string = "wf_standard-font, helvetica, arial, sans-serif";
@@ -18,7 +16,7 @@ module powerbi.extensibility.visual {
     export const MinCategoryWidthEndValue: number = 180;
     export const NiceDateFormat: string = "M/d/yyyy";
 
-    export class VisualSettings extends DataViewObjectsParser {
+    export class VisualSettings extends dataViewObjectsParser.DataViewObjectsParser {
         public smallMultiple: smallMultiple = new smallMultiple();
         public general: generalSettings = new generalSettings();
         public legend: legendSettings = new legendSettings();
@@ -46,6 +44,12 @@ module powerbi.extensibility.visual {
     export class generalSettings {
         // Responsive
         public responsive: boolean = true;
+    }
+
+    export enum LegendIcon {
+        Box,
+        Circle,
+        Line
     }
 
     export class legendSettings {
@@ -220,4 +224,3 @@ module powerbi.extensibility.visual {
         // Fill
         public fill: string = "#777";
     }
-}

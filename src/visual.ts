@@ -1,21 +1,72 @@
-module powerbi.extensibility.visual {    
-    "use strict";
+    import "../style/visual.less";
+
+    import powerbi from 'powerbi-visuals-api';
+    import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+    import IVisual = powerbi.extensibility.visual.IVisual;
+    import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+    import DataView = powerbi.DataView;
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
+    import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+    import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
+    import ISelectionId = powerbi.extensibility.ISelectionId;
+    import DataViewObjects = powerbi.DataViewObjects;
+    import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
+    import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
+    import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
+    import VisualUpdateType = powerbi.VisualUpdateType;
+    import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+    import DataViewValueColumn = powerbi.DataViewValueColumn;
+
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
+    import { ITooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
+    import { legend, legendPosition, legendInterfaces } from 'powerbi-visuals-utils-chartutils';
+    import ILegend = legendInterfaces.ILegend;
+    import LegendModule = legend;
+    import LegendPosition = legendInterfaces.LegendPosition;
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
+    import { interactivityBaseService, interactivitySelectionService } from 'powerbi-visuals-utils-interactivityutils';
+    import IInteractivityService = interactivityBaseService.IInteractivityService;
+    import createInteractivityService = interactivitySelectionService.createInteractivitySelectionService;
+    
+    import { createTooltipServiceWrapper } from 'powerbi-visuals-utils-tooltiputils';
+    import { CssConstants } from 'powerbi-visuals-utils-svgutils';
+    import ClassAndSelector = CssConstants.ClassAndSelector;
+    import createClassAndSelector = CssConstants.createClassAndSelector;
 
-    import ILegend = utils.chart.legend.ILegend;
-    import LegendModule = utils.chart.legend;
-    import LegendPosition = utils.chart.legend.LegendPosition;
-
-    import IValueFormatter = utils.formatting.IValueFormatter;
-
-    import IInteractivityService = utils.interactivity.IInteractivityService;
-    import createInteractivityService = utils.interactivity.createInteractivityService;
-
-    import ITooltipServiceWrapper = utils.tooltip.ITooltipServiceWrapper;
-    import createTooltipServiceWrapper = utils.tooltip.createTooltipServiceWrapper;
-
-    import ClassAndSelector = utils.svg.CssConstants.ClassAndSelector;
-    import createClassAndSelector = utils.svg.CssConstants.createClassAndSelector;
+    import { EnumerateObject } from './utilities/objectEnumerationUtility'
+    import { LegendBehavior} from './legendBehavior';
+    import { renderVisual } from './renderVisual';
+    import { VizUtility } from './utilities/vizUtility';
+    import { retrieveLegendCategoryColumn, renderLegend, positionChartArea, getLegendData } from './utilities/legendUtility';
+    import { implementLassoSelection } from './lasso';
+    import { WebBehavior, WebBehaviorOptions } from './behavior';
+    import { 
+        MinStrokeWidth,
+        PrecisionMinValue,
+        MaximumSizeStartValue,
+        MaximumSizeEndValue,
+        MinCategoryWidthStartValue,
+        MinCategoryWidthEndValue,
+        NiceDateFormat,
+        DefaultSeparator,
+        legendSettings,
+        VisualSettings
+    } from './settings';
+    import {
+        VerticalLineDataItemsGlobalWithKey,
+        VisualViewModel,
+        VisualDomain,
+        VisualDataPoint,
+        LegendDataPointExtended,
+        LineDataPoint,
+        LineKeyIndex,
+        CategoryType,
+        LegendDataExtended
+    } from './visualInterfaces';
 
     function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
 
@@ -446,7 +497,7 @@ module powerbi.extensibility.visual {
                                 let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
                                 legendDataPointItem.markerColor = markerColor ? markerColor : color;
                                 legendDataPointItem.showMarkers = letShowMarkers;
-                                legendDataPointItem.markerShape = lineDataPoint.markerShape ? lineDataPoint.markerShape : settings.shapes.markerShape;
+                                legendDataPointItem.markerShape = <any>(lineDataPoint.markerShape ? lineDataPoint.markerShape : settings.shapes.markerShape);
                                 legendDataPoint[legendDataPointIndex] = legendDataPointItem;
 
                                 lineIndex = lines.push(lineDataPoint);
@@ -605,8 +656,8 @@ module powerbi.extensibility.visual {
     export class Visual implements IVisual {
         private host: IVisualHost;
         private model: VisualViewModel;
-        private element: Selection<any>;
-        private interactivityService: IInteractivityService;
+        private element: Selection<any, any, any, any>;
+        private interactivityService: IInteractivityService<any>;
         private legend: ILegend;
         private tooltipServiceWrapper: ITooltipServiceWrapper;
         private behavior: WebBehavior;
@@ -677,13 +728,12 @@ module powerbi.extensibility.visual {
                 height: options.viewport.height - margin.top - margin.bottom
             };
 
-            let container: Selection<any> =  this.element
+            let container: Selection<any, any, any, any> =  this.element
                 .append('div')
                 .classed('chart', true)
-                .style({
-                    'width' :  containerSize.width + 'px',
-                    'height':  containerSize.height + 'px'
-                });
+                .style('width',  containerSize.width + 'px')
+                .style('height',  containerSize.height + 'px');
+
             positionChartArea(container, this.legend);
             this.interactivityService.applySelectionStateToData(this.model.lines);
 
@@ -711,10 +761,10 @@ module powerbi.extensibility.visual {
             let itemWidth: number = Math.max((containerSize.width - titleHeight*matrixIndex*titleIndex) / columnsNumber - separatorSize*matrixFlowIndex, minItemWidth);
 
             if (!matrixFlowIndex && !this.model.settings.general.responsive) {
-                container.style({
-                    'overflow-x': 'auto',
-                    'overflow-y': 'hidden'
-                });
+                container
+                    .style('overflow-x', 'auto')
+                    .style('overflow-y', 'hidden');
+                
                 let MinWidhtForNotResponsive: number = 200;
                 if (itemWidth < MinWidhtForNotResponsive) {
                     containerSize.height = containerSize.height - 20;
@@ -738,7 +788,7 @@ module powerbi.extensibility.visual {
                 let maxWidth: number = maxCountOfXAxis * this.model.settings.xAxis.minCategoryWidth;
                 itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
             }
-            let lassoContainer: Selection<any>;
+            let lassoContainer: Selection<any, any, any, any>;
             if (this.model.settings.smallMultiple.enable) {
                 container.style('overflow', 'auto');
                 switch (this.model.settings.smallMultiple.layoutMode) {
@@ -746,17 +796,15 @@ module powerbi.extensibility.visual {
                         let rowHeight: number = itemHeight + separatorSize;
                         let matrixWidth: number = itemWidth*columnsNumber + separatorSize*(columnsNumber-1);
                         let rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
-                        let smContainer: Selection<any> = container.append("svg")
-                            .attr({
-                                'width':  matrixWidth + titleHeight*titleIndex,
-                                'height' : rowHeight* rowNumber + titleHeight*columnTitleIndex
-                            });
+                        let smContainer: Selection<any, any, any, any> = container.append("svg")
+                            .attr('width',  matrixWidth + titleHeight*titleIndex)
+                            .attr('height', rowHeight* rowNumber + titleHeight*columnTitleIndex);
+
                         smContainer.append('rect')
                             .classed('clearCatcher', true)
-                            .attr({
-                                'width':  '100%',
-                                'height': '100%'
-                        });
+                            .attr('width',  '100%')
+                            .attr('height', '100%');
+
                         lassoContainer = smContainer;
                         lassoContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
                         for(let i=0;i<rowNumber;i++) {
@@ -764,13 +812,11 @@ module powerbi.extensibility.visual {
                                 ? 0
                                 : i*rowHeight + titleHeight*columnTitleIndex;
                             let matrixTitleIndex = (i==0)&&(columnTitleIndex== 1) ? 1 : 0
-                            let rowContainer: Selection<any> = smContainer
+                            let rowContainer: Selection<any, any, any, any> = smContainer
                                 .append("g")
-                                .attr({
-                                    'width':  matrixWidth + titleIndex*rowTitleIndex,
-                                    'height' : rowHeight + titleHeight*matrixTitleIndex,
-                                    'transform': 'translate(0,' + translateY + ')'
-                                });
+                                .attr('width',  matrixWidth + titleIndex*rowTitleIndex)
+                                .attr('height', rowHeight + titleHeight*matrixTitleIndex)
+                                .attr('transform', 'translate(0,' + translateY + ')');
                             if (titleIndex == 1 && this.model.rows.length > 0) {
                                 let maxTextWidth: number = rowHeight + titleHeight*matrixTitleIndex;
                                 let titleX: string = this.formatSmallMultipleTitle(this.model.rows[i], this.model.rowsFormat, this.host.locale);
@@ -791,13 +837,11 @@ module powerbi.extensibility.visual {
 
                                 let translateX: number = (itemWidth + separatorSize)*j + titleHeight*rowTitleIndex;
                                 let rowItemHeight: number = (i == rowNumber-1) ? rowHeight - separatorSize : rowHeight + titleHeight*matrixTitleIndex;
-                                let itemContainer: Selection<SVGElement> = rowContainer
+                                let itemContainer: Selection<SVGElement, any, any, any> = rowContainer
                                     .append('g')
-                                    .attr({
-                                        'width':  itemWidth,
-                                        'height': rowItemHeight,
-                                        'transform': 'translate('+ translateX +',0)'
-                                    });
+                                    .attr('width', itemWidth)
+                                    .attr('height', rowItemHeight)
+                                    .attr('transform', 'translate('+ translateX +',0)');
                                 if (i==0 && titleY!="")
                                     renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, titleY, lines, lineKey, translateX, translateY);
                                 else
@@ -805,21 +849,21 @@ module powerbi.extensibility.visual {
                                 //show row separator
                                 if (i<rowNumber-1) {
                                     let columnSeparatorY: number = itemHeight + titleHeight*matrixTitleIndex;
-                                    let rowSeparator: Selection<any> = itemContainer.append("g").attr({
-                                        'width':  itemWidth,
-                                        'height': separatorSize,
-                                        'transform': 'translate(0,'+ columnSeparatorY +')'
-                                    });
+                                    let rowSeparator: Selection<any, any, any, any> = itemContainer.append("g")
+                                        .attr('width',  itemWidth)
+                                        .attr('height', separatorSize)
+                                        .attr('transform', 'translate(0,'+ columnSeparatorY +')');
+
                                     renderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize/2, itemWidth, separatorSize/2, separatorIndex);
                                 }
                                 //show column separator
                                 if (j<columnsNumber-1) {
                                     let columnSeparatorX: number = translateX +itemWidth;
-                                    let columnSeparator: Selection<any> = rowContainer.append("g").attr({
-                                            'width':  separatorSize,
-                                            'height': rowHeight + titleHeight*matrixTitleIndex,
-                                            'transform': 'translate('+ columnSeparatorX +',0)'
-                                    });
+                                    let columnSeparator: Selection<any, any, any, any> = rowContainer.append("g")
+                                            .attr('width',  separatorSize)
+                                            .attr('height', rowHeight + titleHeight*matrixTitleIndex)
+                                            .attr('transform', 'translate('+ columnSeparatorX +',0)');
+                                    
                                     renderVisual.renderSeparatorLine(columnSeparator, separatorSize/2, 0, separatorSize/2, rowHeight + titleHeight*matrixTitleIndex, separatorIndex);
                                     if (i<rowNumber-1) {
                                         let separatorY = itemHeight + titleHeight*matrixTitleIndex + separatorSize/2;
@@ -870,17 +914,13 @@ module powerbi.extensibility.visual {
                             maxColumnsNumber = itemCountForRow;
                         itemWidth = Math.max(itemWidth, (containerSize.width - separatorSize)/maxColumnsNumber - separatorSize);
                         let flowWidth: number = Math.max(containerSize.width, (itemWidth + separatorSize)*maxColumnsNumber - separatorSize);
-                        let smContainer: Selection<any> = container.append("svg")
-                            .attr({
-                                'width':  flowWidth,
-                                'height' : rowSumHeight - separatorSize
-                            });
+                        let smContainer: Selection<any, any, any, any> = container.append("svg")
+                            .attr('width',  flowWidth)
+                            .attr('height', rowSumHeight - separatorSize);
                         smContainer.append('rect')
                             .classed('clearCatcher', true)
-                            .attr({
-                                'width':  '100%',
-                                'height': '100%'
-                        });
+                            .attr('width',  '100%')
+                            .attr('height', '100%');
                         lassoContainer = smContainer;
                         lassoContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
                         let oldRowItemHeight: number = 0;
@@ -888,13 +928,11 @@ module powerbi.extensibility.visual {
                             rowItemHeight = rowHeights[i];
                             let translateY = oldRowItemHeight;
                             oldRowItemHeight = translateY + rowItemHeight + separatorSize;
-                            let rowContainer: Selection<any> = smContainer
+                            let rowContainer: Selection<any, any, any, any> = smContainer
                                 .append("g")
-                                .attr({
-                                    'width':  flowWidth,
-                                    'height' : rowItemHeight,
-                                    'transform': 'translate(0,' + translateY + ')'
-                            });
+                                .attr('width',  flowWidth)
+                                .attr('height', rowItemHeight)
+                                .attr('transform', 'translate(0,' + translateY + ')');
                             let j1: number = -1;
                             for(let j=0;j<columnsNumber;j++) {
                                 let lineKey: string = this.retrieveLineKey(i,j);
@@ -912,22 +950,19 @@ module powerbi.extensibility.visual {
 
                                 let translateItemX: number = (j2%itemCountForRow)*(itemWidth + separatorSize);
                                 let translateItemY: number = Math.floor(j2/itemCountForRow)*(itemHeight + titleHeight*titleIndex + separatorSize);
-                                let itemContainer: Selection<SVGElement> = rowContainer
+                                let itemContainer: Selection<SVGElement, any, any, any> = rowContainer
                                     .append('g')
-                                    .attr({
-                                        'width':  itemWidth,
-                                        'height': itemHeight + titleHeight*titleIndex,
-                                        'transform': 'translate('+ translateItemX +',' + translateItemY + ')'
-                                    });
+                                    .attr('width',  itemWidth)
+                                    .attr('height', itemHeight + titleHeight*titleIndex)
+                                    .attr('transform', 'translate('+ translateItemX +',' + translateItemY + ')');
                                 renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, title, lines, lineKey, translateItemX, translateY + translateItemY);
                             }
                             if (separatorIndex && i<rowNumber-1) {
                                 let translateSeparatorY: number = translateY + rowItemHeight;
-                                let rowSeparator: Selection<any> = smContainer.append("g").attr({
-                                    'width':  flowWidth,
-                                    'height': separatorSize,
-                                    'transform': 'translate(0,'+ translateSeparatorY +')'
-                                });
+                                let rowSeparator: Selection<any, any, any, any> = smContainer.append("g")
+                                    .attr('width',  flowWidth)
+                                    .attr('height', separatorSize)
+                                    .attr('transform', 'translate(0,'+ translateSeparatorY +')');
                                 renderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize/2, (itemWidth + separatorSize)*itemCountForRow, separatorSize/2, separatorIndex);
                             }
                         }
@@ -939,12 +974,10 @@ module powerbi.extensibility.visual {
                 let scrollbarMargin: number = 25;
                 if (itemWidth > containerSize.width)
                     itemHeight = itemHeight - scrollbarMargin;
-                let svgContainer: Selection<SVGElement> = container
+                let svgContainer: Selection<SVGElement, any, any, any> = container
                     .append('svg')
-                    .attr({
-                        'width':  itemWidth,
-                        'height': itemHeight
-                });
+                    .attr('width',  itemWidth)
+                    .attr('height', itemHeight);
                 let lineKey: string = this.retrieveLineKey(0,0);
                 let lines: LineDataPoint[] = this.retrieveLines(lineKey);
                 selectionLines = lines;
@@ -990,23 +1023,20 @@ module powerbi.extensibility.visual {
                     container =  this.element
                         .append('div')
                         .classed('chart', true)
-                        .style({
-                            'width' :  containerSize.width + 'px',
-                            'height':  containerSize.height + 'px'
-                        });
+                        .style('width',  containerSize.width + 'px')
+                        .style('height',  containerSize.height + 'px');
                     positionChartArea(container, this.legend);
-                    container.style({
-                        'overflow-x': 'auto',
-                        'overflow-y': 'hidden'
-                    });
+                    container
+                        .style('overflow-x', 'auto')
+                        .style('overflow-y', 'hidden');
+                    
                     if (svgContainerWidth > containerSize.width)
                         svgContainerHeight = svgContainerHeight - scrollbarMargin;
                     svgContainer = container
                         .append('svg')
-                        .attr({
-                            'width':  svgContainerWidth,
-                            'height': svgContainerHeight
-                    });
+                        .attr('width',  svgContainerWidth)
+                        .attr('height', svgContainerHeight);
+                    
                     if (legendPosition == newLegendPosition) {
                         break;
                     } else{
@@ -1022,14 +1052,15 @@ module powerbi.extensibility.visual {
             }
 
             //selection
-            let legendContainer: Selection<any> = this.element.select('.legend');
+            let legendContainer: Selection<any, any, any, any> = this.element.select('.legend');
             let verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey = renderSimpleVisual.verticalLineDataItemsGlobal;
             let behaviorOptions: WebBehaviorOptions =
                 new WebBehaviorOptions(container, this.model.dataPoints, selectionLines, dots, this.tooltipServiceWrapper, verticalLineDataItemsGlobal,
-                    this.legendBehavior, this.model.legendDataPoint, this.model.legendFormatter, this.model.legendType, this.model.settings.shapes);
-            this.interactivityService.bind(this.model.dataPoints, this.behavior, behaviorOptions);
+                    this.legendBehavior, this.model.legendDataPoint, this.model.legendFormatter, this.model.legendType, this.model.settings.shapes, this.behavior);
+            /*this.interactivityService.bind(this.model.dataPoints, this.behavior, behaviorOptions);*/
+            this.interactivityService.bind(behaviorOptions);
 
-            let clearContainer: Selection<any> = lassoContainer.selectAll('.clearCatcher,'+ Visual.SmallMultipleNameSelector.selectorName);
+            let clearContainer: Selection<any, any, any, any> = lassoContainer.selectAll('.clearCatcher,'+ Visual.SmallMultipleNameSelector.selectorName);
             let behavior: WebBehavior = this.behavior;
             clearContainer.on('click', function() {
                 behavior.clearCather();
@@ -1041,19 +1072,19 @@ module powerbi.extensibility.visual {
             //start legend changing by click
             let legendBehavior = this.legendBehavior;
             let legendPosition: string = this.model.settings.legend.position;
-            let is: IInteractivityService = this.interactivityService;
+            let is: IInteractivityService<any> = this.interactivityService;
             if (legendPosition == "Top" || legendPosition == "TopCenter" || legendPosition == "Bottom" || legendPosition == "BottomCenter") {
                 legendBehavior.leftOrRightClick(true, legendBehavior);
                 let hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             }
-            let arrowLeft: Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
+            let arrowLeft: Selection<any, any, any, any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
             arrowLeft.on('click', () => {
                 legendBehavior.leftOrRightClick(true, legendBehavior);
                 let hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             });
-            let arrowRight: Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
+            let arrowRight: Selection<any, any, any, any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
             arrowRight.on('click', () => {
                 legendBehavior.leftOrRightClick(false, legendBehavior);
                 let hasSelection: boolean = is.hasSelection();
@@ -1119,4 +1150,3 @@ module powerbi.extensibility.visual {
             return instanceEnumeration;
         }
     }
-}

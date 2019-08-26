@@ -1,9 +1,22 @@
-module powerbi.extensibility.visual {
+    import powerbi from 'powerbi-visuals-api';
+    import PrimitiveValue = powerbi.PrimitiveValue;
+    import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+    import * as d3 from 'd3';
     import Selection = d3.Selection;
-    import IValueFormatter = utils.formatting.IValueFormatter;
+    import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+    import IValueFormatter = valueFormatter.IValueFormatter;
+
+    import { Visual } from './visual';
+    import { DefaultTooltipCircleRadius } from './settings';
+    import {
+        VerticalLineDataItem,
+        LinePoint,
+        SimplePoint,
+        LineDataPoint
+    } from './visualInterfaces';
 
     export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IValueFormatter, tooltipFormatter: IValueFormatter, lines: LineDataPoint[],
-        xAxisDataPoints: any[], line: d3.svg.Line<[number,number]>, shapesShowMarkers: boolean, rectGlobalX: number, rectGlobalY: number): VerticalLineDataItem[] {
+        xAxisDataPoints: any[], line/*: d3.svg.Line<[number,number]>*/, shapesShowMarkers: boolean, rectGlobalX: number, rectGlobalY: number): VerticalLineDataItem[] {
         let verticalLineDataItems: VerticalLineDataItem[] = [];
         for(let i=0;i<xAxisDataPoints.length;i++) {
             let category: string = convertCategoryItemToString(xAxisDataPoints[i], categoryIsDate);
@@ -101,7 +114,7 @@ module powerbi.extensibility.visual {
         return category;
     }
 
-    export function drawPointsForVerticalLine(verticalLineContainer: Selection<any>, x: number, points: LinePoint[]) {
+    export function drawPointsForVerticalLine(verticalLineContainer: Selection<any, any, any, any>, x: number, points: LinePoint[]) {
         verticalLineContainer.selectAll("circle").remove();
         if (!points) return;
         for(let j=0;j<points.length;j++) {
@@ -116,4 +129,3 @@ module powerbi.extensibility.visual {
             }
         }
     }
-}

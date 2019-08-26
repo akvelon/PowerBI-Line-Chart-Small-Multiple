@@ -1,4 +1,12 @@
-module powerbi.extensibility.visual {
+    import powerbi from 'powerbi-visuals-api';
+    import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
+    import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
+    import VisualObjectInstance = powerbi.VisualObjectInstance;
+    import PrimitiveValue = powerbi.PrimitiveValue;
+
+    import { VisualSettings } from '../settings';
+    import { VisualViewModel, LegendDataPointExtended, LineDataPoint, CategoryType } from '../visualInterfaces';
+
     export class EnumerateObject {
 
         public static setInstances(
@@ -248,4 +256,3 @@ module powerbi.extensibility.visual {
             }
         }
     }
-}
