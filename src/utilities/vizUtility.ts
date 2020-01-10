@@ -1,99 +1,99 @@
-module powerbi.extensibility.visual {
-    import ValueFormatter = utils.formatting.valueFormatter;
-    import IValueFormatter = utils.formatting.IValueFormatter;
-    import ValueFormatterOptions = utils.formatting.ValueFormatterOptions;
-    export module VizUtility {
+import { valueFormatter } from 'powerbi-visuals-utils-formattingutils';
+import ValueFormatter = valueFormatter;
+import IValueFormatter = valueFormatter.IValueFormatter;
+import ValueFormatterOptions = valueFormatter.ValueFormatterOptions;
+
+export module VizUtility {
+    
+        export class Formatter {
         
-         export class Formatter {
-            
-            private static _instance:Formatter = new Formatter();
-            private _cachedFormatters: {} = {};
+        private static _instance:Formatter = new Formatter();
+        private _cachedFormatters: {} = {};
 
-            constructor() {
+        constructor() {
 
-                if(Formatter._instance){
-                    console.log("Error: use Formatter.getInstance() instead of new.");
-                    return;
-                }
-                Formatter._instance = this;
+            if(Formatter._instance){
+                console.log("Error: use Formatter.getInstance() instead of new.");
+                return;
             }
-
-            public static getFormatter(properties: ValueFormatterOptions) {
-
-                let singleton = Formatter._instance;
-
-                let key = JSON.stringify(properties); //.replace(/\W/g,'_');
-                let pbiFormatter: IValueFormatter;
-                if (key in singleton._cachedFormatters) {
-                    pbiFormatter = singleton._cachedFormatters[key];
-                } else {
-                    pbiFormatter = ValueFormatter.create(properties);
-                    singleton._cachedFormatters[key] = pbiFormatter;
-                }
-
-                return pbiFormatter;
-            }
-
+            Formatter._instance = this;
         }
 
-        export function getLineStyleParam(lineStyle: string): string {
-            let strokeDasharray: string;
+        public static GetFormatter(properties: ValueFormatterOptions) {
 
-            switch (lineStyle) {
-                case "solid":
-                    strokeDasharray = "none";
-                    break;
-                case "dashed":
-                    strokeDasharray = "5, 5";
-                    break;
-                case "dotted":
-                    strokeDasharray = "1, 5";
-                    break;
-            }
+            let singleton = Formatter._instance;
 
-            return strokeDasharray;
-        }
-
-        export function isValidURL(URL: string) {
-
-            if (typeof URL === 'undefined' || !URL) return false;
-            if (URL.length > 2083) return false;
-
-            let pattern = new RegExp('^https?:\\/\\/', 'i');
-            return pattern.test(URL);
-            
-            /*
-            let pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
-                '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-                '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-                '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-            return pattern.test(URL);
-            */
-        }
-        
-        export function makeMeasureReadable(value: any) {
-            
-            if (value === undefined) {
-                return '(Blank)';
-            } else if (Object.prototype.toString.call(value) === '[object Date]') {
-               return value;
-            } else if (isValidURL(value)) {
-                return makeURLReadable(value);
+            let key = JSON.stringify(properties); //.replace(/\W/g,'_');
+            let pbiFormatter: IValueFormatter;
+            if (key in singleton._cachedFormatters) {
+                pbiFormatter = singleton._cachedFormatters[key];
             } else {
-                return String(value).substr(0, 256);
+                pbiFormatter = ValueFormatter.create(properties);
+                singleton._cachedFormatters[key] = pbiFormatter;
             }
-        };
 
-        export function makeURLReadable(URL: string) {
-            let returnName = URL;
-            if (returnName) {
-                let parts = String(returnName).split(/[\\/.]/).slice(-2, -1);
-                if (parts.length > 0)
-                    returnName = parts[0].replace('_', ' ').replace('-', ' ');
-            }
-            return returnName;
+            return pbiFormatter;
         }
+
+    }
+
+    export function getLineStyleParam(lineStyle: string): string {
+        let strokeDasharray: string;
+
+        switch (lineStyle) {
+            case "solid":
+                strokeDasharray = "none";
+                break;
+            case "dashed":
+                strokeDasharray = "5, 5";
+                break;
+            case "dotted":
+                strokeDasharray = "1, 5";
+                break;
+        }
+
+        return strokeDasharray;
+    }
+
+    export function isValidURL(URL: string) {
+
+        if (URL === undefined || !URL) return false;
+        if (URL.length > 2083) return false;
+
+        let pattern = new RegExp('^https?:\\/\\/', 'i');
+        return pattern.test(URL);
+        
+        /*
+        let pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|' + // domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+            '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+        return pattern.test(URL);
+        */
+    }
+    
+    export function makeMeasureReadable(value: any) {
+        
+        if (value === undefined) {
+            return '(Blank)';
+        } else if (Object.prototype.toString.call(value) === '[object Date]') {
+            return value;
+        } else if (isValidURL(value)) {
+            return makeURLReadable(value);
+        } else {
+            return String(value).substr(0, 256);
+        }
+    };
+
+    export function makeURLReadable(URL: string) {
+        let returnName = URL;
+        if (returnName) {
+            let parts = String(returnName).split(/[\\/.]/).slice(-2, -1);
+            if (parts.length > 0)
+                returnName = parts[0].replace('_', ' ').replace('-', ' ');
+        }
+        return returnName;
     }
 }
