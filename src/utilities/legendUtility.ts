@@ -553,7 +553,6 @@ export function buildLegendData(
     // } else {
     //     let legendLength: number = legendColumn && legendColumn.values ? legendColumn.values.length : 0;
     //     let legendKeys: string[] = [];
-    //     debugger;
     //     for (let i: number = 0; i < legendLength; i++) {
     //         let name: string = legendColumn.values[i].toString();
     //         if (legendKeys.indexOf(name) == -1) {

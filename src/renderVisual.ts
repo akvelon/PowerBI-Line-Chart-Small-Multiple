@@ -696,6 +696,7 @@ export class renderVisual {
     // tslint:disable-next-line
     private renderXAxis(svgContainer: Selection<SVGElement>, plotSize: any, xScale: D3Scale, xIsCategorical: boolean, xAxisDataPoints: any[],
         tickMaxWidth: number, xRange: [number, number], axisPadding: number, start: number, end: number): number {
+        
         if (!this.settings.xAxis.show) return 0;
         let svgAxisContainer: Selection<SVGElement> = svgContainer
             .append('svg');
@@ -752,7 +753,7 @@ export class renderVisual {
         }
 
         let xAxis = null;
-        
+
         if (this.categoryIsDate) {
             xAxis = d3.axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0)
         } else if (this.settings.xAxis.axisScale == "log") {
@@ -760,7 +761,7 @@ export class renderVisual {
         } else {
             xAxis = d3.axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0)
         }
-            
+
         if (this.categoryIsDate) {
             if (xIsCategorical) {
                 xAxis.tickFormat(d => this.xFormatter.format(d));
@@ -774,6 +775,10 @@ export class renderVisual {
         }
 
         axis.selectAll('.domain').remove();
+        // D3.js v5 adds stroke: currentColor
+        svgAxisContainer.selectAll("line").attrs({
+            "stroke": null
+        });
 
         let labels = axis.selectAll('text')
             .styles({
@@ -1232,7 +1237,6 @@ export class renderVisual {
             let dataPoint: LineDataPoint = lines[i];
             let marker: string = lineNamesWithMarkers[dataPoint.name];
             if (marker) {
-                debugger;
                 let item: Selection<any> = d3.select(lineGroupSelectionMerged.nodes()[i]);
                 item.attr('marker-start', marker);
                 item.attr('marker-mid', marker);
@@ -1300,7 +1304,7 @@ export class renderVisual {
 
         interactiveLineGroupSelectionAppend
             .classed(Visual.InteractivityLineSelector.className, true);
-    
+
         interactiveLineGroupSelection.exit().remove();
 
         const interactiveLineGroupSelectionMerged = interactiveLineGroupSelection
@@ -1331,7 +1335,6 @@ export class renderVisual {
         dataLabelsBackgroundContext.selectAll("*").remove();
         dataLabelsBackgroundContext.selectAll("*").remove();
 
-        debugger;
         let dataLabelsContext: Selection<any> = svgContainer.append('g').classed("labelGraphicsContext", true);
         dataLabelsContext.selectAll("*").remove();
 

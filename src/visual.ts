@@ -71,6 +71,7 @@ import {
     Selection
 } from './visualInterfaces';
 
+//tslint:disable-next-line
 function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
     //Get DataViews
     let dataViews = options.dataViews;
@@ -714,6 +715,7 @@ export class Visual implements IVisual {
         this.behavior = new WebBehavior();
     }
 
+    //tslint:disable-next-line
     public update(options: VisualUpdateOptions) {
         this.model = visualTransform(options, this.host);
         this.element.selectAll('div, svg:not(.legend)').remove();

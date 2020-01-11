@@ -198,6 +198,7 @@ export function drawLassoRect(globalLines: LineDataPoint[], data: LassoData, las
     let selectedLegendNames: string[] = [];
     let lines: LineDataPointForLasso[] = [];
     let points: SimplePoint[] = [];
+    //tslint:disable-next-line
     for (let lineKey in verticalLineDataItemsGlobal) {
         let verticalLineDataItems: VerticalLineDataItem[] = verticalLineDataItemsGlobal[lineKey].verticalLineDataItems;
         for (let i = 0; i < verticalLineDataItems.length; i++) {
@@ -288,12 +289,16 @@ export function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], 
         .selectAll(Visual.SimpleLineSelector.selectorName)
         .data(newLines);
 
-    lineGroupSelection
+    let lineGroupSelectionAppend = lineGroupSelection
         .enter()
-        .append("path")
+        .append("path");
+    
+    lineGroupSelectionAppend
         .classed(Visual.SimpleLineSelector.className, true);
 
-    lineGroupSelection
+    let lineGroupSelectionMerged = lineGroupSelection.merge(lineGroupSelectionAppend);
+
+    lineGroupSelectionMerged
         .attrs({
             "d": (dataPoint: LineDataPoint, index: number) => {
                 let lineD: string = lineDD[index];
@@ -317,7 +322,8 @@ export function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], 
                     : VizUtility.getLineStyleParam(dataPoint.lineStyle);
             },
             'fill': 'none'
-        }).style('opacity', 1);
+        })
+        .style('opacity', 1);
 
     let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
     for (let i = 0; i < newLines.length; i++) {
@@ -336,12 +342,16 @@ export function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], 
         .selectAll(Visual.SimpleLineSelector.selectorName)
         .data(dots);
 
-    dotsGroupSelection
+    let dotsGroupSelectionAppend = dotsGroupSelection
         .enter()
-        .append("circle")
+        .append("circle");
+
+    dotsGroupSelectionAppend
         .classed(Visual.DotSelector.className, true);
 
-    dotsGroupSelection
+    let dotsGroupSelectionMerged = dotsGroupSelection.merge(dotsGroupSelectionAppend);
+
+    dotsGroupSelectionMerged
         .attrs({
             'cx': (dataPoint: LineDataPoint) => {
                 return +dataPoint.points[0].x;
