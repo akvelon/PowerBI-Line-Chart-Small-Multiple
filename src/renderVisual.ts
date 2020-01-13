@@ -88,7 +88,7 @@ export class renderVisual {
         this.isSeparateDomainY = model.settings.yAxis.chartRangeType == "separate";
 
         if (model.categoryIsScalar) {
-            this.xFormatter = VizUtility.Formatter.GetFormatter({
+            this.xFormatter = VizUtility.Formatter.GET_FORMATTER({
                 format: model.categoryFormat,
                 value: model.settings.xAxis.displayUnits,
                 precision: model.settings.xAxis.precision,
@@ -97,13 +97,13 @@ export class renderVisual {
             });
         } else {
             let format: string = (model.categoryIsDate && !model.categoryFormat) ? NiceDateFormat : model.categoryFormat;
-            this.xFormatter = VizUtility.Formatter.GetFormatter({
+            this.xFormatter = VizUtility.Formatter.GET_FORMATTER({
                 format: format,
                 cultureSelector: host.locale
             });
         }
 
-        this.yFormatter = VizUtility.Formatter.GetFormatter({
+        this.yFormatter = VizUtility.Formatter.GET_FORMATTER({
             format: model.valueFormat,
             value: model.settings.yAxis.displayUnits,
             formatSingleValues: (model.settings.yAxis.displayUnits == 0),
@@ -121,8 +121,8 @@ export class renderVisual {
             precision: precision,
             cultureSelector: host.locale
         };
-        this.dataLabelFormatter = VizUtility.Formatter.GetFormatter(properties);
-        this.tooltipFormatter = VizUtility.Formatter.GetFormatter({
+        this.dataLabelFormatter = VizUtility.Formatter.GET_FORMATTER(properties);
+        this.tooltipFormatter = VizUtility.Formatter.GET_FORMATTER({
             value: 0,
             precision: null,
             displayUnitSystemType: 0,
@@ -1086,7 +1086,7 @@ export class renderVisual {
     private retrievexFormatPrecision(): number {
         let precision: number = 1;
         if (this.categoryIsScalar) {
-            let customFormatter: IValueFormatter = VizUtility.Formatter.GetFormatter({
+            let customFormatter: IValueFormatter = VizUtility.Formatter.GET_FORMATTER({
                 format: this.xFormatter.options.format,
                 value: 0,
                 precision: null,
@@ -1193,14 +1193,14 @@ export class renderVisual {
             let lineD: string = line(points);
             lineDD.push(lineD);
         }
-        let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
+        let lineNamesWithMarkers = renderVisual.RETRIEVE_LINE_NAMES_WITH_MARKERS(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
         lineGroupSelectionMerged
             .attrs({
                 "d": (dataPoint: LineDataPoint, index: number) => {
                     let lineD = lineDD[index];
                     let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
                     return (stepped)
-                        ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                        ? MarkersUtility.GET_DATA_LINE_FOR_FOR_STEPPED_LINE_CHART(lineD)
                         : lineD
                 },
                 "stroke": (dataPoint: LineDataPoint) => {
@@ -1228,7 +1228,7 @@ export class renderVisual {
                     ? dataPoint.stepped
                     : shapes.stepped;
                 if (showMarkers && stepped) {
-                    let markerPathId: string = MarkersUtility.retrieveMarkerName(dataPoint.lineKey, Visual.MarkerLineSelector.className);
+                    let markerPathId: string = MarkersUtility.RETRIEVE_MARKER_NAME(dataPoint.lineKey, Visual.MarkerLineSelector.className);
                     svgLinesContainer.selectAll('#' + markerPathId).style("opacity", opacity);
                 }
                 return opacity;
@@ -1317,7 +1317,7 @@ export class renderVisual {
                     let lineD: string = line(points);
                     let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
                     return (stepped)
-                        ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                        ? MarkersUtility.GET_DATA_LINE_FOR_FOR_STEPPED_LINE_CHART(lineD)
                         : lineD
                 },
                 'stroke-width': '10',
@@ -1507,7 +1507,7 @@ export class renderVisual {
             (!((item.bgY + item.bgHeight - DataLabelEps < coord.bgY) || (coord.bgY + coord.bgHeight - DataLabelEps < item.bgY)));
     }
 
-    public static retrieveLineNamesWithMarkers(container: Selection<any>, svgLinesContainer: Selection<any>, lineDD: string[], shapes: shapes, lines: LineDataPoint[]): {} {
+    public static RETRIEVE_LINE_NAMES_WITH_MARKERS(container: Selection<any>, svgLinesContainer: Selection<any>, lineDD: string[], shapes: shapes, lines: LineDataPoint[]): {} {
         //init markers
         let lineNamesWithMarkers = {};
         let defsContainer = container.append('defs');
@@ -1524,14 +1524,14 @@ export class renderVisual {
                     ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
                     : lineDataPoint.markerColor;
                 //init marker
-                let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
+                let markerId: string = MarkersUtility.INIT_MARKER(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
                 if (markerId) {
                     let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
                     if (stepped) {
                         let lineD = lineDD[i];
                         let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
-                        let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-                        MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
+                        let markerPathId: string = MarkersUtility.RETRIEVE_MARKER_NAME(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+                        MarkersUtility.DRAW_MARKERS_FOR_STEPPED_LINE_CHART(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
                     } else {
                         lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
                     }
@@ -1578,10 +1578,10 @@ export class renderVisual {
             .text(shortTitle);
         rowText.append("title").text(titleX);
         if (i > 0)
-            renderVisual.renderSeparatorLine(rowText, 0, -separatorSize / 2, titleHeight, -separatorSize / 2, separatorIndex);
+            renderVisual.RENDER_SEPARATOR_LINE(rowText, 0, -separatorSize / 2, titleHeight, -separatorSize / 2, separatorIndex);
     }
 
-    public static renderSeparatorLine(separatorItem: Selection<any>, x1: number, y1: number, x2: number, y2: number, separatorIndex: number) {
+    public static RENDER_SEPARATOR_LINE(separatorItem: Selection<any>, x1: number, y1: number, x2: number, y2: number, separatorIndex: number) {
         let separatorLine: Selection<any> = separatorItem.append('line')
             .attrs({
                 'x1': x1,

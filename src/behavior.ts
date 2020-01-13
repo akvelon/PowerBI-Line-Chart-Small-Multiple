@@ -180,7 +180,7 @@ export class WebBehavior implements IInteractiveBehavior {
                 ? lineDataPoint.stepped
                 : this.shapes.stepped;
             if (showMarkers && stepped) {
-                let markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+                let markerPathId = MarkersUtility.RETRIEVE_MARKER_NAME(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
                 let markers = this.container.select("#" + markerPathId);
                 markers.style("opacity", opacity);
             }

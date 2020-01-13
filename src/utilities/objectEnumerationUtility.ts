@@ -7,9 +7,11 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import { VisualSettings } from '../settings';
 import { VisualViewModel, LegendDataPointExtended, LineDataPoint, CategoryType } from '../visualInterfaces';
 
+//tslint:disable-next-line
 export class EnumerateObject {
 
-    public static SetInstances(
+    //tslint:disable-next-line
+    public static SET_INSTANCES(
         settings: VisualSettings,
         instanceEnumeration: VisualObjectInstanceEnumeration,
         model: VisualViewModel) {

@@ -19,7 +19,7 @@ export module VizUtility {
             Formatter._instance = this;
         }
 
-        public static GetFormatter(properties: ValueFormatterOptions) {
+        public static GET_FORMATTER(properties: ValueFormatterOptions) {
 
             let singleton = Formatter._instance;
 

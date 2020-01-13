@@ -254,9 +254,9 @@ export function drawCustomLegendIcons(legendItems: any/* Selection<any> */, lege
                 let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
                 if (showMarkers) {
                     //draw marker
-                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    MarkersUtility.INIT_MARKER(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
                     let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
-                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
+                    let markerId: string = MarkersUtility.INIT_MARKER(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
                     if (markerId) {
                         customLegendMarker.attrs({
                             'd': "M" + cx + "," + cy + "Z",
@@ -302,8 +302,8 @@ export function drawCustomLegendIcons(legendItems: any/* Selection<any> */, lege
                 circle.attr('r', lineLen / 2);
                 let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
                 if (showMarkers) {
-                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
-                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
+                    MarkersUtility.INIT_MARKER(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    let markerId: string = MarkersUtility.INIT_MARKER(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
                     if (markerId) {
                         customLegendMarker.attrs({
                             'd': "M" + cx + "," + cy + "Z",
@@ -474,7 +474,7 @@ export function getLegendData(dataView: DataView, host: IVisualHost, legend: leg
         title: "",
         dataPoints: []
     };
-    let isLegendFilled: boolean = IsLegendFilled(dataView);
+    let isLegendsFilled: boolean = isLegendFilled(dataView);
 
     let legendIcons = {
         "markers": LegendIcon.Circle,
@@ -482,7 +482,7 @@ export function getLegendData(dataView: DataView, host: IVisualHost, legend: leg
         "line": LegendIcon.Line
     };
     let legendIcon: LegendIcon = legendIcons[legend.style];
-    if (isLegendFilled) {
+    if (isLegendsFilled) {
         legendData = buildLegendData(dataView,
             host,
             legend,
@@ -493,7 +493,7 @@ export function getLegendData(dataView: DataView, host: IVisualHost, legend: leg
     return legendData;
 }
 
-export function IsLegendFilled(dataView: DataView): boolean {
+export function isLegendFilled(dataView: DataView): boolean {
     const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
     for (let i = 0; i < columns.length; i++) {
         let column: DataViewMetadataColumn = columns[i];

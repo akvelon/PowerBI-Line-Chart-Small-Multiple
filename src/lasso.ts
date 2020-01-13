@@ -304,7 +304,7 @@ export function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], 
                 let lineD: string = lineDD[index];
                 let stepped: boolean = (dataPoint.stepped == undefined) ? shapes.stepped : dataPoint.stepped;
                 return (stepped)
-                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                    ? MarkersUtility.GET_DATA_LINE_FOR_FOR_STEPPED_LINE_CHART(lineD)
                     : lineD;
             },
             "stroke": (dataPoint: LineDataPoint) => {
@@ -325,7 +325,7 @@ export function drawLines(cont: Selection<any>, lines: LineDataPointForLasso[], 
         })
         .style('opacity', 1);
 
-    let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
+    let lineNamesWithMarkers = renderVisual.RETRIEVE_LINE_NAMES_WITH_MARKERS(cont, linesCont, lineDD, shapes, newLines);
     for (let i = 0; i < newLines.length; i++) {
         let ldp: LineDataPoint = newLines[i];
         let marker: string = lineNamesWithMarkers[ldp.name];

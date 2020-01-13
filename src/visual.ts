@@ -82,7 +82,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     if (!dataView || options.type === VisualUpdateType.ResizeEnd) {
         return;
     }
-    let settings = Visual.ParseSettings(dataView);
+    let settings = Visual.PARSE_SETTINGS(dataView);
 
     //Limit some properties
     if (settings.shapes.strokeWidth < MinStrokeWidth) settings.shapes.strokeWidth = MinStrokeWidth;
@@ -265,7 +265,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         }
         switch (legendType) {
             case CategoryType.Number: {
-                legendFormatter = VizUtility.Formatter.GetFormatter({
+                legendFormatter = VizUtility.Formatter.GET_FORMATTER({
                     format: legendFormat,
                     value: 0,
                     precision: null,
@@ -278,7 +278,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             }
             case CategoryType.Date: {
                 legendFormat = legendFormat ? legendFormat : NiceDateFormat;
-                legendFormatter = VizUtility.Formatter.GetFormatter({
+                legendFormatter = VizUtility.Formatter.GET_FORMATTER({
                     format: legendFormat,
                     cultureSelector: host.locale});
                 for(let i=0;i<legendDataPoint.length;i++) {
@@ -288,7 +288,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                 break;
             }
             case CategoryType.Boolean: {
-                legendFormatter = VizUtility.Formatter.GetFormatter({
+                legendFormatter = VizUtility.Formatter.GET_FORMATTER({
                     format: legendFormat,
                     cultureSelector: host.locale});
                 for(let i=0;i<legendDataPoint.length;i++) {
@@ -399,7 +399,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 break;
                             }
                         }
-                        let tooltipFormatter = VizUtility.Formatter.GetFormatter({
+                        let tooltipFormatter = VizUtility.Formatter.GET_FORMATTER({
                             format: dataValue.source.format,
                             value: 0,
                             precision: null,
@@ -424,7 +424,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                     tooltipValue = new Date(tooltipValue.toString());
                                     format = format ? format : NiceDateFormat;
                                 }
-                                let formatter = VizUtility.Formatter.GetFormatter({
+                                let formatter = VizUtility.Formatter.GET_FORMATTER({
                                     format: format,
                                     precision: null,
                                     displayUnitSystemType: 0,
@@ -604,7 +604,7 @@ function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, 
     } else {
         categoryValue = category.values[i];
     }
-    let formatter: IValueFormatter = VizUtility.Formatter.GetFormatter({
+    let formatter: IValueFormatter = VizUtility.Formatter.GET_FORMATTER({
         format: format,
         cultureSelector: locale});
     return formatter.format(categoryValue);
@@ -864,7 +864,7 @@ export class Visual implements IVisual {
                                     'height': separatorSize,
                                     'transform': 'translate(0,'+ columnSeparatorY +')'
                                 });
-                                renderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize/2, itemWidth, separatorSize/2, separatorIndex);
+                                renderVisual.RENDER_SEPARATOR_LINE(rowSeparator, 0, separatorSize/2, itemWidth, separatorSize/2, separatorIndex);
                             }
                             //show column separator
                             if (j<columnsNumber-1) {
@@ -874,10 +874,10 @@ export class Visual implements IVisual {
                                         'height': rowHeight + titleHeight*matrixTitleIndex,
                                         'transform': 'translate('+ columnSeparatorX +',0)'
                                 });
-                                renderVisual.renderSeparatorLine(columnSeparator, separatorSize/2, 0, separatorSize/2, rowHeight + titleHeight*matrixTitleIndex, separatorIndex);
+                                renderVisual.RENDER_SEPARATOR_LINE(columnSeparator, separatorSize/2, 0, separatorSize/2, rowHeight + titleHeight*matrixTitleIndex, separatorIndex);
                                 if (i<rowNumber-1) {
                                     let separatorY = itemHeight + titleHeight*matrixTitleIndex + separatorSize/2;
-                                    renderVisual.renderSeparatorLine(columnSeparator, 0, separatorY, separatorSize, separatorY, separatorIndex);
+                                    renderVisual.RENDER_SEPARATOR_LINE(columnSeparator, 0, separatorY, separatorSize, separatorY, separatorIndex);
                                 }
                             }
                         }
@@ -982,7 +982,7 @@ export class Visual implements IVisual {
                                 'height': separatorSize,
                                 'transform': 'translate(0,'+ translateSeparatorY +')'
                             });
-                            renderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize/2, (itemWidth + separatorSize)*itemCountForRow, separatorSize/2, separatorIndex);
+                            renderVisual.RENDER_SEPARATOR_LINE(rowSeparator, 0, separatorSize/2, (itemWidth + separatorSize)*itemCountForRow, separatorSize/2, separatorIndex);
                         }
                     }
                     break;
@@ -1123,7 +1123,7 @@ export class Visual implements IVisual {
             format = format ? format : NiceDateFormat;
             value = new Date(value.toString());
         }
-        let formatter: IValueFormatter = VizUtility.Formatter.GetFormatter({
+        let formatter: IValueFormatter = VizUtility.Formatter.GET_FORMATTER({
             format: format,
             cultureSelector: locale});
         return formatter.format(value);
@@ -1161,13 +1161,13 @@ export class Visual implements IVisual {
                 ? this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
                 : "");
     }
-    public static ParseSettings(dataView: DataView): VisualSettings {
+    public static PARSE_SETTINGS(dataView: DataView): VisualSettings {
         return <VisualSettings>VisualSettings.parse(dataView);
     }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
         let instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
-        EnumerateObject.SetInstances(this.model.settings, instanceEnumeration, this.model);
+        EnumerateObject.SET_INSTANCES(this.model.settings, instanceEnumeration, this.model);
         return instanceEnumeration;
     }
 }

@@ -139,7 +139,7 @@ export class LegendBehavior implements IInteractiveBehavior {
         let itemLegendMarker: Selection<LegendDataPoint> = item.select('.legend-item-marker');
         let markerId: string = itemLegendMarker && itemLegendMarker[0] && itemLegendMarker[0][0] ? itemLegendMarker.style('marker-start') : null;
         if (markerId) {
-            let labelText: string = MarkersUtility.retrieveMarkerName(label + LegendBehavior.legendMarkerSuffix, "");
+            let labelText: string = MarkersUtility.RETRIEVE_MARKER_NAME(label + LegendBehavior.legendMarkerSuffix, "");
             for(let i=0;i<markerIds.length;i++) {
                 let item: string = markerIds[i];
                 if (item.indexOf(labelText) != -1) {

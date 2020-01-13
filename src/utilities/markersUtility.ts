@@ -5,7 +5,7 @@ import { Selection } from "../visualInterfaces";
 import { Visual } from '../visual';
 
 export class MarkersUtility {
-    public static initMarker(container: Selection<any>, uniqueName: string, markerShape: string, markerSize: number, markerColor: string): string {
+    public static INIT_MARKER(container: Selection<any>, uniqueName: string, markerShape: string, markerSize: number, markerColor: string): string {
         //set markerD and strokeWidth from markerShape
         let markerD: string = "";
         let strokeWidth: number = 0;
@@ -50,7 +50,7 @@ export class MarkersUtility {
         let markerId: string;
         //init marker
         if (markerD !== "") {
-            markerId = MarkersUtility.retrieveMarkerName(uniqueName, markerShape);
+            markerId = MarkersUtility.RETRIEVE_MARKER_NAME(uniqueName, markerShape);
             let isMarkerNotExists = container.select("#" + markerId).empty();
             if (isMarkerNotExists) {
                 let marker = container.append('marker')
@@ -70,14 +70,14 @@ export class MarkersUtility {
         return markerId;
     }
 
-    public static retrieveMarkerName(uniqueName: string, markerShape: string): string {
+    public static RETRIEVE_MARKER_NAME(uniqueName: string, markerShape: string): string {
         let markerId: string = markerShape + uniqueName;
         markerId = markerId.replace(/\+/g, 'plus');
         markerId = markerId.replace(/[^0-9a-zA-Z]/g, '');
         return markerId;
     }
 
-    public static getDataLineForForSteppedLineChart(dataLine: string): string {
+    public static GET_DATA_LINE_FOR_FOR_STEPPED_LINE_CHART(dataLine: string): string {
         let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
         let markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
 
@@ -126,7 +126,7 @@ export class MarkersUtility {
         return newDataLine;
     }
 
-    public static drawMarkersForSteppedLineChart(container: Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
+    public static DRAW_MARKERS_FOR_STEPPED_LINE_CHART(container: Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
         let markerAttr = 'url(#' + markerId + ')';
         container.append("path")
             .classed(Visual.MarkerLineSelector.className, true)
