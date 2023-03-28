@@ -1,50 +1,29 @@
 "use strict";
 
 import {d3Selection} from "../visualInterfaces";
+import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 
 export class MarkersUtility {
-    public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: string, markerSize: number, markerColor: string): string {
+    public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: MarkerShape, markerSize: number, markerColor: string): string {
         // set markerD and strokeWidth from markerShape
         let markerD: string = "";
         let strokeWidth: number = 0;
         switch (markerShape) {
-            case "circle" : {
+            case MarkerShape.circle : {
                 markerD = "M 0 0 m -5 0 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0";
                 break;
             }
-            case "square" : {
+            case MarkerShape.square : {
                 markerD = "M 0 0 m -5 -5 l 10 0 l 0 10 l -10 0 z";
                 break;
             }
-            case "diamond" : {
-                markerD = "M 0 0 m -5 0 l 5 -5 l 5 5 l -5 5 z";
-                break;
-            }
-            case "triangle" : {
-                markerD = "M 0 0 m -5 5 l 5 -10 l 5 10 z";
-                break;
-            }
-            case "x" : {
-                markerD = "M 0 0 m -5 -5 l 10 10 m -10 0 l 10 -10";
-                strokeWidth = 1;
-                break;
-            }
-            case "shortDash" : {
-                markerD = "M 0 0 l 5 0";
-                strokeWidth = 2;
-                break;
-            }
-            case "longDash" : {
+            case MarkerShape.longDash : {
                 markerD = "M 0 0 m -5 0 l 10 0";
                 strokeWidth = 2;
                 break;
             }
-            case "plus" : {
-                markerD = "M 0 0 m -5 0 l 10 0 m -5 -5 l 0 10";
-                strokeWidth = 1;
-                break;
-            }
         }
+
         let markerId: string;
         //init marker
         if (markerD !== "") {
