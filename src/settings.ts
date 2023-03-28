@@ -1,6 +1,7 @@
 "use strict";
 
 import {DataViewObjectsParser} from "powerbi-visuals-utils-dataviewutils/lib/dataViewObjectsParser";
+import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 
 export const DefaultFontFamily: string = "\"Segoe UI\", wf_segoe-ui_normal, helvetica, arial, sans-serif";
 const DataLabelsFontFamily: string = "wf_standard-font, helvetica, arial, sans-serif";
@@ -207,7 +208,7 @@ export class Shapes {
     public lineStyle: string = "solid";
 
     public showMarkers: boolean = false;
-    public markerShape: string = "circle";
+    public markerShape: string = MarkerShape.circle;
     public markerSize: number = 5;
     public markerColor: string = "";
 

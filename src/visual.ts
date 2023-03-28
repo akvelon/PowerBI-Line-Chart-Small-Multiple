@@ -14,6 +14,7 @@ import {
     VisualViewModel
 } from "./visualInterfaces";
 import {
+    DefaultSeparator,
     MaximumSizeEndValue,
     MaximumSizeStartValue, MinCategoryWidthEndValue,
     MinCategoryWidthStartValue,
@@ -28,7 +29,7 @@ import {
 import {IInteractivityService} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
 import {LegendBehavior} from "./legendBehavior";
 import {createLegend} from "powerbi-visuals-utils-chartutils/lib/legend/legend";
-import {ILegend, LegendPosition} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
+import {ILegend, LegendPosition, MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import {createTooltipServiceWrapper, ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
 import {WebBehavior} from "./behavior";
 import {createClassAndSelector} from "powerbi-visuals-utils-svgutils/lib/cssConstants";
@@ -39,8 +40,15 @@ import VisualUpdateType = powerbi.VisualUpdateType;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
 import {Formatter} from "./utilities/vizUtility";
-import {getLegendData} from "./utilities/legendUtility";
+import {getLegendData, renderLegend, retrieveLegendCategoryColumn} from "./utilities/legendUtility";
+import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+import DataViewValueColumn = powerbi.DataViewValueColumn;
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import ISelectionIdBuilder = powerbi.extensibility.ISelectionIdBuilder;
+import ISelectionId = powerbi.extensibility.ISelectionId;
+import DataViewObjects = powerbi.DataViewObjects;
 
+import '../style/visual.less';
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format: string = category.source.format;
@@ -72,16 +80,17 @@ function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolea
     return categoryType;
 }
 
-//     function sortNumberLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
-//         let result: number = sortNumber(+a.tooltip, +b.tooltip);
-//         return result;
-//     }
-//     function sortDateLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
-//         let a1: Date = new Date(a.tooltip);
-//         let b1: Date = new Date(b.tooltip);
-//         let result: number = a1.getTime() - b1.getTime();
-//         return result;
-//     }
+function sortNumberLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
+    let result: number = sortNumber(+a.tooltip, +b.tooltip);
+    return result;
+}
+
+function sortDateLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
+    let a1: Date = new Date(a.tooltip);
+    let b1: Date = new Date(b.tooltip);
+    let result: number = a1.getTime() - b1.getTime();
+    return result;
+}
 
 function sortNumber(a, b) {
     let a1: number = +a;
@@ -185,13 +194,15 @@ export class Visual implements IVisual {
             console.log('=== UPDATE START ===')
 
             this.model = visualTransform(options, this.host);
-//             this.element.selectAll('div, svg:not(.legend)').remove();
-//             if (this.model.categories.length == 0) return;
-//             this.legendBehavior.addLegendData(this.model.settings.legend, this.model.legendDataPoint);
-//             let margin = {top: 0, left: 0, bottom: 0, right: 0};
-//             //Legend
-//             renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
-//
+            console.log(this.model);
+            this.element.selectAll('div, svg:not(.legend)').remove();
+            if (this.model.categories.length == 0) return;
+            this.legendBehavior.addLegendData(this.model.settings.legend, this.model.legendDataPoint);
+            let margin = {top: 0, left: 0, bottom: 0, right: 0};
+
+            //Legend
+            renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
+
 //             let containerSize = {
 //                 width: options.viewport.width - margin.left - margin.right,
 //                 height: options.viewport.height - margin.top - margin.bottom
@@ -801,363 +812,363 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         columnsData = (column != null) ? get_sorted(columnsData, column.source.type) : [];
 
         let legendData: LegendDataExtended = getLegendData(dataView, host, settings.legend);
-        // if (settings.legend.legendName == null)
-        //     settings.legend.legendName = legendData.title;
-        // legendDataPoint = legendData.dataPoints;
-        //
-        // let legendFormat: string = null;
-        // if (legendDataPoint.length > 0) {
-        //     const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
-        //     let legendValueType: ValueTypeDescriptor = null;
-        //     for (let i = 0; i < columns.length; i++) {
-        //         let column: DataViewMetadataColumn = columns[i];
-        //         if (column.roles["Legend"]) {
-        //             legendFormat = column.format;
-        //             legendValueType = column.type;
-        //             break;
-        //         }
-        //         if (column.roles["Values"] && !column.groupName) {
-        //             valuesName = valuesName + column.displayName + " ";
-        //         }
-        //     }
-        //     if (legendValueType) {
-        //         legendType = retrieveCategoryType(legendValueType.numeric, legendValueType.dateTime, legendValueType.bool);
-        //     } else {
-        //         let legendIsBoolean: boolean = false;
-        //         if (legendDataPoint.length == 2) {
-        //             let labels: string[] = [legendDataPoint[0].tooltip.toLowerCase(), legendDataPoint[1].tooltip.toLowerCase()];
-        //             if (labels.indexOf("false") != -1 && labels.indexOf("true") != -1) {
-        //                 legendIsBoolean = true;
-        //                 legendType = CategoryType.Boolean;
-        //             }
-        //         }
-        //         if (!legendIsBoolean) {
-        //             let item: string = legendDataPoint[0].tooltip;
-        //             let legendIsNumber: boolean = !isNaN(+item);
-        //             if (legendIsNumber) {
-        //                 legendType = CategoryType.Number;
-        //             } else {
-        //                 let legendIsDate: boolean = !isNaN(+Date.parse(item));
-        //                 if (legendIsDate)
-        //                     legendType = CategoryType.Date;
-        //             }
-        //         }
-        //     }
-        // }
-        // switch (legendType) {
-        //     case CategoryType.Number: {
-        //         legendFormatter = VizUtility.Formatter.getFormatter({
-        //             format: legendFormat,
-        //             value: 0,
-        //             precision: null,
-        //             displayUnitSystemType: 0,
-        //             cultureSelector: host.locale
-        //         });
-        //         for (let i = 0; i < legendDataPoint.length; i++) {
-        //             legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
-        //         }
-        //         break;
-        //     }
-        //     case CategoryType.Date: {
-        //         legendFormat = legendFormat ? legendFormat : NiceDateFormat;
-        //         legendFormatter = VizUtility.Formatter.getFormatter({
-        //             format: legendFormat,
-        //             cultureSelector: host.locale
-        //         });
-        //         for (let i = 0; i < legendDataPoint.length; i++) {
-        //             let d: Date = new Date(legendDataPoint[i].tooltip);
-        //             legendDataPoint[i].label = legendFormatter.format(d);
-        //         }
-        //         break;
-        //     }
-        //     case CategoryType.Boolean: {
-        //         legendFormatter = VizUtility.Formatter.getFormatter({
-        //             format: legendFormat,
-        //             cultureSelector: host.locale
-        //         });
-        //         for (let i = 0; i < legendDataPoint.length; i++) {
-        //             legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
-        //         }
-        //         break;
-        //     }
-        //     case CategoryType.String: {
-        //         legendFormatter = null;
-        //         break;
-        //     }
-        // }
-        //
-        // let legendItemIndexForNameKey: {} = {};
-        // for (let i = 0; i < legendDataPoint.length; i++) {
-        //     legendItemIndexForNameKey[legendDataPoint[i].tooltip] = i;
-        // }
-        //
-        // let tooltipsDataViewValueColumns: DataViewValueColumn[] = [];
-        // for (let ii = 0; ii < dataCategorical.values.length; ii++) {
-        //     let dataValue: DataViewValueColumn = dataCategorical.values[ii];
-        //     if (dataValue.source.roles["Tooltips"]) {
-        //         tooltipsDataViewValueColumns.push(dataValue);
-        //     }
-        // }
-        // let legendColumn: DataViewCategoryColumn = retrieveLegendCategoryColumn(dataView);
-        // let newLegendDataPoint: LegendDataPointExtended[] = [];
-        // let existedLegendNames: string[] = [];
-        // for (let ii = 0; ii < dataCategorical.values.length; ii++) {
-        //     let dataValue: DataViewValueColumn = dataCategorical.values[ii];
-        //     if (dataValue.source.roles["Values"]) {
-        //         if (ii == 0) {
-        //             valueFormat = dataValue.source.format;
-        //         }
-        //         for (let i = 0; i < dataValue.values.length; i++) {
-        //             let value: PrimitiveValue = dataValue.values[i];
-        //             let highlights: boolean = value == null
-        //                 ? false
-        //                 : ((dataValue.highlights != null)
-        //                     ? dataValue.highlights[i] != null
-        //                     : true);
-        //             if (highlights) {
-        //                 value = +value;
-        //                 let displayName: string = dataValue.source.groupName != null
-        //                     ? dataValue.source.groupName.toString()
-        //                     : (legendColumn && legendColumn.values
-        //                         ? legendColumn.values[i].toString()
-        //                         : dataValue.source.displayName);
-        //                 //generate key
-        //                 let rowIndex = 0;
-        //                 if (row != null) {
-        //                     let rowValue: PrimitiveValue = row.values[i];
-        //                     rowIndex = rowsData.indexOf(rowValue);
-        //                 }
-        //                 let columnIndex = 0;
-        //                 if (column != null) {
-        //                     let columnValue: PrimitiveValue = column.values[i];
-        //                     columnIndex = columnsData.indexOf(columnValue);
-        //                 }
-        //                 let lineKey: string = rowIndex + DefaultSeparator + columnIndex + DefaultSeparator;
-        //                 //domain
-        //                 if (!domain.startForced)
-        //                     domain.start = (domain.start !== undefined ? Math.min(domain.start, value) : value);
-        //                 if (!domain.endForced)
-        //                     domain.end = (domain.end !== undefined ? Math.max(domain.end, value) : value);
-        //                 //linePoint
-        //                 let lineIndex: number = lineKeyIndex[lineKey + displayName];
-        //                 let lineDataPoint: LineDataPoint = (lineIndex != undefined)
-        //                     ? lines[lineIndex]
-        //                     : null;
-        //
-        //                 //generate tooltips
-        //                 let legendDataPointIndex: number = legendItemIndexForNameKey[displayName];
-        //                 let legendDataPointItem: LegendDataPointExtended = legendDataPoint[legendDataPointIndex];
-        //                 let color: string = legendDataPointItem.color;
-        //                 let tooltipName: string = legendDataPointItem.tooltip;
-        //                 if (existedLegendNames.indexOf(tooltipName) == -1) {
-        //                     existedLegendNames.push(tooltipName);
-        //                     newLegendDataPoint.push(legendDataPointItem);
-        //                 }
-        //                 switch (legendType) {
-        //                     case CategoryType.Number: {
-        //                         tooltipName = legendFormatter.format(+tooltipName);
-        //                         break;
-        //                     }
-        //                     case CategoryType.Date: {
-        //                         let item: Date = new Date(tooltipName);
-        //                         tooltipName = legendFormatter.format(item);
-        //                         break;
-        //                     }
-        //                 }
-        //                 let xValue: PrimitiveValue;
-        //                 switch (category.length) {
-        //                     case 0: {
-        //                         xValue = "";
-        //                         break;
-        //                     }
-        //                     case 1: {
-        //                         xValue = category[0].values[i];
-        //                         break;
-        //                     }
-        //                     default: {
-        //                         xValue = "";
-        //                         for (let cI = 0; cI < category.length; cI++) {
-        //                             let formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
-        //                             xValue = xValue + formattedValue + " ";
-        //                         }
-        //                         break;
-        //                     }
-        //                 }
-        //                 let tooltipFormatter = VizUtility.Formatter.getFormatter({
-        //                     format: dataValue.source.format,
-        //                     value: 0,
-        //                     precision: null,
-        //                     displayUnitSystemType: 0,
-        //                     cultureSelector: host.locale
-        //                 });
-        //                 let tooltip: VisualTooltipDataItem = {
-        //                     displayName: tooltipName,
-        //                     value: tooltipFormatter.format(value),
-        //                     color: color
-        //                 };
-        //                 let tooltips: VisualTooltipDataItem[] = [tooltip];
-        //                 for (let k = 0; k < tooltipsDataViewValueColumns.length; k++) {
-        //                     let tooltipDataValueColumn: DataViewValueColumn = tooltipsDataViewValueColumns[k];
-        //                     let tooltipName: string = tooltipDataValueColumn.source.groupName != null
-        //                         ? tooltipDataValueColumn.source.groupName.toString()
-        //                         : displayName;
-        //                     if (tooltipName == displayName) {
-        //                         let tooltipValue: PrimitiveValue = tooltipDataValueColumn.values[i];
-        //                         let tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue.toString()));
-        //                         let format: string = tooltipDataValueColumn.source.format;
-        //                         if (tooltipValueIsDate) {
-        //                             tooltipValue = new Date(tooltipValue.toString());
-        //                             format = format ? format : NiceDateFormat;
-        //                         }
-        //                         let formatter = VizUtility.Formatter.getFormatter({
-        //                             format: format,
-        //                             precision: null,
-        //                             displayUnitSystemType: 0,
-        //                             cultureSelector: host.locale
-        //                         });
-        //                         let tooltip: VisualTooltipDataItem = {
-        //                             displayName: tooltipDataValueColumn.source.displayName,
-        //                             value: formatter.format(tooltipValue)
-        //                         };
-        //                         tooltips.push(tooltip);
-        //                     }
-        //                 }
-        //                 //generate dataPoint
-        //                 let selectionIdBuilder: ISelectionIdBuilder = host.createSelectionIdBuilder();
-        //                 for (let cI = 0; cI < category.length; cI++) {
-        //                     selectionIdBuilder = selectionIdBuilder.withCategory(category[cI], i);
-        //                 }
-        //                 let dataPointIdentity: ISelectionId = legendDataPoint.length > 2
-        //                     ? selectionIdBuilder
-        //                         .withSeries(dataCategorical.values, dataValue)
-        //                         .withMeasure(dataValue.source.queryName)
-        //                         .createSelectionId()
-        //                     : selectionIdBuilder
-        //                         .withMeasure(dataValue.source.queryName)
-        //                         .createSelectionId();
-        //                 let dataPoint: VisualDataPoint = {
-        //                     x: xValue,
-        //                     y: value,
-        //                     tooltips: tooltips,
-        //                     lineKey: lineKey + displayName,
-        //                     selected: false,
-        //                     identity: dataPointIdentity,
-        //                 };
-        //                 dataPoints.push(dataPoint);
-        //                 if (lineDataPoint) {
-        //                     lineDataPoint.points.push(dataPoint);
-        //                 } else {
-        //                     let object: DataViewObjects = legendDataPointItem.object;
-        //                     let identity: ISelectionId = legendDataPointItem.identity;
-        //
-        //                     lineDataPoint = {
-        //                         lineKey: lineKey + displayName,
-        //                         name: displayName,
-        //                         points: [dataPoint],
-        //                         color: color,
-        //                         identity: identity,
-        //                         selected: false
-        //                     };
-        //
-        //                     let objectShapesDefined: boolean = (object != undefined) && (object.shapes != undefined);
-        //                     if (objectShapesDefined && settings.shapes.customizeSeries) {
-        //                         if (object.shapes.seriesStrokeWidth != undefined)
-        //                             lineDataPoint.strokeWidth = +object.shapes.seriesStrokeWidth;
-        //                         if (object.shapes.seriesStrokeLineJoin != undefined)
-        //                             lineDataPoint.strokeLineJoin = object.shapes.seriesStrokeLineJoin.toString();
-        //                         if (object.shapes.seriesLineStyle != undefined)
-        //                             lineDataPoint.lineStyle = object.shapes.seriesLineStyle.toString();
-        //                         if (object.shapes.seriesStepped != undefined)
-        //                             lineDataPoint.stepped = object.shapes.seriesStepped == true;
-        //                         if (object.shapes.seriesShowMarkers != undefined)
-        //                             lineDataPoint.showMarkers = object.shapes.seriesShowMarkers == true;
-        //                         if (object.shapes.seriesMarkerShape != undefined)
-        //                             lineDataPoint.markerShape = object.shapes.seriesMarkerShape.toString();
-        //                         if (object.shapes.seriesMarkerSize != undefined)
-        //                             lineDataPoint.markerSize = +object.shapes.seriesMarkerSize;
-        //                         if (object.shapes.seriesMarkerColor != undefined) {
-        //                             let colorMarkerShapes: string = object.shapes.seriesMarkerColor["solid"].color;
-        //                             lineDataPoint.markerColor = colorMarkerShapes;
-        //                             if (lineDataPoint.markerColor == "")
-        //                                 lineDataPoint.markerColor = color;
-        //                         }
-        //                     }
-        //                     let letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
-        //                     let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
-        //                     legendDataPointItem.markerColor = markerColor ? markerColor : color;
-        //                     legendDataPointItem.showMarkers = letShowMarkers;
-        //                     legendDataPointItem.markerShape = lineDataPoint.markerShape ? lineDataPoint.markerShape : settings.shapes.markerShape;
-        //                     legendDataPoint[legendDataPointIndex] = legendDataPointItem;
-        //
-        //                     lineIndex = lines.push(lineDataPoint);
-        //                     lineKeyIndex[lineKey + displayName] = lineIndex - 1;
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-        // legendDataPoint = newLegendDataPoint;
-        //
-        // if (lines.length > 0 && categoryData.length == 0) {
-        //     settings.xAxis.axisType = "categorical";
-        //     categoryIsScalar = false;
-        //     categoryIsDate = false;
-        //     categorySourceType = CategoryType.String;
-        //     categoryData = [""];
-        // }
-        // if (settings.xAxis.axisType == "continuous") {
-        //     switch (categorySourceType) {
-        //         case CategoryType.Number: {
-        //             categoryData = categoryData.sort(sortNumber);
-        //             legendDataPoint = legendDataPoint.sort(sortNumberLegend);
-        //             break;
-        //         }
-        //         case CategoryType.Date: {
-        //             categoryData = categoryData.sort(sortDate);
-        //             legendDataPoint = legendDataPoint.sort(sortDateLegend);
-        //             break;
-        //         }
-        //     }
-        //     for (let i = 0; i < legendDataPoint.length; i++) {
-        //         legendDataPoint[i].showMarkers = false;
-        //     }
-        // }
+        if (settings.legend.legendName == null)
+            settings.legend.legendName = legendData.title;
+        legendDataPoint = legendData.dataPoints;
+
+        let legendFormat: string = null;
+        if (legendDataPoint.length > 0) {
+            const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
+            let legendValueType: ValueTypeDescriptor = null;
+            for (let i = 0; i < columns.length; i++) {
+                let column: DataViewMetadataColumn = columns[i];
+                if (column.roles["Legend"]) {
+                    legendFormat = column.format;
+                    legendValueType = column.type;
+                    break;
+                }
+                if (column.roles["Values"] && !column.groupName) {
+                    valuesName = valuesName + column.displayName + " ";
+                }
+            }
+            if (legendValueType) {
+                legendType = retrieveCategoryType(legendValueType.numeric, legendValueType.dateTime, legendValueType.bool);
+            } else {
+                let legendIsBoolean: boolean = false;
+                if (legendDataPoint.length == 2) {
+                    let labels: string[] = [legendDataPoint[0].tooltip.toLowerCase(), legendDataPoint[1].tooltip.toLowerCase()];
+                    if (labels.indexOf("false") != -1 && labels.indexOf("true") != -1) {
+                        legendIsBoolean = true;
+                        legendType = CategoryType.Boolean;
+                    }
+                }
+                if (!legendIsBoolean) {
+                    let item: string = legendDataPoint[0].tooltip;
+                    let legendIsNumber: boolean = !isNaN(+item);
+                    if (legendIsNumber) {
+                        legendType = CategoryType.Number;
+                    } else {
+                        let legendIsDate: boolean = !isNaN(+Date.parse(item));
+                        if (legendIsDate)
+                            legendType = CategoryType.Date;
+                    }
+                }
+            }
+        }
+        switch (legendType) {
+            case CategoryType.Number: {
+                legendFormatter = Formatter.getFormatter({
+                    format: legendFormat,
+                    value: 0,
+                    precision: null,
+                    displayUnitSystemType: 0,
+                    cultureSelector: host.locale
+                });
+                for (let i = 0; i < legendDataPoint.length; i++) {
+                    legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
+                }
+                break;
+            }
+            case CategoryType.Date: {
+                legendFormat = legendFormat ? legendFormat : NiceDateFormat;
+                legendFormatter = Formatter.getFormatter({
+                    format: legendFormat,
+                    cultureSelector: host.locale
+                });
+                for (let i = 0; i < legendDataPoint.length; i++) {
+                    let d: Date = new Date(legendDataPoint[i].tooltip);
+                    legendDataPoint[i].label = legendFormatter.format(d);
+                }
+                break;
+            }
+            case CategoryType.Boolean: {
+                legendFormatter = Formatter.getFormatter({
+                    format: legendFormat,
+                    cultureSelector: host.locale
+                });
+                for (let i = 0; i < legendDataPoint.length; i++) {
+                    legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
+                }
+                break;
+            }
+            case CategoryType.String: {
+                legendFormatter = null;
+                break;
+            }
+        }
+
+        let legendItemIndexForNameKey: {} = {};
+        for (let i = 0; i < legendDataPoint.length; i++) {
+            legendItemIndexForNameKey[legendDataPoint[i].tooltip] = i;
+        }
+
+        let tooltipsDataViewValueColumns: DataViewValueColumn[] = [];
+        for (let ii = 0; ii < dataCategorical.values.length; ii++) {
+            let dataValue: DataViewValueColumn = dataCategorical.values[ii];
+            if (dataValue.source.roles["Tooltips"]) {
+                tooltipsDataViewValueColumns.push(dataValue);
+            }
+        }
+        let legendColumn: DataViewCategoryColumn = retrieveLegendCategoryColumn(dataView);
+        let newLegendDataPoint: LegendDataPointExtended[] = [];
+        let existedLegendNames: string[] = [];
+        for (let ii = 0; ii < dataCategorical.values.length; ii++) {
+            let dataValue: DataViewValueColumn = dataCategorical.values[ii];
+            if (dataValue.source.roles["Values"]) {
+                if (ii == 0) {
+                    valueFormat = dataValue.source.format;
+                }
+                for (let i = 0; i < dataValue.values.length; i++) {
+                    let value: PrimitiveValue = dataValue.values[i];
+                    let highlights: boolean = value == null
+                        ? false
+                        : ((dataValue.highlights != null)
+                            ? dataValue.highlights[i] != null
+                            : true);
+                    if (highlights) {
+                        value = +value;
+                        let displayName: string = dataValue.source.groupName != null
+                            ? dataValue.source.groupName.toString()
+                            : (legendColumn && legendColumn.values
+                                ? legendColumn.values[i].toString()
+                                : dataValue.source.displayName);
+                        //generate key
+                        let rowIndex = 0;
+                        if (row != null) {
+                            let rowValue: PrimitiveValue = row.values[i];
+                            rowIndex = rowsData.indexOf(rowValue);
+                        }
+                        let columnIndex = 0;
+                        if (column != null) {
+                            let columnValue: PrimitiveValue = column.values[i];
+                            columnIndex = columnsData.indexOf(columnValue);
+                        }
+                        let lineKey: string = rowIndex + DefaultSeparator + columnIndex + DefaultSeparator;
+                        //domain
+                        if (!domain.startForced)
+                            domain.start = (domain.start !== undefined ? Math.min(domain.start, value) : value);
+                        if (!domain.endForced)
+                            domain.end = (domain.end !== undefined ? Math.max(domain.end, value) : value);
+                        //linePoint
+                        let lineIndex: number = lineKeyIndex[lineKey + displayName];
+                        let lineDataPoint: LineDataPoint = (lineIndex != undefined)
+                            ? lines[lineIndex]
+                            : null;
+
+                        //generate tooltips
+                        let legendDataPointIndex: number = legendItemIndexForNameKey[displayName];
+                        let legendDataPointItem: LegendDataPointExtended = legendDataPoint[legendDataPointIndex];
+                        let color: string = legendDataPointItem.color;
+                        let tooltipName: string = legendDataPointItem.tooltip;
+                        if (existedLegendNames.indexOf(tooltipName) == -1) {
+                            existedLegendNames.push(tooltipName);
+                            newLegendDataPoint.push(legendDataPointItem);
+                        }
+                        switch (legendType) {
+                            case CategoryType.Number: {
+                                tooltipName = legendFormatter.format(+tooltipName);
+                                break;
+                            }
+                            case CategoryType.Date: {
+                                let item: Date = new Date(tooltipName);
+                                tooltipName = legendFormatter.format(item);
+                                break;
+                            }
+                        }
+                        let xValue: PrimitiveValue;
+                        switch (category.length) {
+                            case 0: {
+                                xValue = "";
+                                break;
+                            }
+                            case 1: {
+                                xValue = category[0].values[i];
+                                break;
+                            }
+                            default: {
+                                xValue = "";
+                                for (let cI = 0; cI < category.length; cI++) {
+                                    let formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
+                                    xValue = xValue + formattedValue + " ";
+                                }
+                                break;
+                            }
+                        }
+                        let tooltipFormatter = Formatter.getFormatter({
+                            format: dataValue.source.format,
+                            value: 0,
+                            precision: null,
+                            displayUnitSystemType: 0,
+                            cultureSelector: host.locale
+                        });
+                        let tooltip: VisualTooltipDataItem = {
+                            displayName: tooltipName,
+                            value: tooltipFormatter.format(value),
+                            color: color
+                        };
+                        let tooltips: VisualTooltipDataItem[] = [tooltip];
+                        for (let k = 0; k < tooltipsDataViewValueColumns.length; k++) {
+                            let tooltipDataValueColumn: DataViewValueColumn = tooltipsDataViewValueColumns[k];
+                            let tooltipName: string = tooltipDataValueColumn.source.groupName != null
+                                ? tooltipDataValueColumn.source.groupName.toString()
+                                : displayName;
+                            if (tooltipName == displayName) {
+                                let tooltipValue: PrimitiveValue = tooltipDataValueColumn.values[i];
+                                let tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue.toString()));
+                                let format: string = tooltipDataValueColumn.source.format;
+                                if (tooltipValueIsDate) {
+                                    tooltipValue = new Date(tooltipValue.toString());
+                                    format = format ? format : NiceDateFormat;
+                                }
+                                let formatter = Formatter.getFormatter({
+                                    format: format,
+                                    precision: null,
+                                    displayUnitSystemType: 0,
+                                    cultureSelector: host.locale
+                                });
+                                let tooltip: VisualTooltipDataItem = {
+                                    displayName: tooltipDataValueColumn.source.displayName,
+                                    value: formatter.format(tooltipValue)
+                                };
+                                tooltips.push(tooltip);
+                            }
+                        }
+                        //generate dataPoint
+                        let selectionIdBuilder: ISelectionIdBuilder = host.createSelectionIdBuilder();
+                        for (let cI = 0; cI < category.length; cI++) {
+                            selectionIdBuilder = selectionIdBuilder.withCategory(category[cI], i);
+                        }
+                        let dataPointIdentity: ISelectionId = legendDataPoint.length > 2
+                            ? selectionIdBuilder
+                                .withSeries(dataCategorical.values, dataValue)
+                                .withMeasure(dataValue.source.queryName)
+                                .createSelectionId()
+                            : selectionIdBuilder
+                                .withMeasure(dataValue.source.queryName)
+                                .createSelectionId();
+                        let dataPoint: VisualDataPoint = {
+                            x: xValue,
+                            y: value,
+                            tooltips: tooltips,
+                            lineKey: lineKey + displayName,
+                            selected: false,
+                            identity: dataPointIdentity,
+                        };
+                        dataPoints.push(dataPoint);
+                        if (lineDataPoint) {
+                            lineDataPoint.points.push(dataPoint);
+                        } else {
+                            let object: DataViewObjects = legendDataPointItem.object;
+                            let identity: ISelectionId = legendDataPointItem.identity;
+
+                            lineDataPoint = {
+                                lineKey: lineKey + displayName,
+                                name: displayName,
+                                points: [dataPoint],
+                                color: color,
+                                identity: identity,
+                                selected: false
+                            };
+
+                            let objectShapesDefined: boolean = (object != undefined) && (object.shapes != undefined);
+                            if (objectShapesDefined && settings.shapes.customizeSeries) {
+                                if (object.shapes.seriesStrokeWidth != undefined)
+                                    lineDataPoint.strokeWidth = +object.shapes.seriesStrokeWidth;
+                                if (object.shapes.seriesStrokeLineJoin != undefined)
+                                    lineDataPoint.strokeLineJoin = object.shapes.seriesStrokeLineJoin.toString();
+                                if (object.shapes.seriesLineStyle != undefined)
+                                    lineDataPoint.lineStyle = object.shapes.seriesLineStyle.toString();
+                                if (object.shapes.seriesStepped != undefined)
+                                    lineDataPoint.stepped = object.shapes.seriesStepped == true;
+                                if (object.shapes.seriesShowMarkers != undefined)
+                                    lineDataPoint.showMarkers = object.shapes.seriesShowMarkers == true;
+                                if (object.shapes.seriesMarkerShape != undefined)
+                                    lineDataPoint.markerShape = object.shapes.seriesMarkerShape.toString();
+                                if (object.shapes.seriesMarkerSize != undefined)
+                                    lineDataPoint.markerSize = +object.shapes.seriesMarkerSize;
+                                if (object.shapes.seriesMarkerColor != undefined) {
+                                    let colorMarkerShapes: string = object.shapes.seriesMarkerColor["solid"].color;
+                                    lineDataPoint.markerColor = colorMarkerShapes;
+                                    if (lineDataPoint.markerColor == "")
+                                        lineDataPoint.markerColor = color;
+                                }
+                            }
+                            let letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
+                            let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
+                            legendDataPointItem.markerColor = markerColor ? markerColor : color;
+                            legendDataPointItem.showMarkers = letShowMarkers;
+                            legendDataPointItem.markerShape = lineDataPoint.markerShape ? <MarkerShape>lineDataPoint.markerShape : <MarkerShape>settings.shapes.markerShape;
+                            legendDataPoint[legendDataPointIndex] = legendDataPointItem;
+
+                            lineIndex = lines.push(lineDataPoint);
+                            lineKeyIndex[lineKey + displayName] = lineIndex - 1;
+                        }
+                    }
+                }
+            }
+        }
+        legendDataPoint = newLegendDataPoint;
+
+        if (lines.length > 0 && categoryData.length == 0) {
+            settings.xAxis.axisType = "categorical";
+            categoryIsScalar = false;
+            categoryIsDate = false;
+            categorySourceType = CategoryType.String;
+            categoryData = [""];
+        }
+        if (settings.xAxis.axisType == "continuous") {
+            switch (categorySourceType) {
+                case CategoryType.Number: {
+                    categoryData = categoryData.sort(sortNumber);
+                    legendDataPoint = legendDataPoint.sort(sortNumberLegend);
+                    break;
+                }
+                case CategoryType.Date: {
+                    categoryData = categoryData.sort(sortDate);
+                    legendDataPoint = legendDataPoint.sort(sortDateLegend);
+                    break;
+                }
+            }
+            for (let i = 0; i < legendDataPoint.length; i++) {
+                legendDataPoint[i].showMarkers = false;
+            }
+        }
     }
 
-    // if (!domain.start) domain.start = 0;
-    // if (!domain.end) domain.end = 0;
-    // if (domain.start > domain.end)
-    //     domain.end = domain.start;
-    // //sort data points
-    // for (let i = 0; i < lines.length; i++) {
-    //     let points: any[] = lines[i].points;
-    //     let newPoints: any[] = [];
-    //     for (let j = 0; j < categoryData.length; j++) {
-    //         let categoryString: string = categoryData[j].toString();
-    //         let k: number = 0;
-    //         while (k < points.length) {
-    //             let pointCategoryString: string = points[k].x.toString();
-    //             if (categoryString == pointCategoryString) {
-    //                 newPoints.push(points[k]);
-    //                 break;
-    //             }
-    //             k = k + 1;
-    //         }
-    //         if (points.length == newPoints.length)
-    //             break;
-    //     }
-    //     lines[i].points = newPoints;
-    // }
-    //
-    // if (settings.xAxis.axisType !== "categorical") {
-    //     settings.shapes.showMarkers = false;
-    // }
-    //
-    // if (settings.shapes.customizeSeries) {
-    //     if (settings.shapes.series == "") {
-    //         settings.shapes.series = legendDataPoint[0].label;
-    //     }
-    // }
+    if (!domain.start) domain.start = 0;
+    if (!domain.end) domain.end = 0;
+    if (domain.start > domain.end)
+        domain.end = domain.start;
+    //sort data points
+    for (let i = 0; i < lines.length; i++) {
+        let points: any[] = lines[i].points;
+        let newPoints: any[] = [];
+        for (let j = 0; j < categoryData.length; j++) {
+            let categoryString: string = categoryData[j].toString();
+            let k: number = 0;
+            while (k < points.length) {
+                let pointCategoryString: string = points[k].x.toString();
+                if (categoryString == pointCategoryString) {
+                    newPoints.push(points[k]);
+                    break;
+                }
+                k = k + 1;
+            }
+            if (points.length == newPoints.length)
+                break;
+        }
+        lines[i].points = newPoints;
+    }
+
+    if (settings.xAxis.axisType !== "categorical") {
+        settings.shapes.showMarkers = false;
+    }
+
+    if (settings.shapes.customizeSeries) {
+        if (settings.shapes.series == "") {
+            settings.shapes.series = legendDataPoint[0].label;
+        }
+    }
 
     return {
         rows: rowsData,

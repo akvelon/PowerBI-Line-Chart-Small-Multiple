@@ -5,36 +5,38 @@ import {
     ISelectionHandler
 } from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
 
-import {LegendBehaviorOptions} from "./visualInterfaces";
+import {d3Selection, LegendBehaviorOptions, LegendDataPointExtended} from "./visualInterfaces";
+import {LegendSettings} from "./settings";
+import {calculateItemWidth} from "./utilities/legendUtility";
 
 export class LegendBehavior implements IInteractiveBehavior {
-//         public static dimmedLegendColor: string = "#A6A6A6";
-//         public static dimmedLegendMarkerSuffix: string = "grey";
-//         public static legendMarkerSuffix: string = "legend";
-//
-//         private static clearCatcher: Selection<any>;
-//         private static selectionHandler: ISelectionHandler;
-//
-//         private legendItems: Selection<any>;
-//         private legendIcons: Selection<any>;
-//
-//         private legendSettings: legendSettings;
-//         private dataPoints: LegendDataPointExtended[];
-//         private markerIds: string[];
-//         private selectedLegendNames: string[];
-//         private itemWidth: number;
-//
-//         constructor() {
-//             this.selectedLegendNames = [];
-//         }
-//
-//         public addLegendData(legendSettings: legendSettings, dataPoints: LegendDataPointExtended[]): void {
-//             this.legendSettings = legendSettings;
-//             this.dataPoints = dataPoints;
-//             if (dataPoints.length < 2)
-//                 return;
-//             this.itemWidth = calculateItemWidth(this.legendSettings, this.dataPoints);
-//         }
+        public static dimmedLegendColor: string = "#A6A6A6";
+        public static dimmedLegendMarkerSuffix: string = "grey";
+        public static legendMarkerSuffix: string = "legend";
+
+        private static clearCatcher: d3Selection<any>;
+        private static selectionHandler: ISelectionHandler;
+
+        private legendItems: d3Selection<any>;
+        private legendIcons: d3Selection<any>;
+
+        private legendSettings: LegendSettings;
+        private dataPoints: LegendDataPointExtended[];
+        private markerIds: string[];
+        private selectedLegendNames: string[];
+        private itemWidth: number;
+
+        constructor() {
+            this.selectedLegendNames = [];
+        }
+
+        public addLegendData(legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]): void {
+            this.legendSettings = legendSettings;
+            this.dataPoints = dataPoints;
+            if (dataPoints.length < 2)
+                return;
+            this.itemWidth = calculateItemWidth(this.legendSettings, this.dataPoints);
+        }
 //
 //         public leftOrRightClick(isLeft: boolean, legendBehavior: LegendBehavior) {
 //             let legendItems: Selection<any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);

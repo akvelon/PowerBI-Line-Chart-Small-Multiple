@@ -3,365 +3,361 @@
 import powerbi from "powerbi-visuals-api";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import {LegendSettings} from "../settings";
-import {LegendDataExtended, LegendDataPointExtended} from "../visualInterfaces";
+import {d3Selection, LegendDataExtended, LegendDataPointExtended} from "../visualInterfaces";
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import DataView = powerbi.DataView;
-import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
+import {
+    ILegend,
+    LegendData,
+    LegendPosition,
+    MarkerShape
+} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
 import {ColorHelper} from "powerbi-visuals-utils-colorutils";
 import DataViewValueColumns = powerbi.DataViewValueColumns;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
+import {fromPixelToPoint, fromPointToPixel, measureTextWidth, TextProperties} from "./textUtility";
+import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
+import {selectAll as d3selectAll, select as d3select} from "d3-selection";
+import {Visual} from "../visual";
+import {MarkersUtility} from "./markersUtility";
+import {LegendBehavior} from "../legendBehavior";
+import IViewport = powerbi.IViewport;
 
-// module powerbi.extensibility.visual {
-//     import Selection = d3.Selection;
-//
-//     import ILegend = utils.chart.legend.ILegend;
-//     import LegendPosition = utils.chart.legend.LegendPosition;
-//     import LegendData = utils.chart.legend.LegendData;
-//     import LegendIcon = utils.chart.legend.LegendIcon;
-//     import ColorHelper = utils.color.ColorHelper;
-//
-//     const paddingText: number = 10;
-//     const arrowWidth: number = 7.5;
-//     let lineLen: number = 30;
-//     let circleD: number = 10;
-//
-//     export function renderLegend(legendSettings: legendSettings, dataPoints: LegendDataPointExtended[], legend: ILegend, options: VisualUpdateOptions, margin: any) {
-//
-//         let legendData: LegendData = {
-//             dataPoints: []
-//         };
-//         if (!legendSettings.show || dataPoints == null || dataPoints.length <= 1)  {
-//             legend.drawLegend(legendData, options.viewport);
-//             return;
-//         }
-//         legend.changeOrientation(<any>LegendPosition[legendSettings.position]);
-//
-//         let legendName: string = (legendSettings.showTitle) ? legendSettings.legendName : "";
-//         if (legendSettings.position == "Top" || legendSettings.position == "TopCenter"
-//             || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter") {
-//             let textProp: TextProperties = {
-//                 text: legendName,
-//                 fontFamily: legendSettings.fontFamily,
-//                 fontSize: legendSettings.fontSize + "px"
-//             };
-//             let legendNameWidth: number = PixelConverter.fromPointToPixel(TextUtility.measureTextWidth(textProp));
-//             if (legendNameWidth > options.viewport.width/3) {
-//                 let maxTitleWidth: number = PixelConverter.fromPixelToPoint(options.viewport.width/3);
-//                 legendName = TextUtility.getTailoredTextOrDefault(textProp, maxTitleWidth);
-//             }
-//         }
-//
-//         legendData = {
-//             title: legendName,
-//             dataPoints: dataPoints,
-//             labelColor: legendSettings.legendNameColor,
-//             fontSize: legendSettings.fontSize
-//         };
-//         legend.drawLegend(legendData, options.viewport);
-//
-//         let legendItems: Selection<LegendDataPointExtended> = d3.selectAll('svg.legend g.legendItem');
-//         drawCustomLegendIcons(legendItems, legendSettings, dataPoints);
-//         appendLegendMargins(legend, margin);
-//     }
-//
-//     export function drawCustomLegendIcons(legendItems: Selection<any>, legendSettings: legendSettings, dataPoints: LegendDataPointExtended[]) {
-//         if (!dataPoints || dataPoints.length == 0) return;
-//         let legendIcon: LegendIcon = dataPoints[0].icon;
-//         let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
-//         if (legendItemsLen == 0) return;
-//
-//         let isLongMarker: boolean = (legendIcon == LegendIcon.Box || legendIcon == LegendIcon.Line);
-//         let isTopOrBottomLegend: boolean = legendSettings.position == "Top" || legendSettings.position == "TopCenter"
-//             || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter";
-//
-//         let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-//         let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
-//
-//         let markerSize: number = 6;
-//         let padding: number = legendSettings.fontSize/4;
-//         let arrowHeight: number = 15;
-//         let minCx: number = isLongMarker ? lineLen/2 + padding : circleD/2 + padding;
-//         let svgLegendWidth: number = +legend.attr('width');
-//         let svgLegendHeight: number = +legend.attr('height');
-//
-//         let parent: Selection<any> = d3.select(legendItems[0][0]);
-//         let firstName: string = parent.select('title').text();
-//         parent = d3.select(legendItems[0][legendItemsLen-1]);
-//         let lastName: string = parent.select('title').text();
-//         let legendItemsFirstIndex: number;
-//         let legendItemsLastIndex: number;
-//         for(let j=0;j<dataPoints.length;j++) {
-//             let label: string = dataPoints[j].label;
-//             if (label == firstName) {
-//                 legendItemsFirstIndex = j;
-//             }
-//             if (label == lastName) {
-//                 legendItemsLastIndex = j;
-//             }
-//         }
-//         let isLastData: boolean = legendItemsLastIndex == dataPoints.length - 1;
-//
-//         let titleElement: Selection<any> = legendGroup.select('.legendTitle');
-//         let titleWidth: number = 0;
-//         if (titleElement && titleElement[0] && titleElement[0][0]) {
-//             let maxTitleWidth: number = isTopOrBottomLegend ? svgLegendWidth/3 : svgLegendWidth;
-//             let maxTitleWidthPoint: number = PixelConverter.fromPixelToPoint(maxTitleWidth);
-//             let textProp: TextProperties = {
-//                 text: legendSettings.legendName,
-//                 fontFamily: legendSettings.fontFamily,
-//                 fontSize: legendSettings.fontSize + "px"
-//             };
-//             let shortTitle: string = TextUtility.getTailoredTextOrDefault(textProp, maxTitleWidthPoint);
-//             titleElement.text(shortTitle);
-//             titleElement.append('title').text(legendSettings.legendName);
-//
-//             textProp.text = shortTitle;
-//             titleWidth = PixelConverter.fromPointToPixel(TextUtility.measureTextWidth(textProp));
-//         }
-//         let arrowCount: number = 0;
-//         let defaultArrows: Selection<any> = legendGroup.selectAll(Visual.NavigationArrow.selectorName);
-//         let arrowLeft: Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomLeft.selectorName);
-//         let arrowRight: Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomRight.selectorName);
-//
-//         let defaultTranslateXForTopOrBottomCenter: number = 5;
-//         let defaultTranslateYForTopOrBottomCenter: number = 0;
-//         let translateLegendGroupX: number = 0;
-//
-//         if (isTopOrBottomLegend && legendItemsLen<dataPoints.length) {
-//             let arrowY: number = (svgLegendHeight - arrowHeight)/2;
-//             defaultArrows.attr({
-//                 'transform': 'translate(' + svgLegendWidth + ',' + arrowY + ')',
-//                 'opacity': 0
-//             });
-//             if (legendSettings.position == "TopCenter" || legendSettings.position == "BottomCenter") {
-//                 translateLegendGroupX = defaultTranslateXForTopOrBottomCenter;
-//                 let transform: string = 'translate(' + defaultTranslateXForTopOrBottomCenter + ',' + defaultTranslateYForTopOrBottomCenter + ')';
-//                 legendGroup.attr('transform', transform);
-//             }
-//             let leftArrowX: number = - translateLegendGroupX - arrowWidth;
-//             if (legendItemsFirstIndex != 0) {
-//                 leftArrowX = titleWidth + padding;
-//                 arrowCount = arrowCount + 1;
-//             }
-//             if (arrowLeft[0][0] == null) {
-//                 arrowLeft = legendGroup.append('g')
-//                     .classed(Visual.NavigationArrowCustomLeft.className, true)
-//                     .attr('transform','translate(' + leftArrowX + ',' + arrowY + ')');
-//                 arrowLeft.append('path')
-//                     .attr({
-//                         "d": "M0 0L0 15L7.5 7.5 Z",
-//                         "transform": "rotate(180 3.75 7.5)"
-//                     });
-//             } else {
-//                 arrowLeft.attr('transform','translate(' + leftArrowX + ',' + arrowY + ')');
-//             }
-//             let rightArrowX: number = svgLegendWidth;
-//             if (!isLastData) {
-//                 rightArrowX = svgLegendWidth - arrowWidth - translateLegendGroupX;
-//                 arrowCount = arrowCount + 1;
-//             }
-//             if (arrowRight[0][0] == null) {
-//                 arrowRight = legendGroup.append('g')
-//                     .classed(Visual.NavigationArrowCustomRight.className, true)
-//                     .attr('transform','translate(' + rightArrowX + ',' + arrowY + ')');
-//                 arrowRight.append('path')
-//                     .attr({
-//                         "d": "M0 0L0 15L7.5 7.5 Z",
-//                         "transform": "rotate(0 3.75 7.5)"
-//                     });
-//             } else {
-//                 arrowRight.attr('transform','translate(' + rightArrowX + ',' + arrowY + ')');
-//             }
-//         } else {
-//             arrowLeft.remove();
-//             arrowRight.remove();
-//             defaultArrows.attr('opacity', 1);
-//         }
-//
-//         legend.selectAll('defs').remove();
-//         let defs: Selection<any> = legend.append("defs");
-//         let prefixForArrow: number = legendItemsFirstIndex == 0 ? 0 : arrowWidth;
-//         let cx0: number = isTopOrBottomLegend ? translateLegendGroupX + titleWidth + paddingText + prefixForArrow : minCx;
-//         let cx1: number = cx0;
-//         let currentItemWidth: number = (svgLegendWidth - arrowWidth - cx0)/legendItemsLen - padding;
-//         currentItemWidth = currentItemWidth < 0 ? 0 : currentItemWidth;
-//         for(let i=0;i<legendItemsLen;i++) {
-//             let parent: Selection<any> = d3.select(legendItems[0][i]);
-//             let circle: Selection<any> = parent.select('circle');
-//             let cx: number = isTopOrBottomLegend
-//                 ? ((isLastData)
-//                     ? cx1
-//                     : cx0 + i*currentItemWidth)
-//                 : minCx;
-//             circle.attr('cx', cx);
-//             let cy: string = circle.attr('cy');
-//             let text: Selection<any> = parent.select('text');
-//             let name: string = parent.select('title').text();
-//
-//             let dataPointIndex: number;
-//             for(let j=0;j<dataPoints.length;j++) {
-//                 if (dataPoints[j].label == name) {
-//                     dataPointIndex = j;
-//                     break;
-//                 }
-//             }
-//             let dataPoint: LegendDataPointExtended = dataPoints[dataPointIndex];
-//             //start set short name for legend label
-//             let textProp: TextProperties = {
-//                 text: name,
-//                 fontFamily: legendSettings.fontFamily,
-//                 fontSize: legendSettings.fontSize + "px"
-//             };
-//             let shortText: string;
-//             if (isTopOrBottomLegend) {
-//                 cx = isLongMarker ? cx + lineLen/2 : cx + circleD/2;
-//                 circle.attr('cx', cx);
-//                 let deltaX: number = isLongMarker ? -padding - lineLen : -padding - circleD;
-//                 deltaX = (i<legendItemsLen-1) ? deltaX + currentItemWidth : deltaX + svgLegendWidth - arrowWidth - cx;
-//                 let maxTextLen: number = PixelConverter.fromPixelToPoint(deltaX);
-//                 shortText = TextUtility.getTailoredTextOrDefault(textProp, maxTextLen);
-//                 textProp.text = shortText;
-//                 let textLen: number = PixelConverter.fromPointToPixel(TextUtility.measureTextWidth(textProp));
-//                 cx1 = isLongMarker ? cx + lineLen/2 : cx + circleD/2;
-//                 cx1 = cx1 + padding + textLen + padding;
-//             } else {
-//                 let textX: number = +text.attr('x');
-//                 let textLen: number = isLongMarker
-//                     ? svgLegendWidth - textX + (circleD - lineLen)
-//                     : svgLegendWidth - textX;
-//                 let maxTextLen: number = PixelConverter.fromPixelToPoint(textLen) - padding;
-//                 shortText = TextUtility.getTailoredTextOrDefault(textProp, maxTextLen);
-//             }
-//             text.text(shortText);
-//             //end set short name for legend label
-//
-//             parent.selectAll('.legend-item-line').remove();
-//             parent.selectAll('.legend-item-marker').remove();
-//             circle.attr('opacity', 1);
-//             let customLegendLine: Selection<any> = parent.insert("path", ":first-child").classed("legend-item-line", true);
-//             let customLegendMarker: Selection<any> = parent.insert("path", "circle").classed("legend-item-marker", true);
-//
-//             switch (legendIcon) {
-//                 case LegendIcon.Circle: {
-//                     text.attr('x', cx + circleD/2 + padding);
-//                     let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-//                     if (showMarkers) {
-//                         //draw marker
-//                         MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
-//                         let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
-//                         let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
-//                         if (markerId) {
-//                             customLegendMarker.attr({
-//                                 'd': "M" + cx + "," + cy + "Z",
-//                                 'stroke-width': "2",
-//                                 'fill': "none",
-//                                 'marker-start': 'url(#' + markerId + ')'
-//                             }).append('title').text(dataPoint.label);
-//                             circle.attr('opacity', 0);
-//                         }
-//                     } else {
-//                         if (legendSettings.circleDefaultIcon != true) {
-//                             //draw short line
-//                             customLegendLine.attr({
-//                                     'transform': "translate(" + cx + "," + cy +")",
-//                                     'd': "M0 0 m -5 0 l 10 0",
-//                                     'stroke-width': "2"
-//                                 }).style({
-//                                 'fill': dataPoint.color,
-//                                 'stroke': dataPoint.color,
-//                                 'stroke-linejoin': 'round'
-//                                 }).append('title').text(dataPoint.label);
-//                             circle.attr('opacity', 0);
-//                         }
-//                     }
-//                     break;
-//                 }
-//                 case LegendIcon.Box: {
-//                     //draw line and marker
-//                     let textX: number = cx + lineLen/2 + padding;
-//                     text.attr('x', textX);
-//                     let lineStart: number = -lineLen - padding;
-//                     let lineEnd: number = -padding;
-//                     customLegendLine.attr({
-//                         'transform': "translate(" + textX + "," + cy +")",
-//                         'd': "M" + lineStart + ",0L" + lineEnd + ",0",
-//                         'stroke-width': "2",
-//                         'fill': "none"
-//                     }).style({
-//                         'stroke': dataPoint.color
-//                     }).append('title').text(dataPoint.label);
-//
-//                     circle.attr('opacity', 0);
-//                     circle.attr('r', lineLen/2);
-//                     let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-//                     if (showMarkers) {
-//                         MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
-//                         let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
-//                         if (markerId) {
-//                             customLegendMarker.attr({
-//                                 'd': "M" + cx + "," + cy + "Z",
-//                                 'stroke-width': "2",
-//                                 'fill': "none",
-//                                 'marker-start': 'url(#' + markerId + ')'
-//                             }).append('title').text(dataPoint.label);
-//                         }
-//                     }
-//                     break;
-//                 }
-//                 case LegendIcon.Line: {
-//                     customLegendMarker.remove();
-//                     //draw line
-//                     let textX: number = cx + lineLen/2 + padding;
-//                     text.attr('x', textX);
-//                     let lineStart: number = -lineLen - padding;
-//                     let lineEnd: number = -padding;
-//                     customLegendLine.attr({
-//                         'transform': "translate(" + textX + "," + cy +")",
-//                         'd': "M" + lineStart + ",0L" + lineEnd + ",0",
-//                         'stroke-width': "2",
-//                         'fill': 'none'
-//                     }).style({
-//                         'stroke': dataPoint.color
-//                     }).append('title').text(dataPoint.label);
-//                     circle.attr('opacity', 0);
-//                     circle.attr('r', lineLen/2);
-//                 }
-//             }
-//         }
-//         if (legendSettings.position == "TopCenter" || legendSettings.position == "BottomCenter") {
-//             translateLegendGroupX = (isLastData)
-//                 ? (translateLegendGroupX + svgLegendWidth - cx1 + padding)/2
-//                 : defaultTranslateXForTopOrBottomCenter;
-//             let transform: string = 'translate(' + translateLegendGroupX + ',' + defaultTranslateYForTopOrBottomCenter + ')';
-//             legendGroup.attr('transform', transform);
-//         }
-//     }
-//
-//     export function calculateItemWidth(legendSettings: legendSettings, dataPoints: LegendDataPointExtended[]): number {
-//         if (!dataPoints || dataPoints.length == 0) return 0;
-//         let sumLength: number = 0;
-//         let padding: number = legendSettings.fontSize/4;
-//         let iconLength: number = dataPoints[0].icon == LegendIcon.Circle ? circleD : lineLen;
-//         for(let i=0;i<dataPoints.length;i++) {
-//             let dataPoint: LegendDataPointExtended = dataPoints[i];
-//             let textProp: TextProperties = {
-//                 text: dataPoint.label,
-//                 fontFamily: legendSettings.fontFamily,
-//                 fontSize: legendSettings.fontSize + "px"
-//             };
-//             let textLength: number = PixelConverter.fromPointToPixel(TextUtility.measureTextWidth(textProp));
-//             let dataPointLength: number = iconLength + padding + textLength + padding;
-//             sumLength = sumLength + dataPointLength;
-//         }
-//         let itemWidth: number = dataPoints.length > 0
-//             ? sumLength/dataPoints.length
-//             : sumLength;
-//         return itemWidth;
-//     }
-//
+const paddingText: number = 10;
+const arrowWidth: number = 7.5;
+let lineLen: number = 30;
+let circleD: number = 10;
+
+export function renderLegend(legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[], legend: ILegend, options: VisualUpdateOptions, margin: any) {
+
+    let legendData: LegendData = {
+        dataPoints: []
+    };
+    if (!legendSettings.show || dataPoints == null || dataPoints.length <= 1) {
+        legend.drawLegend(legendData, options.viewport);
+        return;
+    }
+    legend.changeOrientation(<any>LegendPosition[legendSettings.position]);
+
+    let legendName: string = (legendSettings.showTitle) ? legendSettings.legendName : "";
+    if (legendSettings.position == "Top" || legendSettings.position == "TopCenter"
+        || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter") {
+        let textProp: TextProperties = {
+            text: legendName,
+            fontFamily: legendSettings.fontFamily,
+            fontSize: legendSettings.fontSize + "px"
+        };
+        let legendNameWidth: number = fromPointToPixel(measureTextWidth(textProp));
+        if (legendNameWidth > options.viewport.width / 3) {
+            let maxTitleWidth: number = fromPixelToPoint(options.viewport.width / 3);
+            legendName = getTailoredTextOrDefault(textProp, maxTitleWidth);
+        }
+    }
+
+    legendData = {
+        title: legendName,
+        dataPoints: dataPoints,
+        labelColor: legendSettings.legendNameColor,
+        fontSize: legendSettings.fontSize
+    };
+    legend.drawLegend(legendData, options.viewport);
+
+    let legendItems: d3Selection<LegendDataPointExtended> = d3selectAll('svg.legend g.legendItem');
+    drawCustomLegendIcons(legendItems, legendSettings, dataPoints);
+    appendLegendMargins(legend, margin);
+}
+
+export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]) {
+    if (!dataPoints || dataPoints.length == 0) return;
+    let legendIcon = dataPoints[0].markerShape;
+    let legendItemsLen: number = legendItems && legendItems.size() > 0 && legendItems[0] ? legendItems[0].length : 0;
+    if (legendItemsLen == 0) return;
+
+    let isLongMarker: boolean = (legendIcon == MarkerShape.square || legendIcon == MarkerShape.longDash);
+    let isTopOrBottomLegend: boolean = legendSettings.position == "Top" || legendSettings.position == "TopCenter"
+        || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter";
+
+    let legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
+    let legend: d3Selection<any> = d3select(legendGroup.node().parentElement);
+
+    let markerSize: number = 6;
+    let padding: number = legendSettings.fontSize / 4;
+    let arrowHeight: number = 15;
+    let minCx: number = isLongMarker ? lineLen / 2 + padding : circleD / 2 + padding;
+    let svgLegendWidth: number = +legend.attr('width');
+    let svgLegendHeight: number = +legend.attr('height');
+
+    let parent: d3Selection<any> = d3select(legendItems[0][0]);
+    let firstName: string = parent.select('title').text();
+    parent = d3select(legendItems[0][legendItemsLen - 1]);
+    let lastName: string = parent.select('title').text();
+    let legendItemsFirstIndex: number;
+    let legendItemsLastIndex: number;
+    for (let j = 0; j < dataPoints.length; j++) {
+        let label: string = dataPoints[j].label;
+        if (label == firstName) {
+            legendItemsFirstIndex = j;
+        }
+        if (label == lastName) {
+            legendItemsLastIndex = j;
+        }
+    }
+    let isLastData: boolean = legendItemsLastIndex == dataPoints.length - 1;
+
+    let titleElement: d3Selection<any> = legendGroup.select('.legendTitle');
+    let titleWidth: number = 0;
+    if (titleElement && titleElement[0] && titleElement[0][0]) {
+        let maxTitleWidth: number = isTopOrBottomLegend ? svgLegendWidth / 3 : svgLegendWidth;
+        let maxTitleWidthPoint: number = fromPixelToPoint(maxTitleWidth);
+        let textProp: TextProperties = {
+            text: legendSettings.legendName,
+            fontFamily: legendSettings.fontFamily,
+            fontSize: legendSettings.fontSize + "px"
+        };
+        let shortTitle: string = getTailoredTextOrDefault(textProp, maxTitleWidthPoint);
+        titleElement.text(shortTitle);
+        titleElement.append('title').text(legendSettings.legendName);
+
+        textProp.text = shortTitle;
+        titleWidth = fromPointToPixel(measureTextWidth(textProp));
+    }
+    let arrowCount: number = 0;
+    let defaultArrows: d3Selection<any> = legendGroup.selectAll(Visual.NavigationArrow.selectorName);
+    let arrowLeft: d3Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomLeft.selectorName);
+    let arrowRight: d3Selection<any> = legendGroup.selectAll(Visual.NavigationArrowCustomRight.selectorName);
+
+    let defaultTranslateXForTopOrBottomCenter: number = 5;
+    let defaultTranslateYForTopOrBottomCenter: number = 0;
+    let translateLegendGroupX: number = 0;
+
+    if (isTopOrBottomLegend && legendItemsLen < dataPoints.length) {
+        let arrowY: number = (svgLegendHeight - arrowHeight) / 2;
+        defaultArrows.attr('transform', 'translate(' + svgLegendWidth + ',' + arrowY + ')')
+            .attr('opacity', 0);
+        if (legendSettings.position == "TopCenter" || legendSettings.position == "BottomCenter") {
+            translateLegendGroupX = defaultTranslateXForTopOrBottomCenter;
+            let transform: string = 'translate(' + defaultTranslateXForTopOrBottomCenter + ',' + defaultTranslateYForTopOrBottomCenter + ')';
+            legendGroup.attr('transform', transform);
+        }
+        let leftArrowX: number = -translateLegendGroupX - arrowWidth;
+        if (legendItemsFirstIndex != 0) {
+            leftArrowX = titleWidth + padding;
+            arrowCount = arrowCount + 1;
+        }
+        if (arrowLeft[0][0] == null) {
+            arrowLeft = legendGroup.append('g')
+                .classed(Visual.NavigationArrowCustomLeft.className, true)
+                .attr('transform', 'translate(' + leftArrowX + ',' + arrowY + ')');
+            arrowLeft.append('path')
+                .attr("d", "M0 0L0 15L7.5 7.5 Z")
+                .attr("transform", "rotate(180 3.75 7.5)");
+        } else {
+            arrowLeft.attr('transform', 'translate(' + leftArrowX + ',' + arrowY + ')');
+        }
+        let rightArrowX: number = svgLegendWidth;
+        if (!isLastData) {
+            rightArrowX = svgLegendWidth - arrowWidth - translateLegendGroupX;
+            arrowCount = arrowCount + 1;
+        }
+        if (arrowRight[0][0] == null) {
+            arrowRight = legendGroup.append('g')
+                .classed(Visual.NavigationArrowCustomRight.className, true)
+                .attr('transform', 'translate(' + rightArrowX + ',' + arrowY + ')');
+            arrowRight.append('path')
+                .attr("d", "M0 0L0 15L7.5 7.5 Z")
+                .attr("transform", "rotate(0 3.75 7.5)");
+        } else {
+            arrowRight.attr('transform', 'translate(' + rightArrowX + ',' + arrowY + ')');
+        }
+    } else {
+        arrowLeft.remove();
+        arrowRight.remove();
+        defaultArrows.attr('opacity', 1);
+    }
+
+    legend.selectAll('defs').remove();
+    let defs: d3Selection<any> = legend.append("defs");
+    let prefixForArrow: number = legendItemsFirstIndex == 0 ? 0 : arrowWidth;
+    let cx0: number = isTopOrBottomLegend ? translateLegendGroupX + titleWidth + paddingText + prefixForArrow : minCx;
+    let cx1: number = cx0;
+    let currentItemWidth: number = (svgLegendWidth - arrowWidth - cx0) / legendItemsLen - padding;
+    currentItemWidth = currentItemWidth < 0 ? 0 : currentItemWidth;
+    for (let i = 0; i < legendItemsLen; i++) {
+        let parent: d3Selection<any> = d3select(legendItems[0][i]);
+        let circle: d3Selection<any> = parent.select('circle');
+        let cx: number = isTopOrBottomLegend
+            ? ((isLastData)
+                ? cx1
+                : cx0 + i * currentItemWidth)
+            : minCx;
+        circle.attr('cx', cx);
+        let cy: string = circle.attr('cy');
+        let text: d3Selection<any> = parent.select('text');
+        let name: string = parent.select('title').text();
+
+        let dataPointIndex: number;
+        for (let j = 0; j < dataPoints.length; j++) {
+            if (dataPoints[j].label == name) {
+                dataPointIndex = j;
+                break;
+            }
+        }
+        let dataPoint: LegendDataPointExtended = dataPoints[dataPointIndex];
+        //start set short name for legend label
+        let textProp: TextProperties = {
+            text: name,
+            fontFamily: legendSettings.fontFamily,
+            fontSize: legendSettings.fontSize + "px"
+        };
+        let shortText: string;
+        if (isTopOrBottomLegend) {
+            cx = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
+            circle.attr('cx', cx);
+            let deltaX: number = isLongMarker ? -padding - lineLen : -padding - circleD;
+            deltaX = (i < legendItemsLen - 1) ? deltaX + currentItemWidth : deltaX + svgLegendWidth - arrowWidth - cx;
+            let maxTextLen: number = fromPixelToPoint(deltaX);
+            shortText = getTailoredTextOrDefault(textProp, maxTextLen);
+            textProp.text = shortText;
+            let textLen: number = fromPointToPixel(measureTextWidth(textProp));
+            cx1 = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
+            cx1 = cx1 + padding + textLen + padding;
+        } else {
+            let textX: number = +text.attr('x');
+            let textLen: number = isLongMarker
+                ? svgLegendWidth - textX + (circleD - lineLen)
+                : svgLegendWidth - textX;
+            let maxTextLen: number = fromPixelToPoint(textLen) - padding;
+            shortText = getTailoredTextOrDefault(textProp, maxTextLen);
+        }
+        text.text(shortText);
+        //end set short name for legend label
+
+        parent.selectAll('.legend-item-line').remove();
+        parent.selectAll('.legend-item-marker').remove();
+        circle.attr('opacity', 1);
+        let customLegendLine: d3Selection<any> = parent.insert("path", ":first-child").classed("legend-item-line", true);
+        let customLegendMarker: d3Selection<any> = parent.insert("path", "circle").classed("legend-item-marker", true);
+
+        switch (legendIcon) {
+            case MarkerShape.circle: {
+                text.attr('x', cx + circleD / 2 + padding);
+                let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
+                if (showMarkers) {
+                    //draw marker
+                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
+                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
+                    if (markerId) {
+                        customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
+                            .attr('stroke-width', "2")
+                            .attr('fill', "none")
+                            .attr('marker-start', 'url(#' + markerId + ')')
+                            .append('title')
+                            .text(dataPoint.label);
+                        circle.attr('opacity', 0);
+                    }
+                } else {
+                    if (legendSettings.circleDefaultIcon != true) {
+                        //draw short line
+                        customLegendLine.attr('transform', "translate(" + cx + "," + cy + ")")
+                            .attr('d', "M0 0 m -5 0 l 10 0")
+                            .attr('stroke-width', "2")
+                            .style('fill', dataPoint.color)
+                            .style('stroke', dataPoint.color)
+                            .style('stroke-linejoin', 'round')
+                            .append('title')
+                            .text(dataPoint.label);
+                        circle.attr('opacity', 0);
+                    }
+                }
+                break;
+            }
+            case MarkerShape.square: {
+                //draw line and marker
+                let textX: number = cx + lineLen / 2 + padding;
+                text.attr('x', textX);
+                let lineStart: number = -lineLen - padding;
+                let lineEnd: number = -padding;
+                customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
+                    .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                    .attr('stroke-width', "2")
+                    .attr('fill', "none")
+                    .style('stroke', dataPoint.color)
+                    .append('title')
+                    .text(dataPoint.label);
+
+                circle.attr('opacity', 0);
+                circle.attr('r', lineLen / 2);
+                let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
+                if (showMarkers) {
+                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
+                    if (markerId) {
+                        customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
+                            .attr('stroke-width', "2")
+                            .attr('fill', "none")
+                            .attr('marker-start', 'url(#' + markerId + ')')
+                            .append('title')
+                            .text(dataPoint.label);
+                    }
+                }
+                break;
+            }
+            case MarkerShape.longDash: {
+                customLegendMarker.remove();
+                //draw line
+                let textX: number = cx + lineLen / 2 + padding;
+                text.attr('x', textX);
+                let lineStart: number = -lineLen - padding;
+                let lineEnd: number = -padding;
+                customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
+                    .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                    .attr('stroke-width', "2")
+                    .attr('fill', 'none')
+                    .style('stroke', dataPoint.color)
+                    .append('title')
+                    .text(dataPoint.label);
+                circle.attr('opacity', 0);
+                circle.attr('r', lineLen / 2);
+            }
+        }
+    }
+
+    if (legendSettings.position == "TopCenter" || legendSettings.position == "BottomCenter") {
+        translateLegendGroupX = (isLastData)
+            ? (translateLegendGroupX + svgLegendWidth - cx1 + padding) / 2
+            : defaultTranslateXForTopOrBottomCenter;
+        let transform: string = 'translate(' + translateLegendGroupX + ',' + defaultTranslateYForTopOrBottomCenter + ')';
+        legendGroup.attr('transform', transform);
+    }
+}
+
+export function calculateItemWidth(legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]): number {
+    if (!dataPoints || dataPoints.length == 0) return 0;
+    let sumLength: number = 0;
+    let padding: number = legendSettings.fontSize / 4;
+    let iconLength: number = dataPoints[0].markerShape == MarkerShape.circle ? circleD : lineLen;
+    for (let i = 0; i < dataPoints.length; i++) {
+        let dataPoint: LegendDataPointExtended = dataPoints[i];
+        let textProp: TextProperties = {
+            text: dataPoint.label,
+            fontFamily: legendSettings.fontFamily,
+            fontSize: legendSettings.fontSize + "px"
+        };
+        let textLength: number = fromPointToPixel(measureTextWidth(textProp));
+        let dataPointLength: number = iconLength + padding + textLength + padding;
+        sumLength = sumLength + dataPointLength;
+    }
+    let itemWidth: number = dataPoints.length > 0
+        ? sumLength / dataPoints.length
+        : sumLength;
+    return itemWidth;
+}
+
 //     export function generateLegendItemsForLeftOrRightClick(legendItems: Selection<any>, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): Selection<any> {
 //         if (!legendItems || !dataPoints || itemWidth == 0) return;
 //         let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
@@ -694,29 +690,29 @@ function buildLegendDataForMultipleValues(
     };
 }
 
-//     function appendLegendMargins(legend: ILegend, margins) {
-//
-//         if (legend) {
-//             let legendViewPort: IViewport = legend.getMargins();
-//             let legendOrientation: LegendPosition = legend.getOrientation();
-//             let svgLegend: Selection<any> = d3.select('svg.legend');
-//             let width: number = +svgLegend.attr('width');
-//
-//             if (legend.isVisible()) {
-//                 if (legendOrientation == LegendPosition.Top || legendOrientation == LegendPosition.TopCenter) {
-//                     margins.top += legendViewPort.height;
-//                 } else if (legendOrientation == LegendPosition.Left || legendOrientation == LegendPosition.LeftCenter) {
-//                     margins.left += width;
-//                 } else if (legendOrientation == LegendPosition.Right || legendOrientation == LegendPosition.RightCenter) {
-//                     margins.right += width;
-//                 } else {
-//                     margins.bottom += legendViewPort.height;
-//                 }
-//             }
-//         }
-//         return margins;
-//     }
-//
+function appendLegendMargins(legend: ILegend, margins) {
+
+    if (legend) {
+        let legendViewPort: IViewport = legend.getMargins();
+        let legendOrientation: LegendPosition = legend.getOrientation();
+        let svgLegend: d3Selection<any> = d3select('svg.legend');
+        let width: number = +svgLegend.attr('width');
+
+        if (legend.isVisible()) {
+            if (legendOrientation == LegendPosition.Top || legendOrientation == LegendPosition.TopCenter) {
+                margins.top += legendViewPort.height;
+            } else if (legendOrientation == LegendPosition.Left || legendOrientation == LegendPosition.LeftCenter) {
+                margins.left += width;
+            } else if (legendOrientation == LegendPosition.Right || legendOrientation == LegendPosition.RightCenter) {
+                margins.right += width;
+            } else {
+                margins.bottom += legendViewPort.height;
+            }
+        }
+    }
+    return margins;
+}
+
 //     export function positionChartArea(container: Selection<any>, legend: ILegend) {
 //         let margin = {top: 0, left: 0, bottom: 0, right: 0};
 //         appendLegendMargins(legend, margin);

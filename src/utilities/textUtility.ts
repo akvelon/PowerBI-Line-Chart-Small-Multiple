@@ -1,37 +1,38 @@
-// module powerbi.extensibility.visual {
-//     export interface TextProperties {
-//         text?: string;
-//         fontFamily: string;
-//         fontSize: string;
-//         fontWeight?: string;
-//         fontStyle?: string;
-//         fontVariant?: string;
-//         whiteSpace?: string;
-//     }
-//
-//     export module TextUtility {
-//         let canvasCtx: CanvasRenderingContext2D;
-//         let ellipsis = '...';
-//         function ensureCanvas() {
-//             if (canvasCtx)
-//                 return;
-//             let canvas: HTMLCanvasElement = document.createElement('canvas');
-//             canvasCtx = canvas.getContext("2d");
-//         }
-//         /**
-//          * Measures text width at a high speed using a canvas element
-//          * @param textProperties The text properties (including text content) to use for text measurement.
-//          */
-//         export function measureTextWidth(textProperties: TextProperties): number {
-//             ensureCanvas();
-//             canvasCtx.font =
-//                 (textProperties.fontStyle || "") + " " +
-//                 (textProperties.fontVariant || "") + " " +
-//                 (textProperties.fontWeight || "") + " " +
-//                 textProperties.fontSize + " " +
-//                 (textProperties.fontFamily);
-//             return canvasCtx.measureText(textProperties.text).width;
-//         }
+export interface TextProperties {
+    text?: string;
+    fontFamily: string;
+    fontSize: string;
+    fontWeight?: string;
+    fontStyle?: string;
+    fontVariant?: string;
+    whiteSpace?: string;
+}
+
+let canvasCtx: CanvasRenderingContext2D;
+let ellipsis = '...';
+
+function ensureCanvas() {
+    if (canvasCtx)
+        return;
+    let canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvasCtx = canvas.getContext("2d");
+}
+
+/**
+ * Measures text width at a high speed using a canvas element
+ * @param textProperties The text properties (including text content) to use for text measurement.
+ */
+export function measureTextWidth(textProperties: TextProperties): number {
+    ensureCanvas();
+    canvasCtx.font =
+        (textProperties.fontStyle || "") + " " +
+        (textProperties.fontVariant || "") + " " +
+        (textProperties.fontWeight || "") + " " +
+        textProperties.fontSize + " " +
+        (textProperties.fontFamily);
+    return canvasCtx.measureText(textProperties.text).width;
+}
+
 //         /**
 //          * Compares labels text size to the available size and renders ellipses when the available size is smaller.
 //          * @param textProperties The text properties (including text content) to use for text measurement.
@@ -101,10 +102,9 @@
 //             });
 //         }
 //     }
-//
-//     export module PixelConverter {
-//         const PxPtRatio: number = 4 / 3;
-//         const PixelString: string = 'px';
+
+const PxPtRatio: number = 4 / 3;
+const PixelString: string = 'px';
 //
 //         /**
 //          * Appends 'px' to the end of number value for use as pixel string in styles
@@ -121,25 +121,25 @@
 //         export function fromPoint(pt: number): string {
 //             return toString(fromPointToPixel(pt));
 //         }
-//
-//        /**
-//         * Converts point value (pt) to pixels
-//         * Returns a number for font-size property
-//         * e.g. fromPoint(8) => 24px
-//         */
-//         export function fromPointToPixel(pt: number): number {
-//             return (PxPtRatio * pt);
-//         }
-//
-//         /**
-//         * Converts pixels value (px) to points
-//         * Returns a number
-//         * e.g. fromPixel(24px) => 8
-//         */
-//         export function fromPixelToPoint(px: number): number {
-//             return (px / PxPtRatio);
-//         }
-//
+
+/**
+ * Converts point value (pt) to pixels
+ * Returns a number for font-size property
+ * e.g. fromPoint(8) => 24px
+ */
+export function fromPointToPixel(pt: number): number {
+    return (PxPtRatio * pt);
+}
+
+/**
+ * Converts pixels value (px) to points
+ * Returns a number
+ * e.g. fromPixel(24px) => 8
+ */
+export function fromPixelToPoint(px: number): number {
+    return (px / PxPtRatio);
+}
+
 //         /**
 //          * Converts pixel value (px) to pt
 //          * e.g. toPoint(24) => 8
