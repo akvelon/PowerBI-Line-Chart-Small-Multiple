@@ -296,53 +296,53 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
             }
             case LegendIconType.lineMarkers: {
                 console.log('lineMarkers')
-                // //draw line and marker
-                // let textX: number = cx + lineLen / 2 + padding;
-                // text.attr('x', textX);
-                // let lineStart: number = -lineLen - padding;
-                // let lineEnd: number = -padding;
-                // customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
-                //     .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
-                //     .attr('stroke-width', "2")
-                //     .attr('fill', "none")
-                //     .style('stroke', dataPoint.color)
-                //     .append('title')
-                //     .text(dataPoint.label);
-                //
-                // circle.attr('opacity', 0);
-                // circle.attr('r', lineLen / 2);
-                // let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-                // if (showMarkers) {
-                //     MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
-                //     let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, dataPoint.markerColor);
-                //     if (markerId) {
-                //         customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
-                //             .attr('stroke-width', "2")
-                //             .attr('fill', "none")
-                //             .attr('marker-start', 'url(#' + markerId + ')')
-                //             .append('title')
-                //             .text(dataPoint.label);
-                //     }
-                // }
+                //draw line and marker
+                let textX: number = cx + lineLen / 2 + padding;
+                text.attr('x', textX);
+                let lineStart: number = -lineLen - padding;
+                let lineEnd: number = -padding;
+                customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
+                    .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                    .attr('stroke-width', "2")
+                    .attr('fill', "none")
+                    .style('stroke', dataPoint.color)
+                    .append('title')
+                    .text(dataPoint.label);
+
+                legendIconElement.attr('opacity', 0);
+                legendIconElement.attr('r', lineLen / 2);
+                let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
+                if (showMarkers) {
+                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, dataPoint.markerColor);
+                    if (markerId) {
+                        customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
+                            .attr('stroke-width', "2")
+                            .attr('fill', "none")
+                            .attr('marker-start', 'url(#' + markerId + ')')
+                            .append('title')
+                            .text(dataPoint.label);
+                    }
+                }
                 break;
             }
             case LegendIconType.line: {
                 console.log('line')
-                // customLegendMarker.remove();
-                // //draw line
-                // let textX: number = cx + lineLen / 2 + padding;
-                // text.attr('x', textX);
-                // let lineStart: number = -lineLen - padding;
-                // let lineEnd: number = -padding;
-                // customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
-                //     .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
-                //     .attr('stroke-width', "2")
-                //     .attr('fill', 'none')
-                //     .style('stroke', dataPoint.color)
-                //     .append('title')
-                //     .text(dataPoint.label);
-                // circle.attr('opacity', 0);
-                // circle.attr('r', lineLen / 2);
+                customLegendMarker.remove();
+                //draw line
+                let textX: number = cx + lineLen / 2 + padding;
+                text.attr('x', textX);
+                let lineStart: number = -lineLen - padding;
+                let lineEnd: number = -padding;
+                customLegendLine.attr('transform', "translate(" + textX + "," + cy + ")")
+                    .attr('d', "M" + lineStart + ",0L" + lineEnd + ",0")
+                    .attr('stroke-width', "2")
+                    .attr('fill', 'none')
+                    .style('stroke', dataPoint.color)
+                    .append('title')
+                    .text(dataPoint.label);
+                legendIconElement.attr('opacity', 0);
+                legendIconElement.attr('r', lineLen / 2);
                 break;
             }
         }

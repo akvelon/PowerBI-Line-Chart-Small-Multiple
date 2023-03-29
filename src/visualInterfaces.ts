@@ -55,7 +55,16 @@ export interface LegendDataPointExtended extends LegendDataPoint {
     markerColor: string;
     showMarkers?: boolean;
     object: DataViewObjects;
+
+    /**
+     * Shape of a marker displayed in the legend.
+     * Used instead of markerShape. Supports a bigger list of values that regular MarkerShape.
+     */
     seriesMarkerShape: SeriesMarkerShape;
+
+    /**
+     * Style of markers displayed in the legend: line, marker or both.
+     */
     style: LegendIconType;
 }
 
