@@ -358,75 +358,75 @@ export function calculateItemWidth(legendSettings: LegendSettings, dataPoints: L
     return itemWidth;
 }
 
-//     export function generateLegendItemsForLeftOrRightClick(legendItems: Selection<any>, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): Selection<any> {
-//         if (!legendItems || !dataPoints || itemWidth == 0) return;
-//         let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
-//         if (legendItemsLen < 1) return;
-//         let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-//         let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
-//
-//         let titleElement: Selection<any> = legendGroup.select('.legendTitle');
-//         let titleWidth: number = 0;
-//         let simpleTextElement: Selection<any> = legendGroup.select('text');
-//         let fontFamily: string = simpleTextElement.style('font-family');
-//         let fontSize: string = simpleTextElement.style('font-size');
-//         if (titleElement && titleElement[0] && titleElement[0][0]) {
-//             let innerTitle: string = titleElement.select('title').text();
-//             let text: string = titleElement.text().split(innerTitle)[0];
-//             let textProp: TextProperties = {
-//                 text: text,
-//                 fontFamily: fontFamily,
-//                 fontSize: fontSize
-//             };
-//             titleWidth = TextUtility.measureTextWidth(textProp);
-//         }
-//         let svgLegendWidth: number = +legend.attr('width');
-//         let width: number = svgLegendWidth - titleWidth - paddingText - 2*arrowWidth;
-//
-//         let numberOfItems: number = width/itemWidth;
-//         let numberOfItemsInt: number = Math.ceil(numberOfItems);
-//         numberOfItems = numberOfItemsInt > numberOfItems ? numberOfItemsInt - 1 : numberOfItemsInt;
-//         if (numberOfItems <= 0)
-//             numberOfItems = 1;
-//
-//         let start: number;
-//         let end: number;
-//         let parent: Selection<any>;
-//         if (isLeft) {
-//             parent = d3.select(legendItems[0][0]);
-//             let firstName: string = parent.select('title').text();
-//             let legendItemsFirstIndex: number = 0;
-//             for(let j=0;j<dataPoints.length;j++) {
-//                 if (dataPoints[j].label == firstName) {
-//                     legendItemsFirstIndex = j;
-//                     break;
-//                 }
-//             }
-//             end = legendItemsFirstIndex;
-//             start = end - numberOfItems;
-//             if (start < 0) {
-//                 start = 0;
-//                 end = numberOfItems;
-//             }
-//         } else {
-//             parent = d3.select(legendItems[0][legendItemsLen-1]);
-//             let lastName: string = parent.select('title').text();
-//             let legendItemsLastIndex: number;
-//             for(let j=0;j<dataPoints.length;j++) {
-//                 if (dataPoints[j].label == lastName) {
-//                     legendItemsLastIndex = j;
-//                     break;
-//                 }
-//             }
-//             start = legendItemsLastIndex + 1;
-//             end = start + numberOfItems;
-//         }
-//         let newDataPoints: LegendDataPointExtended[] = dataPoints.slice(start, end);
-//         if (newDataPoints.length > 0)
-//             legendItems = generateLegendItems(legendItems, newDataPoints);
-//         return legendItems;
-//     }
-//
+export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<any>, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): d3Selection<any> {
+    if (!legendItems || !dataPoints || itemWidth == 0) return;
+    // let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
+    // if (legendItemsLen < 1) return;
+    // let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
+    // let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
+    //
+    // let titleElement: Selection<any> = legendGroup.select('.legendTitle');
+    // let titleWidth: number = 0;
+    // let simpleTextElement: Selection<any> = legendGroup.select('text');
+    // let fontFamily: string = simpleTextElement.style('font-family');
+    // let fontSize: string = simpleTextElement.style('font-size');
+    // if (titleElement && titleElement[0] && titleElement[0][0]) {
+    //     let innerTitle: string = titleElement.select('title').text();
+    //     let text: string = titleElement.text().split(innerTitle)[0];
+    //     let textProp: TextProperties = {
+    //         text: text,
+    //         fontFamily: fontFamily,
+    //         fontSize: fontSize
+    //     };
+    //     titleWidth = TextUtility.measureTextWidth(textProp);
+    // }
+    // let svgLegendWidth: number = +legend.attr('width');
+    // let width: number = svgLegendWidth - titleWidth - paddingText - 2*arrowWidth;
+    //
+    // let numberOfItems: number = width/itemWidth;
+    // let numberOfItemsInt: number = Math.ceil(numberOfItems);
+    // numberOfItems = numberOfItemsInt > numberOfItems ? numberOfItemsInt - 1 : numberOfItemsInt;
+    // if (numberOfItems <= 0)
+    //     numberOfItems = 1;
+    //
+    // let start: number;
+    // let end: number;
+    // let parent: Selection<any>;
+    // if (isLeft) {
+    //     parent = d3.select(legendItems[0][0]);
+    //     let firstName: string = parent.select('title').text();
+    //     let legendItemsFirstIndex: number = 0;
+    //     for(let j=0;j<dataPoints.length;j++) {
+    //         if (dataPoints[j].label == firstName) {
+    //             legendItemsFirstIndex = j;
+    //             break;
+    //         }
+    //     }
+    //     end = legendItemsFirstIndex;
+    //     start = end - numberOfItems;
+    //     if (start < 0) {
+    //         start = 0;
+    //         end = numberOfItems;
+    //     }
+    // } else {
+    //     parent = d3.select(legendItems[0][legendItemsLen-1]);
+    //     let lastName: string = parent.select('title').text();
+    //     let legendItemsLastIndex: number;
+    //     for(let j=0;j<dataPoints.length;j++) {
+    //         if (dataPoints[j].label == lastName) {
+    //             legendItemsLastIndex = j;
+    //             break;
+    //         }
+    //     }
+    //     start = legendItemsLastIndex + 1;
+    //     end = start + numberOfItems;
+    // }
+    // let newDataPoints: LegendDataPointExtended[] = dataPoints.slice(start, end);
+    // if (newDataPoints.length > 0)
+    //     legendItems = generateLegendItems(legendItems, newDataPoints);
+    // return legendItems;
+}
+
 //     function generateLegendItems(legendItems: Selection<any>, newDataPoints: LegendDataPointExtended[]): Selection<any> {
 //         let circleY: string = legendItems.select('circle').attr('cy');
 //         let text: Selection<any> = legendItems.select('text');
@@ -713,16 +713,15 @@ function appendLegendMargins(legend: ILegend, margins) {
     return margins;
 }
 
-//     export function positionChartArea(container: Selection<any>, legend: ILegend) {
-//         let margin = {top: 0, left: 0, bottom: 0, right: 0};
-//         appendLegendMargins(legend, margin);
-//         if (margin.top)
-//             container.style('margin-top', margin.top + 'px');
-//         if (margin.bottom)
-//             container.style('margin-bottom', margin.bottom + 'px');
-//         if (margin.left)
-//             container.style('margin-left', margin.left + 'px');
-//         if (margin.right)
-//             container.style('margin-right', margin.right + 'px');
-//     }
-// }
+export function positionChartArea(container: d3Selection<any>, legend: ILegend) {
+    let margin = {top: 0, left: 0, bottom: 0, right: 0};
+    appendLegendMargins(legend, margin);
+    if (margin.top)
+        container.style('margin-top', margin.top + 'px');
+    if (margin.bottom)
+        container.style('margin-bottom', margin.bottom + 'px');
+    if (margin.left)
+        container.style('margin-left', margin.left + 'px');
+    if (margin.right)
+        container.style('margin-right', margin.right + 'px');
+}

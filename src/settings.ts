@@ -208,7 +208,7 @@ export class Shapes {
     public lineStyle: string = "solid";
 
     public showMarkers: boolean = false;
-    public markerShape: string = MarkerShape.circle;
+    public markerShape: MarkerShape = MarkerShape.circle;
     public markerSize: number = 5;
     public markerColor: string = "";
 

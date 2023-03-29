@@ -4,7 +4,7 @@ import {
     CategoryType,
     d3Selection,
     LegendDataPointExtended,
-    LineDataPoint,
+    LineDataPoint, VerticalLineDataItem, VerticalLineDataItemsGlobal,
     VerticalLineDataItemsGlobalWithKey,
     VisualDataPoint
 } from "./visualInterfaces";
@@ -14,11 +14,15 @@ import {
     IInteractiveBehavior,
     ISelectionHandler
 } from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
+import {ITooltipServiceWrapper, TooltipEventArgs} from "powerbi-visuals-utils-tooltiputils";
 import {LegendBehavior} from "./legendBehavior";
 import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {Shapes} from "./settings";
+import {DefaultOpacity, DimmedOpacity, Shapes} from "./settings";
 import {Visual} from "./visual";
+import {local as d3local} from "d3-selection";
+import powerbi from "powerbi-visuals-api";
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import PrimitiveValue = powerbi.PrimitiveValue;
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     selectionLines: LineDataPoint[];
@@ -36,97 +40,109 @@ export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
 }
 
 export class WebBehavior implements IInteractiveBehavior {
-//         private dataPoints: VisualDataPoint[];
-//         private lineGroupSelection: Update<LineDataPoint>;
-//         private interactiveLineGroupSelection: Update<LineDataPoint>;
-//         private dotsSelection: Update<LineDataPoint>;
-//         private container: Selection<any>;
-//         private shapes: shapes;
-//         private hasLasso: boolean;
-//         private selectionHandler: ISelectionHandler;
-//         private legendBehavior: LegendBehavior;
-//         private legendFormatter: IValueFormatter;
-//         private legendType: CategoryType;
+    private dataPoints: VisualDataPoint[];
+    private lineGroupSelection: d3Selection<LineDataPoint>;
+    private interactiveLineGroupSelection: d3Selection<LineDataPoint>;
+    private dotsSelection: d3Selection<LineDataPoint>;
+    private container: d3Selection<any>;
+    private shapes: Shapes;
+    private hasLasso: boolean;
+    private selectionHandler: ISelectionHandler;
+    private legendBehavior: LegendBehavior;
+    private legendFormatter: IValueFormatter;
+    private legendType: CategoryType;
 
     public bindEvents(
         options: WebBehaviorOptions,
         selectionHandler: ISelectionHandler): void {
-//
-//                 this.dataPoints = options.dataPoints;
-//                 this.lineGroupSelection = options.lineGroupSelection;
-//                 this.interactiveLineGroupSelection = options.interactiveLineGroupSelection;
-//                 this.dotsSelection = options.dotsSelection;
-//                 this.container = options.container;
-//                 this.legendBehavior = options.legendBehavior;
-//                 this.legendFormatter = options.legendFormatter;
-//                 this.legendType = options.legendType;
-//                 this.shapes = options.shapes;
-//
-//                 let retrieveTooltipFromArgument = this.retrieveTooltipFromArgument;
-//                 let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
-//
-//                 this.interactiveLineGroupSelection.on("click", (lineDataPoint: LineDataPoint, index: number) => {
-//                     options.selectionLines[index].selected = !options.selectionLines[index].selected;
-//                     if (options.selectionLines[index].selected) {
-//                         let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
-//                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-//                         selectionHandler.handleSelection(lineDataPoint, false);
-//                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-//                     } else {
-//                         selectionHandler.handleClearSelection();
-//                         options.legendBehavior.renderLassoSelection([], false, false);
-//                     }
-//                 });
-//                 options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
-//                     (args: TooltipEventArgs<LineDataPoint>) => {
-//                         let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
-//                         return tooltips;
-//                     },
-//                     null,
-//                     true);
-//
-//                 this.dotsSelection.on("click", (lineDataPoint: LineDataPoint, index: number) => {
-//                     options.selectionLines[index].selected = !options.selectionLines[index].selected;
-//                     if (options.selectionLines[index].selected) {
-//                         let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
-//                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-//                         selectionHandler.handleSelection(lineDataPoint, false);
-//                         options.legendBehavior.renderLassoSelection([legendName], true, false);
-//                     } else {
-//                         selectionHandler.handleClearSelection();
-//                         options.legendBehavior.renderLassoSelection([], false, false);
-//                     }
-//                 });
-//                 options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
-//                     (args: TooltipEventArgs<LineDataPoint>) => {
-//                         let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
-//                         return tooltips;
-//                     },
-//                     null,
-//                     true);
-//                 this.selectionHandler = selectionHandler;
-//                 this.hasLasso = false;
+
+        this.dataPoints = options.dataPoints as VisualDataPoint[];
+        this.lineGroupSelection = options.lineGroupSelection;
+        this.interactiveLineGroupSelection = options.interactiveLineGroupSelection;
+        this.dotsSelection = options.dotsSelection;
+        this.container = options.container;
+        this.legendBehavior = options.legendBehavior;
+        this.legendFormatter = options.legendFormatter;
+        this.legendType = options.legendType;
+        this.shapes = options.shapes;
+
+        let retrieveTooltipFromArgument = this.retrieveTooltipFromArgument;
+        let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
+
+        const indicesLineGroupSelection = d3local<number>();
+        this.interactiveLineGroupSelection
+            .each(function (d, i) {
+                indicesLineGroupSelection.set(this, i)
+            })
+            .on("click", function (_, lineDataPoint) {
+                const index = indicesLineGroupSelection.get(this);
+                options.selectionLines[index].selected = !options.selectionLines[index].selected;
+                if (options.selectionLines[index].selected) {
+                    let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+                    options.legendBehavior.renderLassoSelection([legendName], true, false);
+                    selectionHandler.handleSelection(lineDataPoint, false);
+                    options.legendBehavior.renderLassoSelection([legendName], true, false);
+                } else {
+                    selectionHandler.handleClearSelection();
+                    options.legendBehavior.renderLassoSelection([], false, false);
+                }
+            });
+        options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
+            (args: TooltipEventArgs<LineDataPoint>) => {
+                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
+                return tooltips;
+            },
+            null,
+            true);
+
+        const indicesDotsSelection = d3local<number>();
+        this.dotsSelection
+            .each(function (d, i) {
+                indicesDotsSelection.set(this, i);
+            })
+            .on("click", function (_, lineDataPoint: LineDataPoint) {
+                const index = indicesDotsSelection.get(this);
+                options.selectionLines[index].selected = !options.selectionLines[index].selected;
+                if (options.selectionLines[index].selected) {
+                    let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+                    options.legendBehavior.renderLassoSelection([legendName], true, false);
+                    selectionHandler.handleSelection(lineDataPoint, false);
+                    options.legendBehavior.renderLassoSelection([legendName], true, false);
+                } else {
+                    selectionHandler.handleClearSelection();
+                    options.legendBehavior.renderLassoSelection([], false, false);
+                }
+            });
+        options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
+            (args: TooltipEventArgs<LineDataPoint>) => {
+                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
+                return tooltips;
+            },
+            null,
+            true);
+        this.selectionHandler = selectionHandler;
+        this.hasLasso = false;
     }
 
-//         private retrieveTooltipFromArgument(args: TooltipEventArgs<LineDataPoint>, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
-//             let lineDataPoint: LineDataPoint = args.data;
-//             let lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
-//             let data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
-//             let tooltips: VisualTooltipDataItem[] = null;
-//             if (data) {
-//                 let hoverLineData: Update<number> = data.hoverLineData;
-//                 let verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
-//                 let index: number = hoverLineData.data()[0];
-//                 tooltips = verticalLineDataItems[index].tooltips;
-//             }
-//             return tooltips;
-//         }
-//
-//         private formatItemWithLegendFormatter(lineDataPointName: string, legendType: CategoryType, legendFormatter: IValueFormatter) {
-//             let item: PrimitiveValue = (legendType == CategoryType.Date) ? new Date(lineDataPointName) : lineDataPointName;
-//             let legendName: string = (legendFormatter) ? legendFormatter.format(item) : item.toString();
-//             return legendName;
-//         }
+    private retrieveTooltipFromArgument(args: TooltipEventArgs<LineDataPoint>, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
+        let lineDataPoint: LineDataPoint = args.data;
+        let lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
+        let data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
+        let tooltips: VisualTooltipDataItem[] = null;
+        if (data) {
+            let hoverLineData: d3Selection<number> = data.hoverLineData;
+            let verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
+            let index: number = hoverLineData.data()[0];
+            tooltips = verticalLineDataItems[index].tooltips;
+        }
+        return tooltips;
+    }
+
+    private formatItemWithLegendFormatter(lineDataPointName: string, legendType: CategoryType, legendFormatter: IValueFormatter) {
+        let item: PrimitiveValue = (legendType == CategoryType.Date) ? new Date(lineDataPointName) : lineDataPointName;
+        let legendName: string = (legendFormatter) ? legendFormatter.format(item) : item.toString();
+        return legendName;
+    }
 
     public renderSelection(hasSelection: boolean): void {
 //             let selectedLegendNames: string[] = [];
@@ -166,11 +182,11 @@ export class WebBehavior implements IInteractiveBehavior {
 //                 this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
     }
 
-//         public renderLassoSelection(hasSelection: boolean): void {
-//             this.renderSelection(hasSelection);
-//             this.hasLasso = hasSelection;
-//         }
-//
+    public renderLassoSelection(hasSelection: boolean): void {
+        this.renderSelection(hasSelection);
+        this.hasLasso = hasSelection;
+    }
+
 //         public hasLassoSelection(): boolean {
 //             return this.hasLasso;
 //         }
@@ -184,17 +200,16 @@ export class WebBehavior implements IInteractiveBehavior {
 //             }
 //             this.legendBehavior.renderLassoSelection(selectedLegendNames, true, false);
 //         }
-//
-//         public clearCather() {
-//             this.selectionHandler.handleClearSelection();
-//             this.legendBehavior.renderLassoSelection([], false, false);
-//         }
+
+    public clearCather() {
+        this.selectionHandler.handleClearSelection();
+        this.legendBehavior.renderLassoSelection([], false, false);
+    }
 }
 
-//     export function getOpacity(selected: boolean, hasSelection: boolean): number {
-//         if (!selected && hasSelection) {
-//             return DimmedOpacity;
-//         }
-//         return DefaultOpacity;
-//     }
-// }
+export function getOpacity(selected: boolean, hasSelection: boolean): number {
+    if (!selected && hasSelection) {
+        return DimmedOpacity;
+    }
+    return DefaultOpacity;
+}

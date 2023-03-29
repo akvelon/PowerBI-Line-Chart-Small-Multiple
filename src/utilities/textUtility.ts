@@ -105,22 +105,22 @@ export function measureTextWidth(textProperties: TextProperties): number {
 
 const PxPtRatio: number = 4 / 3;
 const PixelString: string = 'px';
-//
-//         /**
-//          * Appends 'px' to the end of number value for use as pixel string in styles
-//          */
-//         export function toString(px: number): string {
-//             return px + PixelString;
-//         }
-//
-//         /**
-//          * Converts point value (pt) to pixels
-//          * Returns a string for font-size property
-//          * e.g. fromPoint(8) => '24px'
-//          */
-//         export function fromPoint(pt: number): string {
-//             return toString(fromPointToPixel(pt));
-//         }
+
+/**
+ * Appends 'px' to the end of number value for use as pixel string in styles
+ */
+export function toString(px: number): string {
+    return px + PixelString;
+}
+
+/**
+ * Converts point value (pt) to pixels
+ * Returns a string for font-size property
+ * e.g. fromPoint(8) => '24px'
+ */
+export function fromPoint(pt: number): string {
+    return toString(fromPointToPixel(pt));
+}
 
 /**
  * Converts point value (pt) to pixels

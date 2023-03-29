@@ -8,91 +8,103 @@
 //     import IInteractivityService = utils.interactivity.IInteractivityService;
 //     import BoundingRect = utils.svg.shapes.BoundingRect;
 //
-//     export function implementLassoSelection(mainCont: Selection<any>, lassoContainer: Selection<any>, dataPoints: VisualDataPoint[], globalLines: LineDataPoint[], matrixFlowIndex: number, lassoColor: string,
-//         legend: Selection<any>, is: IInteractivityService, behavior: WebBehavior,
-//         verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey, shapes: shapes, legendFormatter: IValueFormatter, legendType: CategoryType) {
-//
-//         let mainRect: BoundingRect = null;
-//         if (matrixFlowIndex == 0) {
-//             let lineChartRect: Selection<any> = lassoContainer.select(Visual.LineChartRectSelector.selectorName);
-//             let rectX: number = +lineChartRect.attr('x');
-//             let rectY: number = +lineChartRect.attr('y');
-//             let rectW: number = +lineChartRect.attr('width');
-//             let rectH: number = +lineChartRect.attr('height');
-//             mainRect = {
-//                 top: rectY,
-//                 left: rectX,
-//                 right: rectX + rectW,
-//                 bottom: rectY + rectH
-//             };
-//         }
-//
-//         let dp: VisualDataPoint[] = [];
-//         legend.on('click', function() {
-//             lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
-//             lassoContainer.data([null]);
-//             let hasLasso: boolean = behavior.hasLassoSelection();
-//             if (hasLasso) {
-//                 behavior.customLassoSelect([]);
-//                 behavior.renderLassoSelection(false);
-//                 dp = [];
-//             }
-//         });
-//         let isMouseDown: boolean = false;
-//         mainCont.on('mousemove', function() {
-//             let mouse = getMouseXY();
-//             let mouseX: number = reCountMouseX(mouse[0], mainRect);
-//             let mouseY: number = reCountMouseY(mouse[1], mainRect);
-//
-//             let currentLassoData: LassoData = lassoContainer.data()[0];
-//             if (isMouseDown && currentLassoData && currentLassoData.startX != mouseX && currentLassoData.startY != mouseY) {
-//                 if (is.hasSelection())
-//                     is.clearSelection();
-//                 lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
-//                 behavior.renderLassoSelection(true);
-//                 let lassoData: LassoData = generateLassoData(currentLassoData.startX, currentLassoData.startY, mouseX, mouseY, []);
-//
-//                 let childLassoContainer: Selection<any> = lassoContainer.select('#'+Visual.LassoDataSelectorId).append("svg").classed(Visual.LassoSvgSelector.className, true);
-//
-//                 dp = drawLassoRect(globalLines, lassoData, lassoColor, childLassoContainer, dataPoints, verticalLineDataItemsGlobal, shapes, legendFormatter, legendType);
-//                 behavior.customLassoSelect(dp);
-//                 lassoContainer.data([lassoData]);
-//             } else {
-//                 let hasLasso: boolean = behavior.hasLassoSelection();
-//                 if (hasLasso && dp)
-//                     behavior.customLassoSelect(dp);
-//                     dp = null;
-//             }
-//         });
-//         lassoContainer.on('mousedown', function() {
-//             dp = [];
-//             let mouse = getMouseXY();
-//             let startX: number = reCountMouseX(mouse[0], mainRect);
-//             let startY: number = reCountMouseY(mouse[1], mainRect);
-//             is.clearSelection();
-//             let lassoData: LassoData = generateLassoData(startX, startY, startX, startY, []);
-//             lassoContainer.data([lassoData]);
-//             behavior.renderLassoSelection(true);
-//             isMouseDown = true;
-//         });
-//         lassoContainer.on('mouseup', function() {
-//             isMouseDown = false;
-//             let mouse = getMouseXY();
-//             let mouseX: number = reCountMouseX(mouse[0], mainRect);
-//             let mouseY: number = reCountMouseY(mouse[1], mainRect);
-//
-//             let currentLassoData: LassoData = lassoContainer.data()[0];
-//             if (currentLassoData && currentLassoData.startX == mouseX && currentLassoData.startY == mouseY) {
-//                 lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
-//                 behavior.renderLassoSelection(false);
-//                 is.clearSelection();
-//                 dp = [];
-//                 lassoContainer.data([null]);
-//             }
-//             lassoContainer.selectAll(Visual.LassoRectSelector.selectorName).remove();
-//         });
-//     }
-//
+import {
+    CategoryType,
+    d3Selection,
+    LineDataPoint,
+    VerticalLineDataItemsGlobalWithKey,
+    VisualDataPoint
+} from "./visualInterfaces";
+import {IInteractivityService} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
+import {WebBehavior} from "./behavior";
+import {Shapes} from "./settings";
+import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
+
+export function implementLassoSelection(mainCont: d3Selection<any>, lassoContainer: d3Selection<any>, dataPoints: VisualDataPoint[], globalLines: LineDataPoint[], matrixFlowIndex: number, lassoColor: string,
+                                        legend: d3Selection<any>, is: IInteractivityService<any>, behavior: WebBehavior,
+                                        verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey, shapes: Shapes, legendFormatter: IValueFormatter, legendType: CategoryType) {
+    //
+    // let mainRect: BoundingRect = null;
+    // if (matrixFlowIndex == 0) {
+    //     let lineChartRect: Selection<any> = lassoContainer.select(Visual.LineChartRectSelector.selectorName);
+    //     let rectX: number = +lineChartRect.attr('x');
+    //     let rectY: number = +lineChartRect.attr('y');
+    //     let rectW: number = +lineChartRect.attr('width');
+    //     let rectH: number = +lineChartRect.attr('height');
+    //     mainRect = {
+    //         top: rectY,
+    //         left: rectX,
+    //         right: rectX + rectW,
+    //         bottom: rectY + rectH
+    //     };
+    // }
+    //
+    // let dp: VisualDataPoint[] = [];
+    // legend.on('click', function() {
+    //     lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
+    //     lassoContainer.data([null]);
+    //     let hasLasso: boolean = behavior.hasLassoSelection();
+    //     if (hasLasso) {
+    //         behavior.customLassoSelect([]);
+    //         behavior.renderLassoSelection(false);
+    //         dp = [];
+    //     }
+    // });
+    // let isMouseDown: boolean = false;
+    // mainCont.on('mousemove', function() {
+    //     let mouse = getMouseXY();
+    //     let mouseX: number = reCountMouseX(mouse[0], mainRect);
+    //     let mouseY: number = reCountMouseY(mouse[1], mainRect);
+    //
+    //     let currentLassoData: LassoData = lassoContainer.data()[0];
+    //     if (isMouseDown && currentLassoData && currentLassoData.startX != mouseX && currentLassoData.startY != mouseY) {
+    //         if (is.hasSelection())
+    //             is.clearSelection();
+    //         lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
+    //         behavior.renderLassoSelection(true);
+    //         let lassoData: LassoData = generateLassoData(currentLassoData.startX, currentLassoData.startY, mouseX, mouseY, []);
+    //
+    //         let childLassoContainer: Selection<any> = lassoContainer.select('#'+Visual.LassoDataSelectorId).append("svg").classed(Visual.LassoSvgSelector.className, true);
+    //
+    //         dp = drawLassoRect(globalLines, lassoData, lassoColor, childLassoContainer, dataPoints, verticalLineDataItemsGlobal, shapes, legendFormatter, legendType);
+    //         behavior.customLassoSelect(dp);
+    //         lassoContainer.data([lassoData]);
+    //     } else {
+    //         let hasLasso: boolean = behavior.hasLassoSelection();
+    //         if (hasLasso && dp)
+    //             behavior.customLassoSelect(dp);
+    //             dp = null;
+    //     }
+    // });
+    // lassoContainer.on('mousedown', function() {
+    //     dp = [];
+    //     let mouse = getMouseXY();
+    //     let startX: number = reCountMouseX(mouse[0], mainRect);
+    //     let startY: number = reCountMouseY(mouse[1], mainRect);
+    //     is.clearSelection();
+    //     let lassoData: LassoData = generateLassoData(startX, startY, startX, startY, []);
+    //     lassoContainer.data([lassoData]);
+    //     behavior.renderLassoSelection(true);
+    //     isMouseDown = true;
+    // });
+    // lassoContainer.on('mouseup', function() {
+    //     isMouseDown = false;
+    //     let mouse = getMouseXY();
+    //     let mouseX: number = reCountMouseX(mouse[0], mainRect);
+    //     let mouseY: number = reCountMouseY(mouse[1], mainRect);
+    //
+    //     let currentLassoData: LassoData = lassoContainer.data()[0];
+    //     if (currentLassoData && currentLassoData.startX == mouseX && currentLassoData.startY == mouseY) {
+    //         lassoContainer.selectAll(Visual.LassoSvgSelector.selectorName).remove();
+    //         behavior.renderLassoSelection(false);
+    //         is.clearSelection();
+    //         dp = [];
+    //         lassoContainer.data([null]);
+    //     }
+    //     lassoContainer.selectAll(Visual.LassoRectSelector.selectorName).remove();
+    // });
+}
+
 //     function getMouseXY(): number[] {
 //         let mouseEvent: MouseEvent = d3.event as MouseEvent;
 //         return [mouseEvent.offsetX, mouseEvent.offsetY];

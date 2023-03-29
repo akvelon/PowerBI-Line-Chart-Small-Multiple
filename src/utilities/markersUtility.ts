@@ -2,6 +2,7 @@
 
 import {d3Selection} from "../visualInterfaces";
 import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
+import {Visual} from "../visual";
 
 export class MarkersUtility {
     public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: MarkerShape, markerSize: number, markerColor: string): string {
@@ -54,66 +55,66 @@ export class MarkersUtility {
         return markerId;
     }
 
-//         public static getDataLineForForSteppedLineChart(dataLine: string):string {
-//             let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
-//             let markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
-//
-//             newDataLine = "M" + markedPoints[0];
-//             let firstItem: string[] = markedPoints[0].split(',');
-//             let currentX: number = +firstItem[0];
-//             let currentY: number = +firstItem[1];
-//
-//             let j: number = 1;
-//             while(j<markedPoints.length) {
-//                 let action: string = markedPoints[j][0];
-//                 switch (action) {
-//                     case 'H': {
-//                         let newX: number = +markedPoints[j].replace(/\H/, '');
-//                         let newDelta: number = newX - currentX;
-//                         currentX = newX;
-//                         newDataLine = newDataLine + markedPoints[j];
-//                         break;
-//                     }
-//                     case 'V': {
-//                         let newY: number = +markedPoints[j].replace(/\V/, '');
-//                         currentY = newY;
-//                         newDataLine = newDataLine + markedPoints[j];
-//                         break;
-//                     }
-//                     case 'M': {
-//                         let data: string[] = markedPoints[j].replace(/\M/, '').split(',');
-//                         currentX = +data[0];
-//                         currentY = +data[1];
-//                         newDataLine = newDataLine + markedPoints[j];
-//                         break;
-//                     }
-//                     case 'L': {
-//                         let data: string[] = markedPoints[j].replace(/\L/, '').split(',');
-//                         let newX: number = +data[0];
-//                         let newY: number = +data[1];
-//                         let newX1: number = (newX + currentX) / 2;
-//                         newDataLine = newDataLine + "H" + newX1 + "V" + newY + "H" + newX;
-//                         currentX = newX;
-//                         currentY = newY;
-//                         break;
-//                     }
-//                 }
-//                 j = j + 1;
-//             }
-//             return newDataLine;
-//         }
-//
-//         public static drawMarkersForSteppedLineChart(container: d3.Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
-//             let markerAttr = 'url(#' + markerId + ')';
-//             container.append("path")
-//                 .classed(Visual.MarkerLineSelector.className, true)
-//                 .attr("id", markerPathId)
-//                 .attr("d", lineD)
-//                 .attr('stroke-width', strokeWidth)
-//                 .attr('fill', 'none')
-//                 .attr('marker-start', markerAttr)
-//                 .attr('marker-mid', markerAttr)
-//                 .attr('marker-end', markerAttr);
-//         }
+    public static getDataLineForForSteppedLineChart(dataLine: string): string {
+        let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
+        let markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
+
+        newDataLine = "M" + markedPoints[0];
+        let firstItem: string[] = markedPoints[0].split(',');
+        let currentX: number = +firstItem[0];
+        let currentY: number = +firstItem[1];
+
+        let j: number = 1;
+        while (j < markedPoints.length) {
+            let action: string = markedPoints[j][0];
+            switch (action) {
+                case 'H': {
+                    let newX: number = +markedPoints[j].replace(/\H/, '');
+                    let newDelta: number = newX - currentX;
+                    currentX = newX;
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'V': {
+                    let newY: number = +markedPoints[j].replace(/\V/, '');
+                    currentY = newY;
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'M': {
+                    let data: string[] = markedPoints[j].replace(/\M/, '').split(',');
+                    currentX = +data[0];
+                    currentY = +data[1];
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'L': {
+                    let data: string[] = markedPoints[j].replace(/\L/, '').split(',');
+                    let newX: number = +data[0];
+                    let newY: number = +data[1];
+                    let newX1: number = (newX + currentX) / 2;
+                    newDataLine = newDataLine + "H" + newX1 + "V" + newY + "H" + newX;
+                    currentX = newX;
+                    currentY = newY;
+                    break;
+                }
+            }
+            j = j + 1;
+        }
+        return newDataLine;
+    }
+
+    public static drawMarkersForSteppedLineChart(container: d3Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
+        let markerAttr = 'url(#' + markerId + ')';
+        container.append("path")
+            .classed(Visual.MarkerLineSelector.className, true)
+            .attr("id", markerPathId)
+            .attr("d", lineD)
+            .attr('stroke-width', strokeWidth)
+            .attr('fill', 'none')
+            .attr('marker-start', markerAttr)
+            .attr('marker-mid', markerAttr)
+            .attr('marker-end', markerAttr);
+    }
 
 }

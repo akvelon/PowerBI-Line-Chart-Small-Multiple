@@ -32,24 +32,24 @@ export class Formatter {
     }
 }
 
-//         export function getLineStyleParam(lineStyle: string): string {
-//             let strokeDasharray: string;
-//
-//             switch (lineStyle) {
-//                 case "solid":
-//                     strokeDasharray = "none";
-//                     break;
-//                 case "dashed":
-//                     strokeDasharray = "5, 5";
-//                     break;
-//                 case "dotted":
-//                     strokeDasharray = "1, 5";
-//                     break;
-//             }
-//
-//             return strokeDasharray;
-//         }
-//
+export function getLineStyleParam(lineStyle: string): string {
+    let strokeDasharray: string;
+
+    switch (lineStyle) {
+        case "solid":
+            strokeDasharray = "none";
+            break;
+        case "dashed":
+            strokeDasharray = "5, 5";
+            break;
+        case "dotted":
+            strokeDasharray = "1, 5";
+            break;
+    }
+
+    return strokeDasharray;
+}
+
 //         export function isValidURL(URL: string) {
 //
 //             if (typeof URL === 'undefined' || !URL) return false;
