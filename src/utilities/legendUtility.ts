@@ -27,6 +27,8 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IViewport = powerbi.IViewport;
+import {MarkersUtility} from "./markersUtility";
+import {LegendBehavior} from "../legendBehavior";
 
 const paddingText: number = 10;
 const arrowWidth: number = 7.5;
@@ -76,13 +78,11 @@ export function renderLegend(legendSettings: LegendSettings, dataPoints: LegendD
 
 export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]) {
     if (!dataPoints || dataPoints.length == 0) return;
-    let legendIcon = dataPoints[0].markerShape;
-    console.log('legendIcon')
-    console.log(legendIcon)
+    let legendStyle = dataPoints[0].style;
     let legendItemsLen: number = legendItems && legendItems.size() > 0 ? legendItems.size() : 0;
     if (legendItemsLen == 0) return;
 
-    let isLongMarker: boolean = (legendIcon == MarkerShape.square || legendIcon == MarkerShape.longDash);
+    let isLongMarker: boolean = (legendStyle == LegendIconType.line || legendStyle == LegendIconType.lineMarkers);
     let isTopOrBottomLegend: boolean = legendSettings.position == "Top" || legendSettings.position == "TopCenter"
         || legendSettings.position == "Bottom" || legendSettings.position == "BottomCenter";
 
@@ -197,7 +197,6 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
     currentItemWidth = currentItemWidth < 0 ? 0 : currentItemWidth;
 
     for (let i = 0; i < legendItemsLen; i++) {
-        console.log('loop legend items ' + i);
         let parent: d3Selection<any> = d3select(legendItems.nodes()[i]);
         const legendIconElement = parent.select('.legendIcon')
         const legendIconElementTransform = legendIconElement.attr('transform')
@@ -256,50 +255,47 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
         parent.selectAll('.legend-item-line').remove();
         parent.selectAll('.legend-item-marker').remove();
 
-        // circle.attr('opacity', 1);
+        legendIconElement.attr('opacity', 1);
 
         let customLegendLine: d3Selection<any> = parent.insert("path", ":first-child").classed("legend-item-line", true);
         let customLegendMarker: d3Selection<any> = parent.insert("path", "circle").classed("legend-item-marker", true);
 
-        switch (legendIcon) {
-            case MarkerShape.circle: {
-                console.log('circle');
+        switch (legendStyle) {
+            case LegendIconType.markers: {
                 text.attr('x', cx + circleD / 2 + padding);
                 let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-                console.log('showMarkers');
-                console.log(showMarkers);
                 if (showMarkers) {
-                    //draw marker
-                    // MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.markerShape, markerSize, LegendBehavior.dimmedLegendColor);
-                    // let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
-                    // let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.markerShape, markerSize, color);
-                    //     if (markerId) {
-                    //         customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
-                    //             .attr('stroke-width', "2")
-                    //             .attr('fill', "none")
-                    //             .attr('marker-start', 'url(#' + markerId + ')')
-                    //             .append('title')
-                    //             .text(dataPoint.label);
-                    //         legendIconElement.attr('opacity', 0);
-                    //     }
+                    // draw marker
+                    MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
+                    let color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.markerColor;
+                    let markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, color);
+                    if (markerId) {
+                        customLegendMarker.attr('d', "M" + cx + "," + cy + "Z")
+                            .attr('stroke-width', "2")
+                            .attr('fill', "none")
+                            .attr('marker-start', 'url(#' + markerId + ')')
+                            .append('title')
+                            .text(dataPoint.label);
+                        legendIconElement.attr('opacity', 0);
+                    }
                 } else {
-                    //     if (legendSettings.circleDefaultIcon != true) {
-                    //         //draw short line
-                    //         customLegendLine.attr('transform', "translate(" + cx + "," + cy + ")")
-                    //             .attr('d', "M0 0 m -5 0 l 10 0")
-                    //             .attr('stroke-width', "2")
-                    //             .style('fill', dataPoint.color)
-                    //             .style('stroke', dataPoint.color)
-                    //             .style('stroke-linejoin', 'round')
-                    //             .append('title')
-                    //             .text(dataPoint.label);
-                    //         legendIconElement.attr('opacity', 0);
-                    //     }
+                    if (legendSettings.circleDefaultIcon != true) {
+                        //draw short line
+                        customLegendLine.attr('transform', "translate(" + cx + "," + cy + ")")
+                            .attr('d', "M0 0 m -5 0 l 10 0")
+                            .attr('stroke-width', "2")
+                            .style('fill', dataPoint.color)
+                            .style('stroke', dataPoint.color)
+                            .style('stroke-linejoin', 'round')
+                            .append('title')
+                            .text(dataPoint.label);
+                        legendIconElement.attr('opacity', 0);
+                    }
                 }
                 break;
             }
-            case MarkerShape.square: {
-                console.log('square')
+            case LegendIconType.lineMarkers: {
+                console.log('lineMarkers')
                 // //draw line and marker
                 // let textX: number = cx + lineLen / 2 + padding;
                 // text.attr('x', textX);
@@ -330,8 +326,8 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 // }
                 break;
             }
-            case MarkerShape.longDash: {
-                console.log('long dash')
+            case LegendIconType.line: {
+                console.log('line')
                 // customLegendMarker.remove();
                 // //draw line
                 // let textX: number = cx + lineLen / 2 + padding;
@@ -347,6 +343,7 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 //     .text(dataPoint.label);
                 // circle.attr('opacity', 0);
                 // circle.attr('r', lineLen / 2);
+                break;
             }
         }
     }
@@ -493,10 +490,8 @@ export function getLegendData(dataView: DataView, host: IVisualHost, legend: Leg
         "linemarkers": LegendIconType.lineMarkers,
         "line": LegendIconType.line,
     };
-    console.log('legend.style')
-    console.log(legend.style)
+
     let legendIcon: LegendIconType = legendIcons[legend.style];
-    console.log(legendIcon)
     if (isLegendFilled) {
         return buildLegendData(dataView,
             host,
@@ -527,8 +522,6 @@ function buildLegendData(
     host: IVisualHost,
     legendObjectProperties: LegendSettings,
     legendIcon: LegendIconType): LegendDataExtended {
-    console.log('buildLegendData')
-
     const colorHelper: ColorHelper = new ColorHelper(
         host.colorPalette,
         {objectName: "dataPoint", propertyName: "fill"});
@@ -663,9 +656,6 @@ function buildLegendDataForMultipleValues(
     dataView: DataView,
     legendIcon: LegendIconType,
     title: string): LegendDataExtended {
-    console.log('buildLegendDataForMultipleValues')
-    console.log(legendIcon)
-
     let colorHelper: ColorHelper = new ColorHelper(
         host.colorPalette,
         {objectName: "dataPoint", propertyName: "fill"});
@@ -697,8 +687,6 @@ function buildLegendDataForMultipleValues(
 
         let label: string = values[i].source.displayName;
 
-        console.log('push legend item')
-        console.log(legendIcon)
         legendItems.push({
             color: color,
             markerColor: color,
@@ -714,9 +702,6 @@ function buildLegendDataForMultipleValues(
     }
 
     colorHelper = null;
-
-    console.log('legend items before return')
-    console.log(JSON.stringify(legendItems))
 
     return {
         title: title,
