@@ -11,6 +11,8 @@ import {BoundingRect} from "powerbi-visuals-utils-svgutils/lib/shapes/shapesInte
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import {SelectableDataPoint} from "powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService";
 import {BaseDataPoint, IBehaviorOptions} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
+import {SeriesMarkerShape} from "./seriesMarkerShape";
+import {LegendIconType} from "./legendIconType";
 
 export type d3Selection<T> = Selection<any, T, any, any>;
 
@@ -52,8 +54,9 @@ export enum CategoryType {
 export interface LegendDataPointExtended extends LegendDataPoint {
     markerColor: string;
     showMarkers?: boolean;
-    markerShape: MarkerShape;
     object: DataViewObjects;
+    seriesMarkerShape: SeriesMarkerShape;
+    style: LegendIconType;
 }
 
 export interface LineKeyIndex {
@@ -144,7 +147,7 @@ export interface LineDataPoint extends SelectableDataPoint {
     stepped?: boolean;
 
     showMarkers?: boolean;
-    markerShape?: MarkerShape;
+    markerShape?: SeriesMarkerShape;
     markerSize?: number;
     markerColor?: string;
 }

@@ -1,26 +1,49 @@
 "use strict";
 
 import {d3Selection} from "../visualInterfaces";
-import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import {Visual} from "../visual";
+import {SeriesMarkerShape} from "../seriesMarkerShape";
 
 export class MarkersUtility {
-    public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: MarkerShape, markerSize: number, markerColor: string): string {
+    public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: SeriesMarkerShape, markerSize: number, markerColor: string): string {
         // set markerD and strokeWidth from markerShape
         let markerD: string = "";
         let strokeWidth: number = 0;
         switch (markerShape) {
-            case MarkerShape.circle : {
+            case SeriesMarkerShape.circle : {
                 markerD = "M 0 0 m -5 0 a 5 5 0 1 0 10 0 a 5 5 0 1 0 -10 0";
                 break;
             }
-            case MarkerShape.square : {
+            case SeriesMarkerShape.square : {
                 markerD = "M 0 0 m -5 -5 l 10 0 l 0 10 l -10 0 z";
                 break;
             }
-            case MarkerShape.longDash : {
+            case SeriesMarkerShape.diamond : {
+                markerD = "M 0 0 m -5 0 l 5 -5 l 5 5 l -5 5 z";
+                break;
+            }
+            case SeriesMarkerShape.triangle : {
+                markerD = "M 0 0 m -5 5 l 5 -10 l 5 10 z";
+                break;
+            }
+            case SeriesMarkerShape.cross: {
+                markerD = "M 0 0 m -5 -5 l 10 10 m -10 0 l 10 -10";
+                strokeWidth = 1;
+                break;
+            }
+            case SeriesMarkerShape.shortDash: {
+                markerD = "M 0 0 l 5 0";
+                strokeWidth = 2;
+                break;
+            }
+            case SeriesMarkerShape.longDash: {
                 markerD = "M 0 0 m -5 0 l 10 0";
                 strokeWidth = 2;
+                break;
+            }
+            case SeriesMarkerShape.plus: {
+                markerD = "M 0 0 m -5 0 l 10 0 m -5 -5 l 0 10";
+                strokeWidth = 1;
                 break;
             }
         }

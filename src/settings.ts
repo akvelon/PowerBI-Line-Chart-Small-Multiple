@@ -1,7 +1,8 @@
 "use strict";
 
 import {DataViewObjectsParser} from "powerbi-visuals-utils-dataviewutils/lib/dataViewObjectsParser";
-import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
+import {SeriesMarkerShape} from "./seriesMarkerShape";
+import {LegendIconType} from "./legendIconType";
 
 export const DefaultFontFamily: string = "\"Segoe UI\", wf_segoe-ui_normal, helvetica, arial, sans-serif";
 const DataLabelsFontFamily: string = "wf_standard-font, helvetica, arial, sans-serif";
@@ -66,7 +67,7 @@ export class LegendSettings {
     // Legend Font Size
     public fontSize: number = 8;
     //Legend style
-    public style: string = "markers";
+    public style: LegendIconType = LegendIconType.markers;
     // Match line color
     public matchLineColor: boolean = true;
     // Circle default icon
@@ -208,7 +209,7 @@ export class Shapes {
     public lineStyle: string = "solid";
 
     public showMarkers: boolean = false;
-    public markerShape: MarkerShape = MarkerShape.circle;
+    public markerShape: SeriesMarkerShape = SeriesMarkerShape.circle;
     public markerSize: number = 5;
     public markerColor: string = "";
 

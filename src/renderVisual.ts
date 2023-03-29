@@ -38,6 +38,7 @@ import {MarkersUtility} from "./utilities/markersUtility";
 import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import {getOpacity} from "./behavior";
 import {select as d3select} from "d3-selection";
+import {SeriesMarkerShape} from "./seriesMarkerShape";
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -1485,7 +1486,7 @@ export class RenderVisual {
             let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
             if (showMarkers) {
                 //init variables for marker
-                let markerShape: MarkerShape = (lineDataPoint.markerShape == undefined) ? shapes.markerShape : lineDataPoint.markerShape;
+                let markerShape: SeriesMarkerShape = (lineDataPoint.markerShape == undefined) ? shapes.markerShape : lineDataPoint.markerShape;
                 let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
                 let markerColor: string = (lineDataPoint.markerColor == undefined)
                     ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor

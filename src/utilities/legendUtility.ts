@@ -1,33 +1,32 @@
 "use strict";
 
 import powerbi from "powerbi-visuals-api";
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import {LegendSettings} from "../settings";
 import {d3Selection, LegendDataExtended, LegendDataPointExtended} from "../visualInterfaces";
-import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
-import DataView = powerbi.DataView;
 import {
     ILegend,
     LegendData,
     LegendPosition,
     MarkerShape
 } from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
-import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
 import {ColorHelper} from "powerbi-visuals-utils-colorutils";
+import {fromPixelToPoint, fromPointToPixel, measureTextWidth, TextProperties} from "./textUtility";
+import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
+import {select as d3select, selectAll as d3selectAll} from "d3-selection";
+import {Visual} from "../visual";
+import {parseTranslateTransform, translate as svgTranslate} from "powerbi-visuals-utils-svgutils/lib/manipulation";
+import {SeriesMarkerShape} from "../seriesMarkerShape";
+import {LegendIconType} from "../legendIconType";
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+import DataView = powerbi.DataView;
+import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
 import DataViewValueColumns = powerbi.DataViewValueColumns;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
-import {fromPixelToPoint, fromPointToPixel, measureTextWidth, TextProperties} from "./textUtility";
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
-import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
-import {selectAll as d3selectAll, select as d3select} from "d3-selection";
-import {Visual} from "../visual";
-import {MarkersUtility} from "./markersUtility";
-import {LegendBehavior} from "../legendBehavior";
 import IViewport = powerbi.IViewport;
-import {parseTranslateTransform} from "powerbi-visuals-utils-svgutils/lib/manipulation";
-import {translate as svgTranslate} from "powerbi-visuals-utils-svgutils/lib/manipulation";
 
 const paddingText: number = 10;
 const arrowWidth: number = 7.5;
@@ -78,6 +77,8 @@ export function renderLegend(legendSettings: LegendSettings, dataPoints: LegendD
 export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]) {
     if (!dataPoints || dataPoints.length == 0) return;
     let legendIcon = dataPoints[0].markerShape;
+    console.log('legendIcon')
+    console.log(legendIcon)
     let legendItemsLen: number = legendItems && legendItems.size() > 0 ? legendItems.size() : 0;
     if (legendItemsLen == 0) return;
 
@@ -262,6 +263,7 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
 
         switch (legendIcon) {
             case MarkerShape.circle: {
+                console.log('circle');
                 text.attr('x', cx + circleD / 2 + padding);
                 let showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
                 console.log('showMarkers');
@@ -297,6 +299,7 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 break;
             }
             case MarkerShape.square: {
+                console.log('square')
                 // //draw line and marker
                 // let textX: number = cx + lineLen / 2 + padding;
                 // text.attr('x', textX);
@@ -328,6 +331,7 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 break;
             }
             case MarkerShape.longDash: {
+                console.log('long dash')
                 // customLegendMarker.remove();
                 // //draw line
                 // let textX: number = cx + lineLen / 2 + padding;
@@ -481,17 +485,18 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
 //         legendItems = legendGroup.selectAll('.legendItem').data(newDataPoints);
 //         return legendItems;
 //     }
-//
-
 
 export function getLegendData(dataView: DataView, host: IVisualHost, legend: LegendSettings): LegendDataExtended {
     let isLegendFilled: boolean = IsLegendFilled(dataView);
     let legendIcons = {
-        "markers": MarkerShape.circle,
-        "linemarkers": MarkerShape.square,
-        "line": MarkerShape.longDash
+        "markers": LegendIconType.markers,
+        "linemarkers": LegendIconType.lineMarkers,
+        "line": LegendIconType.line,
     };
-    let legendIcon: MarkerShape = legendIcons[legend.style];
+    console.log('legend.style')
+    console.log(legend.style)
+    let legendIcon: LegendIconType = legendIcons[legend.style];
+    console.log(legendIcon)
     if (isLegendFilled) {
         return buildLegendData(dataView,
             host,
@@ -521,7 +526,8 @@ function buildLegendData(
     dataView: DataView,
     host: IVisualHost,
     legendObjectProperties: LegendSettings,
-    legendIcon: MarkerShape): LegendDataExtended {
+    legendIcon: LegendIconType): LegendDataExtended {
+    console.log('buildLegendData')
 
     const colorHelper: ColorHelper = new ColorHelper(
         host.colorPalette,
@@ -551,7 +557,9 @@ function buildLegendData(
             legendItems.push({
                 color: color,
                 markerColor: color,
-                markerShape: legendIcon,
+                markerShape: MarkerShape.circle,
+                seriesMarkerShape: SeriesMarkerShape.circle,
+                style: legendIcon,
                 label: label,
                 tooltip: label,
                 object: grouping.objects,
@@ -579,7 +587,9 @@ function buildLegendData(
                 legendItems.push({
                     color: color,
                     markerColor: color,
-                    markerShape: legendIcon,
+                    markerShape: MarkerShape.circle,
+                    seriesMarkerShape: SeriesMarkerShape.circle,
+                    style: legendIcon,
                     label: name,
                     tooltip: name,
                     object: object,
@@ -651,8 +661,10 @@ function getNumberOfValues(dataView: DataView): number {
 function buildLegendDataForMultipleValues(
     host: IVisualHost,
     dataView: DataView,
-    legendIcon: MarkerShape,
+    legendIcon: LegendIconType,
     title: string): LegendDataExtended {
+    console.log('buildLegendDataForMultipleValues')
+    console.log(legendIcon)
 
     let colorHelper: ColorHelper = new ColorHelper(
         host.colorPalette,
@@ -684,10 +696,15 @@ function buildLegendDataForMultipleValues(
         let color: string = objects && objects.dataPoint ? colorFromObject : currentColor;
 
         let label: string = values[i].source.displayName;
+
+        console.log('push legend item')
+        console.log(legendIcon)
         legendItems.push({
             color: color,
             markerColor: color,
-            markerShape: legendIcon,
+            markerShape: MarkerShape.circle,
+            seriesMarkerShape: SeriesMarkerShape.circle,
+            style: legendIcon,
             label: label,
             tooltip: label,
             object: values[i].source.objects,
@@ -697,6 +714,9 @@ function buildLegendDataForMultipleValues(
     }
 
     colorHelper = null;
+
+    console.log('legend items before return')
+    console.log(JSON.stringify(legendItems))
 
     return {
         title: title,

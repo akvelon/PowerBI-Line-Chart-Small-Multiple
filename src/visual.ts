@@ -54,6 +54,7 @@ import {implementLassoSelection} from "./lasso";
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 import {EnumerateObject} from "./utilities/objectEnumerationUtility";
+import {SeriesMarkerShape} from "./seriesMarkerShape";
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format: string = category.source.format;
@@ -805,6 +806,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         columnsData = (column != null) ? get_sorted(columnsData, column.source.type) : [];
 
         let legendData: LegendDataExtended = getLegendData(dataView, host, settings.legend);
+        console.log('legend data')
+        console.log(JSON.stringify(legendData))
         if (settings.legend.legendName == null)
             settings.legend.legendName = legendData.title;
         legendDataPoint = legendData.dataPoints;
@@ -1076,7 +1079,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 if (object.shapes.seriesShowMarkers != undefined)
                                     lineDataPoint.showMarkers = object.shapes.seriesShowMarkers == true;
                                 if (object.shapes.seriesMarkerShape != undefined)
-                                    lineDataPoint.markerShape = <MarkerShape>object.shapes.seriesMarkerShape.toString();
+                                    lineDataPoint.markerShape = <SeriesMarkerShape>object.shapes.seriesMarkerShape.toString();
                                 if (object.shapes.seriesMarkerSize != undefined)
                                     lineDataPoint.markerSize = +object.shapes.seriesMarkerSize;
                                 if (object.shapes.seriesMarkerColor != undefined) {
@@ -1086,15 +1089,31 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                         lineDataPoint.markerColor = color;
                                 }
                             }
+
+                            console.log('lineDataPoint')
+                            console.log(JSON.stringify(lineDataPoint))
+
                             let letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
                             let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
                             legendDataPointItem.markerColor = markerColor ? markerColor : color;
                             legendDataPointItem.showMarkers = letShowMarkers;
-                            legendDataPointItem.markerShape = lineDataPoint.markerShape ? <MarkerShape>lineDataPoint.markerShape : <MarkerShape>settings.shapes.markerShape;
+                            legendDataPointItem.seriesMarkerShape = lineDataPoint.markerShape ? lineDataPoint.markerShape : settings.shapes.markerShape;
                             legendDataPoint[legendDataPointIndex] = legendDataPointItem;
 
                             lineIndex = lines.push(lineDataPoint);
                             lineKeyIndex[lineKey + displayName] = lineIndex - 1;
+
+                            console.log('settings.shapes.markerShape')
+                            console.log(settings.shapes.markerShape)
+
+                            console.log('lineDataPoint')
+                            console.log(lineDataPoint)
+
+                            console.log('legendDataPointItem')
+                            console.log(legendDataPointItem)
+
+                            console.log('legend data')
+                            console.log(JSON.stringify(legendData))
                         }
                     }
                 }
