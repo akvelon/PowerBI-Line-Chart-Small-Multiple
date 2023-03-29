@@ -295,7 +295,6 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 break;
             }
             case LegendIconType.lineMarkers: {
-                console.log('lineMarkers')
                 //draw line and marker
                 let textX: number = cx + lineLen / 2 + padding;
                 text.attr('x', textX);
@@ -327,7 +326,6 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
                 break;
             }
             case LegendIconType.line: {
-                console.log('line')
                 customLegendMarker.remove();
                 //draw line
                 let textX: number = cx + lineLen / 2 + padding;

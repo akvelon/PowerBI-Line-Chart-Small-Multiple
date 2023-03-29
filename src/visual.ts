@@ -272,7 +272,8 @@ export class Visual implements IVisual {
                 let maxWidth: number = maxCountOfXAxis * this.model.settings.xAxis.minCategoryWidth;
                 itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
             }
-            // let lassoContainer: d3Selection<any>;
+
+            let lassoContainer: d3Selection<any>;
 
             if (this.model.settings.smallMultiple.enable) {
                 // container.style('overflow', 'auto');
@@ -451,83 +452,88 @@ export class Visual implements IVisual {
                 //     }
                 // }
             } else {
-                // //simple view
-                // let scrollbarMargin: number = 25;
-                // if (itemWidth > containerSize.width)
-                //     itemHeight = itemHeight - scrollbarMargin;
-                // let svgContainer: d3Selection<SVGElement> = container
-                //     .append('svg')
-                //     .attr('width', itemWidth)
-                //     .attr('height', itemHeight);
-                // let lineKey: string = this.retrieveLineKey(0, 0);
-                // let lines: LineDataPoint[] = this.retrieveLines(lineKey);
-                // selectionLines = lines;
-                // for (let k = 0; k < lines.length; k++) {
-                //     if (lines[k].points && lines[k].points.length == 1)
-                //         dots.push(lines[k]);
-                // }
-                //
-                // let legendPosition: string = this.model.settings.legend.position;
-                // let legendHeight: number = margin.top;
-                // let newLegendPosition: string = null;
-                // let svgContainerWidth: number = itemWidth;
-                // let svgContainerHeight: number = itemHeight;
-                // let stepCount: number = 0;
-                // let maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
-                // while (stepCount < maxStepCount && legendPosition != "None") {
-                //     newLegendPosition = renderSimpleVisual.retrieveNewLegendPosition(svgContainer, lines, svgContainerWidth, svgContainerHeight, legendPosition, legendHeight);
-                //     let legendSettings: LegendSettings = {
-                //         show: this.model.settings.legend.show,
-                //         position: newLegendPosition,
-                //         showTitle: this.model.settings.legend.showTitle,
-                //         legendName: this.model.settings.legend.legendName,
-                //         legendNameColor: this.model.settings.legend.legendNameColor,
-                //         fontFamily: this.model.settings.legend.fontFamily,
-                //         fontSize: this.model.settings.legend.fontSize,
-                //         style: this.model.settings.legend.style,
-                //         matchLineColor: this.model.settings.legend.matchLineColor,
-                //         circleDefaultIcon: this.model.settings.legend.circleDefaultIcon
-                //     };
-                //     if (newLegendPosition == "None") {
-                //         this.model.settings.legend.position = "None";
-                //     }
-                //     margin = {top: 0, left: 0, bottom: 0, right: 0};
-                //     renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
-                //     legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
-                //     containerSize = {
-                //         width: options.viewport.width - margin.left - margin.right,
-                //         height: options.viewport.height - margin.top - margin.bottom
-                //     };
-                //     this.element.selectAll('.chart').remove();
-                //     svgContainerWidth = Math.max(itemWidth, containerSize.width);
-                //     svgContainerHeight = Math.max(itemHeight, containerSize.height);
-                //     container = this.element
-                //         .append('div')
-                //         .classed('chart', true)
-                //         .style('width', containerSize.width + 'px')
-                //         .style('height', containerSize.height + 'px');
-                //     positionChartArea(container, this.legend);
-                //     container
-                //         .style('overflow-x', 'auto')
-                //         .style('overflow-y', 'hidden');
-                //     if (svgContainerWidth > containerSize.width)
-                //         svgContainerHeight = svgContainerHeight - scrollbarMargin;
-                //     svgContainer = container
-                //         .append('svg')
-                //         .attr('width', svgContainerWidth)
-                //         .attr('height', svgContainerHeight);
-                //     if (legendPosition == newLegendPosition) {
-                //         break;
-                //     } else {
-                //         legendPosition = newLegendPosition;
-                //     }
-                //     stepCount = stepCount + 1;
-                // }
-                // let isLegendHidden: boolean = (legendPosition == "None");
-                // svgContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
-                // renderSimpleVisual.renderSmallMultiple(svgContainer, lines, svgContainerWidth, svgContainerHeight, lineKey,
-                //     this.model.settings.general.responsive, legendHeight, isLegendHidden, 0, 0);
-                // lassoContainer = svgContainer;
+                //simple view
+                let scrollbarMargin: number = 25;
+                if (itemWidth > containerSize.width)
+                    itemHeight = itemHeight - scrollbarMargin;
+                let svgContainer: d3Selection<SVGElement> = container
+                    .append('svg')
+                    .attr('width', itemWidth)
+                    .attr('height', itemHeight);
+                let lineKey: string = this.retrieveLineKey(0, 0);
+                let lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                selectionLines = lines;
+                for (let k = 0; k < lines.length; k++) {
+                    if (lines[k].points && lines[k].points.length == 1)
+                        dots.push(lines[k]);
+                }
+
+                let legendPosition: string = this.model.settings.legend.position;
+                let legendHeight: number = margin.top;
+                let newLegendPosition: string = null;
+                let svgContainerWidth: number = itemWidth;
+                let svgContainerHeight: number = itemHeight;
+                let stepCount: number = 0;
+                let maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
+                while (stepCount < maxStepCount && legendPosition != "None") {
+                    newLegendPosition = renderSimpleVisual.retrieveNewLegendPosition(svgContainer, lines, svgContainerWidth, svgContainerHeight, legendPosition, legendHeight);
+                    let legendSettings: LegendSettings = {
+                        show: this.model.settings.legend.show,
+                        position: newLegendPosition,
+                        showTitle: this.model.settings.legend.showTitle,
+                        legendName: this.model.settings.legend.legendName,
+                        legendNameColor: this.model.settings.legend.legendNameColor,
+                        fontFamily: this.model.settings.legend.fontFamily,
+                        fontSize: this.model.settings.legend.fontSize,
+                        style: this.model.settings.legend.style,
+                        matchLineColor: this.model.settings.legend.matchLineColor,
+                        circleDefaultIcon: this.model.settings.legend.circleDefaultIcon
+                    };
+                    if (newLegendPosition == "None") {
+                        this.model.settings.legend.position = "None";
+                    }
+
+                    margin = {top: 0, left: 0, bottom: 0, right: 0};
+                    renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
+                    legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
+                    containerSize = {
+                        width: options.viewport.width - margin.left - margin.right,
+                        height: options.viewport.height - margin.top - margin.bottom
+                    };
+                    this.element.selectAll('.chart').remove();
+                    svgContainerWidth = Math.max(itemWidth, containerSize.width);
+                    svgContainerHeight = Math.max(itemHeight, containerSize.height);
+                    container = this.element
+                        .append('div')
+                        .classed('chart', true)
+                        .style('width', containerSize.width + 'px')
+                        .style('height', containerSize.height + 'px');
+                    positionChartArea(container, this.legend);
+                    container
+                        .style('overflow-x', 'auto')
+                        .style('overflow-y', 'hidden');
+                    if (svgContainerWidth > containerSize.width)
+                        svgContainerHeight = svgContainerHeight - scrollbarMargin;
+
+                    svgContainer = container
+                        .append('svg')
+                        .attr('width', svgContainerWidth)
+                        .attr('height', svgContainerHeight);
+
+                    if (legendPosition == newLegendPosition) {
+                        break;
+                    } else {
+                        legendPosition = newLegendPosition;
+                    }
+
+                    stepCount = stepCount + 1;
+                }
+
+                let isLegendHidden: boolean = (legendPosition == "None");
+                svgContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
+                renderSimpleVisual.renderSmallMultiple(svgContainer, lines, svgContainerWidth, svgContainerHeight, lineKey,
+                    this.model.settings.general.responsive, legendHeight, isLegendHidden, 0, 0);
+                lassoContainer = svgContainer;
             }
 
             //selection
@@ -806,8 +812,6 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         columnsData = (column != null) ? get_sorted(columnsData, column.source.type) : [];
 
         let legendData: LegendDataExtended = getLegendData(dataView, host, settings.legend);
-        console.log('legend data')
-        console.log(JSON.stringify(legendData))
         if (settings.legend.legendName == null)
             settings.legend.legendName = legendData.title;
         legendDataPoint = legendData.dataPoints;
@@ -1090,9 +1094,6 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 }
                             }
 
-                            console.log('lineDataPoint')
-                            console.log(JSON.stringify(lineDataPoint))
-
                             let letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
                             let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
                             legendDataPointItem.markerColor = markerColor ? markerColor : color;
@@ -1102,18 +1103,6 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
 
                             lineIndex = lines.push(lineDataPoint);
                             lineKeyIndex[lineKey + displayName] = lineIndex - 1;
-
-                            console.log('settings.shapes.markerShape')
-                            console.log(settings.shapes.markerShape)
-
-                            console.log('lineDataPoint')
-                            console.log(lineDataPoint)
-
-                            console.log('legendDataPointItem')
-                            console.log(legendDataPointItem)
-
-                            console.log('legend data')
-                            console.log(JSON.stringify(legendData))
                         }
                     }
                 }
