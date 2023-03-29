@@ -51,6 +51,9 @@ import DataViewObjects = powerbi.DataViewObjects;
 import '../style/visual.less';
 import {RenderVisual} from "./renderVisual";
 import {implementLassoSelection} from "./lasso";
+import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
+import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
+import {EnumerateObject} from "./utilities/objectEnumerationUtility";
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format: string = category.source.format;
@@ -641,13 +644,12 @@ export class Visual implements IVisual {
         return VisualSettings.parse(dataView) as VisualSettings;
     }
 
-//         public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
-//             let instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
-//             EnumerateObject.setInstances(this.model.settings, instanceEnumeration, this.model);
-//             return instanceEnumeration;
-//         }
+    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+        let instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
+        EnumerateObject.setInstances(this.model.settings, instanceEnumeration, this.model);
+        return instanceEnumeration;
+    }
 }
-
 
 function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
     //Get DataViews
