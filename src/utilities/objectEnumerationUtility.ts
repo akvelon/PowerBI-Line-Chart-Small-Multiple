@@ -192,8 +192,8 @@ export class EnumerateObject {
                             let showMarkers: boolean = (lineDataPoint.showMarkers != null)
                                 ? lineDataPoint.showMarkers
                                 : settings.shapes.showMarkers;
-                            let markerShape: string = (lineDataPoint.markerShape != null)
-                                ? lineDataPoint.markerShape
+                            let markerShape: string = (lineDataPoint.seriesMarkerShape != null)
+                                ? lineDataPoint.seriesMarkerShape
                                 : settings.shapes.markerShape;
                             let markerSize: number = (lineDataPoint.markerSize != null)
                                 ? lineDataPoint.markerSize

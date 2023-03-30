@@ -1251,19 +1251,20 @@ export class RenderVisual {
                 return opacity;
             });
 
-        // let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
-        //
-        // for (let i = 0; i < lines.length; i++) {
-        //     let dataPoint: LineDataPoint = lines[i];
-        //     let marker: string = lineNamesWithMarkers[dataPoint.name];
-        //     if (marker) {
-        //         let item: d3Selection<any> = d3select(lineGroupSelection[0][i]);
-        //         item.attr('marker-start', marker);
-        //         item.attr('marker-mid', marker);
-        //         item.attr('marker-end', marker);
-        //     }
-        // }
-        // lineGroupSelection.exit().remove();
+        let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
+        console.log(lineNamesWithMarkers)
+
+        for (let i = 0; i < lines.length; i++) {
+            let dataPoint: LineDataPoint = lines[i];
+            let marker: string = lineNamesWithMarkers[dataPoint.name];
+            if (marker) {
+                let item: d3Selection<any> = d3select(svgLinesContainerE.nodes()[i]);
+                item.attr('marker-start', marker);
+                item.attr('marker-mid', marker);
+                item.attr('marker-end', marker);
+            }
+        }
+
         // let dots: LineDataPoint[] = [];
         // for (let i = 0; i < lines.length; i++) {
         //     if (lines[i].points && lines[i].points.length == 1)
@@ -1518,30 +1519,42 @@ export class RenderVisual {
         let lineNamesWithMarkers = {};
         let defsContainer = container.append('defs');
         let shapesShowMarkers: boolean = shapes.showMarkers;
+        console.log('shapesShowMarkers')
+        console.log(shapesShowMarkers)
         for (let i = 0; i < lines.length; i++) {
             let lineDataPoint: LineDataPoint = lines[i];
             //Marker
             let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
-            if (showMarkers) {
-                //init variables for marker
-                let markerShape: SeriesMarkerShape = (lineDataPoint.markerShape == undefined) ? shapes.markerShape : lineDataPoint.markerShape;
-                let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
-                let markerColor: string = (lineDataPoint.markerColor == undefined)
-                    ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
-                    : lineDataPoint.markerColor;
-                //init marker
-                let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
-                if (markerId) {
-                    let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
-                    if (stepped) {
-                        let lineD = lineDD[i];
-                        let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
-                        let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-                        MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
-                    } else {
-                        lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
-                    }
-                }
+            console.log('showMarkers')
+            console.log(showMarkers)
+            if (!showMarkers) {
+                continue;
+            }
+
+            let markerShape: SeriesMarkerShape = (lineDataPoint.seriesMarkerShape == undefined) ? shapes.markerShape : lineDataPoint.seriesMarkerShape;
+            let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
+            let markerColor: string = (lineDataPoint.markerColor == undefined)
+                ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
+                : lineDataPoint.markerColor;
+            let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
+
+            console.log(markerShape)
+            console.log(markerSize)
+            console.log(markerColor)
+            console.log(markerId)
+            if (!markerId) {
+                continue;
+            }
+
+            let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
+            console.log(stepped)
+            if (stepped) {
+                let lineD = lineDD[i];
+                let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
+                let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+                MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
+            } else {
+                lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
             }
         }
         return lineNamesWithMarkers;

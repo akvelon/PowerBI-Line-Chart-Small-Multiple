@@ -5,7 +5,12 @@ import {Visual} from "../visual";
 import {SeriesMarkerShape} from "../seriesMarkerShape";
 
 export class MarkersUtility {
-    public static initMarker(container: d3Selection<any>, uniqueName: string, markerShape: SeriesMarkerShape, markerSize: number, markerColor: string): string {
+    public static initMarker(
+        container: d3Selection<any>,
+        uniqueName: string,
+        markerShape: SeriesMarkerShape,
+        markerSize: number,
+        markerColor: string): string {
         // set markerD and strokeWidth from markerShape
         let markerD: string = "";
         let strokeWidth: number = 0;
@@ -50,9 +55,13 @@ export class MarkersUtility {
 
         let markerId: string;
         //init marker
+        console.log(markerD)
         if (markerD !== "") {
             markerId = MarkersUtility.retrieveMarkerName(uniqueName, markerShape);
             let isMarkerNotExists = container.select("#" + markerId).empty();
+            console.log('isMarkerNotExists')
+            console.log(isMarkerNotExists)
+
             if (isMarkerNotExists) {
                 let marker = container.append('marker')
                     .attr('id', markerId)

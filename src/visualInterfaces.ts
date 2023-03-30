@@ -158,7 +158,7 @@ export interface LineDataPoint extends SelectableDataPoint {
     stepped?: boolean;
 
     showMarkers?: boolean;
-    markerShape?: SeriesMarkerShape;
+    seriesMarkerShape?: SeriesMarkerShape;
     markerSize?: number;
     markerColor?: string;
 }

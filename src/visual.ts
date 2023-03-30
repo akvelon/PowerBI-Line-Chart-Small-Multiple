@@ -1089,7 +1089,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 if (object.shapes.seriesShowMarkers != undefined)
                                     lineDataPoint.showMarkers = object.shapes.seriesShowMarkers == true;
                                 if (object.shapes.seriesMarkerShape != undefined)
-                                    lineDataPoint.markerShape = <SeriesMarkerShape>object.shapes.seriesMarkerShape.toString();
+                                    lineDataPoint.seriesMarkerShape = object.shapes.seriesMarkerShape as SeriesMarkerShape;
                                 if (object.shapes.seriesMarkerSize != undefined)
                                     lineDataPoint.markerSize = +object.shapes.seriesMarkerSize;
                                 if (object.shapes.seriesMarkerColor != undefined) {
@@ -1104,7 +1104,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                             let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
                             legendDataPointItem.markerColor = markerColor ? markerColor : color;
                             legendDataPointItem.showMarkers = letShowMarkers;
-                            legendDataPointItem.seriesMarkerShape = lineDataPoint.markerShape ? lineDataPoint.markerShape : settings.shapes.markerShape;
+                            legendDataPointItem.seriesMarkerShape = lineDataPoint.seriesMarkerShape ? lineDataPoint.seriesMarkerShape : settings.shapes.markerShape;
                             legendDataPoint[legendDataPointIndex] = legendDataPointItem;
 
                             lineIndex = lines.push(lineDataPoint);
