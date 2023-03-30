@@ -55,13 +55,9 @@ export class MarkersUtility {
 
         let markerId: string;
         //init marker
-        console.log(markerD)
         if (markerD !== "") {
             markerId = MarkersUtility.retrieveMarkerName(uniqueName, markerShape);
             let isMarkerNotExists = container.select("#" + markerId).empty();
-            console.log('isMarkerNotExists')
-            console.log(isMarkerNotExists)
-
             if (isMarkerNotExists) {
                 let marker = container.append('marker')
                     .attr('id', markerId)

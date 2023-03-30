@@ -341,12 +341,10 @@ export class RenderVisual {
         let x: AxisScale<AxisDomain>;
         //set x
         let chartRangeType: string = this.settings.xAxis.chartRangeType;
-        console.log(chartRangeType)
 
         let start: number;
         let end: number;
 
-        console.log(this.categoryIsDate)
         if (this.categoryIsDate) {
             let lastIndex: number = this.categories.length - 1;
             let minDate: Date = new Date(this.categories[0].toString());
@@ -431,8 +429,6 @@ export class RenderVisual {
                 }
             }
 
-            console.log('chartRangeType')
-            console.log(chartRangeType)
             if (chartRangeType == "separate") {
                 let newxAxisDataPoints: any[] = [];
                 for (let k = 0; k < xAxisDataPoints.length; k++) {
@@ -457,8 +453,6 @@ export class RenderVisual {
                 xAxisDataPoints = newxAxisDataPoints;
             }
 
-            console.log('xIsCategorical')
-            console.log(xIsCategorical)
             if (xIsCategorical) {
                 x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange)
             } else {
@@ -474,18 +468,9 @@ export class RenderVisual {
             }
         }
 
-        console.log('xAxisDataPoints')
-        console.log(xAxisDataPoints)
-
         if (xAxisDataPoints.length == 1) {
             x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
         }
-
-
-        // // TODO Remove test
-        // x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
-        // console.log('test')
-        // console.log(x('Feb-14'))
 
         return {
             x: x,
@@ -514,7 +499,6 @@ export class RenderVisual {
 
     public renderSmallMultiple(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
                                isResponsive: boolean, legendHeight: number, isLegendHidden: boolean, rectGlobalX: number, rectGlobalY: number) {
-        console.log('renderSmallMultiple')
         svgContainer.classed(Visual.SmallMultipleSelector.className, true);
         svgContainer = svgContainer.append("svg");
         let plotSize = {width: width, height: height};
@@ -553,8 +537,6 @@ export class RenderVisual {
         let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
         let xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
         let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
-        console.log(xAxisData)
-
         let x = xAxisData.x;
         xAxisDataPoints = xAxisData.xAxisDataPoints;
         lines = xAxisData.lines;
@@ -645,7 +627,7 @@ export class RenderVisual {
         //Render lines
         this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
 
-        // this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
+        this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
         // //Render vertical line
         // if (!showVerticalLine) return;
         //
@@ -748,9 +730,6 @@ export class RenderVisual {
             fontFamily: this.settings.xAxis.fontFamily,
             text: longestXAxis
         });
-
-        console.log('xIsCategorical')
-        console.log(xIsCategorical)
 
         if (xIsCategorical) {
             numTicks = xAxisDataPoints.length;
@@ -1252,8 +1231,6 @@ export class RenderVisual {
             });
 
         let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
-        console.log(lineNamesWithMarkers)
-
         for (let i = 0; i < lines.length; i++) {
             let dataPoint: LineDataPoint = lines[i];
             let marker: string = lineNamesWithMarkers[dataPoint.name];
@@ -1265,16 +1242,18 @@ export class RenderVisual {
             }
         }
 
-        // let dots: LineDataPoint[] = [];
-        // for (let i = 0; i < lines.length; i++) {
-        //     if (lines[i].points && lines[i].points.length == 1)
-        //         dots.push(lines[i]);
-        // }
-        // let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainer
+        let dots: LineDataPoint[] = [];
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].points && lines[i].points.length == 1)
+                dots.push(lines[i]);
+        }
+
+        console.log(dots)
+        // let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainerE
         //     .append("g")
         //     .selectAll(Visual.SimpleLineSelector.selectorName)
         //     .data(dots);
-        //
+
         // dotsGroupSelection
         //     .enter()
         //     .append("circle")
@@ -1342,14 +1321,18 @@ export class RenderVisual {
 
     private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3Line<[number, number]>, svgContainer: d3Selection<any>): void {
 
-        let dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g').classed("labelBackgroundGraphicsContext", true);
+        let dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g')
+            .classed("labelBackgroundGraphicsContext", true);
         dataLabelsBackgroundContext.selectAll("*").remove();
-        dataLabelsBackgroundContext.selectAll("*").remove();
+        // dataLabelsBackgroundContext.selectAll("*").remove();
 
-        let dataLabelsContext: d3Selection<any> = svgContainer.append('g').classed("labelGraphicsContext", true);
+        let dataLabelsContext: d3Selection<any> = svgContainer.append('g')
+            .classed("labelGraphicsContext", true);
         dataLabelsContext.selectAll("*").remove();
 
         let labelSettings = this.settings.dataLabels;
+        console.log('labelSettings')
+        console.log(labelSettings)
 
         if (!labelSettings.show) return;
 
@@ -1360,6 +1343,9 @@ export class RenderVisual {
                 for (let j = 0; j < points.length; j++)
                     dataPoints.push(points[j]);
         }
+
+        console.log('dataPoints')
+        console.log(dataPoints)
 
         let fontSizeInPx: string = fromPoint(labelSettings.fontSize);
         let fontFamily: string = labelSettings.fontFamily;
@@ -1379,6 +1365,11 @@ export class RenderVisual {
             let lineD: string = line(point);
             let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
             let value = this.dataLabelFormatter.format(dataPoints[i].y);
+
+            console.log(lineD)
+            console.log(data)
+            console.log(value)
+
             let width: number = measureTextWidth({
                 fontFamily: fontFamily,
                 fontSize: fontSizeInPx,
@@ -1393,7 +1384,10 @@ export class RenderVisual {
                 bgX: +data[0] - width / 2 - labelBackgroundWidthPadding / 2,
                 bgY: +data[1] - height - labelBackgroundYShift - deltaY
             };
+            console.log(coord)
+
             if (coord.bgX + coord.bgWidth > maxRangeX || coord.bgX < minRangeX || coord.bgY + coord.bgHeight > yRangeMax || coord.bgY < 0) {
+                console.log('continue early')
                 continue;
             }
             let goToBottom: boolean = false;
@@ -1404,6 +1398,7 @@ export class RenderVisual {
                     break;
                 }
             }
+
             if (goToBottom) {
                 coord.bgY = coord.bgY + deltaY * 2;
                 coord.y = coord.y + deltaY * 2;
@@ -1411,6 +1406,7 @@ export class RenderVisual {
                     continue;
                 }
             }
+
             let add: boolean = true;
             for (let j = 0; j < coords.length; j++) {
                 let isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);
@@ -1421,6 +1417,7 @@ export class RenderVisual {
             }
             if (add) coords.push(coord);
         }
+
         let coordsLen: number = coords.length;
         let maxCount: number = (this.settings.xAxis.axisType === "categorical")
             ? coordsLen
@@ -1445,15 +1442,10 @@ export class RenderVisual {
             }
         }
 
-        let labelSelection: d3Selection<Coordinates> = dataLabelsContext
+        dataLabelsContext
             .selectAll(Visual.Label.selectorName)
-            .data(newCoords);
-
-        labelSelection
-            .enter()
-            .append("svg:text");
-
-        labelSelection
+            .data(newCoords)
+            .join("svg:text")
             .classed('label', true)
             .attr('transform', (c: Coordinates) => {
                 return 'translate(' + c.x + ',' + c.y + ')';
@@ -1466,23 +1458,15 @@ export class RenderVisual {
             .style("white-space", "nowrap")
             .text((c: Coordinates) => c.value);
 
-        labelSelection
-            .exit()
-            .remove();
-
         if (!labelSettings.showBackground) return;
 
-        let backgroundSelection: d3Selection<Coordinates> = dataLabelsBackgroundContext
-            .selectAll(Visual.Label.selectorName)
-            .data(newCoords);
-
-        backgroundSelection
-            .enter()
-            .append("svg:rect");
-
         let backgroundColor: string = this.settings.dataLabels.backgroundColor;
+        let transparency: number = this.settings.dataLabels.transparency;
 
-        backgroundSelection
+        dataLabelsBackgroundContext
+            .selectAll(Visual.Label.selectorName)
+            .data(newCoords)
+            .join("svg:rect")
             .attr('height', d => {
                 return d.bgHeight;
             })
@@ -1497,15 +1481,9 @@ export class RenderVisual {
             })
             .attr('rx', DataLabelR)
             .attr('ry', DataLabelR)
-            .attr('fill', backgroundColor);
-
-        let transparency: number = this.settings.dataLabels.transparency;
-        backgroundSelection.style("fill-opacity", (100 - transparency) / 100)
+            .attr('fill', backgroundColor)
+            .style("fill-opacity", (100 - transparency) / 100)
             .style("pointer-events", "none");
-
-        backgroundSelection
-            .exit()
-            .remove();
     }
 
     private isDataLabelOk(item: Coordinates, coord: Coordinates): boolean {
@@ -1519,14 +1497,10 @@ export class RenderVisual {
         let lineNamesWithMarkers = {};
         let defsContainer = container.append('defs');
         let shapesShowMarkers: boolean = shapes.showMarkers;
-        console.log('shapesShowMarkers')
-        console.log(shapesShowMarkers)
         for (let i = 0; i < lines.length; i++) {
             let lineDataPoint: LineDataPoint = lines[i];
             //Marker
             let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
-            console.log('showMarkers')
-            console.log(showMarkers)
             if (!showMarkers) {
                 continue;
             }
@@ -1537,17 +1511,11 @@ export class RenderVisual {
                 ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
                 : lineDataPoint.markerColor;
             let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
-
-            console.log(markerShape)
-            console.log(markerSize)
-            console.log(markerColor)
-            console.log(markerId)
             if (!markerId) {
                 continue;
             }
 
             let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
-            console.log(stepped)
             if (stepped) {
                 let lineD = lineDD[i];
                 let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
