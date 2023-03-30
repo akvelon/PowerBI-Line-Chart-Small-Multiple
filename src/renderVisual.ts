@@ -38,13 +38,15 @@ import {
 } from "./utilities/textUtility";
 import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
 import {Line as d3Line} from 'd3-shape';
-import {axisBottom as d3axisBottom, AxisDomain, AxisScale} from "d3-axis";
+import {axisBottom as d3axisBottom, axisLeft as d3axisLeft, AxisDomain, AxisScale} from "d3-axis";
 import {MarkersUtility} from "./utilities/markersUtility";
 import {getOpacity} from "./behavior";
 import {select as d3select} from "d3-selection";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
+import {line as d3line, curveLinear as d3curveLinear} from "d3-shape";
+import {Axis as d3Axis} from "d3-axis";
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -564,67 +566,70 @@ export class RenderVisual {
             ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
             : 0;
         let xAxisHeight = this.renderXAxis(svgContainer, plotSize, x, xIsCategorical, xAxisDataPoints, tickMaxWidth, xRange, axisPadding, xAxisData.start, xAxisData.end);
-        // if (isResponsive && (plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight || isLegendHidden)) {
-        //     svgContainer.selectAll("svg").remove();
-        //     xAxisHeight = 0;
-        //     axisMargin = 5;
-        //     //recount
-        //     xRange = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
-        //     xAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
-        //     x = xAxisData.x;
-        //     xAxisDataPoints = xAxisData.xAxisDataPoints;
-        //     lines = xAxisData.lines;
-        //     tickMaxWidth = xAxisDataPoints.length > 0
-        //         ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
-        //         : 0;
-        // }
-        //
-        // //Y
-        // let yRangeMax: number = isLegendHidden
-        //     ? plotSize.height - axisPadding - xAxisHeight + legendHeight
-        //     : plotSize.height - axisPadding - xAxisHeight;
-        // if (yRangeMax < 0)
-        //     yRangeMax = 0;
-        //
-        // let yRange: number[] = [axisPadding, yRangeMax];
-        // let domainY: VisualDomain = this.retrieveDomainY(lines);
-        // let y: ScaleContinuousNumeric<number, number>;
-        // if (this.settings.yAxis.axisScale == "linear") {
-        //     y = d3scaleLinear()
-        //         .domain([domainY.end, domainY.start])
-        //         .range(yRange).nice().nice();
-        // } else {
-        //     y = d3scaleLog()
-        //         .domain([domainY.end, domainY.start])
-        //         .range(yRange);
-        // }
-        // if (showYAxis)
-        //     this.renderYAxis(svgContainer, plotSize, y, domainY, axisPadding, yAxisWidth, yAxisFontSize);
-        //
-        // if (isResponsive && ((totalXWidth < this.ResponsiveMinWidth) || (plotSize.height - xAxisHeight - axisPadding < this.ResponsiveMinHeight))) {
-        //     //draw image
-        //     svgContainer.selectAll("svg").remove();
-        //     this.retrieveResponsiveIcon(svgContainer);
-        //     return;
-        // }
-        // //Draw line
-        // if (lines.length == 0)
-        //     return;
-        // let line: d3Line<[number, number]> = d3line()
-        //     .x(function (d: any) {
-        //         return x(d.x);
-        //     })
-        //     .y(function (d: any) {
-        //         return y(d.y);
-        //     })
-        //     .curve(curveLinear);
-        // //prepare vertical line
-        // let showVerticalLine: boolean = (tickMaxWidth > 1);
-        // let xMouseMin: number;
-        // let xMouseMax: number;
-        // let hoverContainer: d3Selection<SVGElement>;
-        // let tooltipRect: d3Selection<SVGElement>;
-        //
+        if (isResponsive && (plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight || isLegendHidden)) {
+            svgContainer.selectAll("svg").remove();
+            xAxisHeight = 0;
+            axisMargin = 5;
+            //recount
+            xRange = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
+            xAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
+            x = xAxisData.x;
+            xAxisDataPoints = xAxisData.xAxisDataPoints;
+            lines = xAxisData.lines;
+            tickMaxWidth = xAxisDataPoints.length > 0
+                ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
+                : 0;
+        }
+
+        //Y
+        let yRangeMax: number = isLegendHidden
+            ? plotSize.height - axisPadding - xAxisHeight + legendHeight
+            : plotSize.height - axisPadding - xAxisHeight;
+        if (yRangeMax < 0)
+            yRangeMax = 0;
+
+        let yRange: number[] = [axisPadding, yRangeMax];
+        let domainY: VisualDomain = this.retrieveDomainY(lines);
+        let y: AxisScale<AxisDomain>;
+        if (this.settings.yAxis.axisScale == "linear") {
+            y = d3scaleLinear()
+                .domain([domainY.end, domainY.start])
+                .range(yRange).nice().nice();
+        } else {
+            y = d3scaleLog()
+                .domain([domainY.end, domainY.start])
+                .range(yRange);
+        }
+
+        if (showYAxis)
+            this.renderYAxis(svgContainer, plotSize, y, domainY, axisPadding, yAxisWidth, yAxisFontSize);
+
+        if (isResponsive && ((totalXWidth < this.ResponsiveMinWidth) || (plotSize.height - xAxisHeight - axisPadding < this.ResponsiveMinHeight))) {
+            //draw image
+            svgContainer.selectAll("svg").remove();
+            this.retrieveResponsiveIcon(svgContainer);
+            return;
+        }
+
+        //Draw line
+        if (lines.length == 0)
+            return;
+        let line: d3Line<[number, number]> = d3line()
+            .x(function (d: any) {
+                return x(d.x);
+            })
+            .y(function (d: any) {
+                return y(d.y);
+            })
+            .curve(d3curveLinear);
+
+        //prepare vertical line
+        let showVerticalLine: boolean = (tickMaxWidth > 1);
+        let xMouseMin: number;
+        let xMouseMax: number;
+        let hoverContainer: d3Selection<SVGElement>;
+        let tooltipRect: d3Selection<SVGElement>;
+
         // if (showVerticalLine) {
         //     xMouseMin = xRange[0] - axisMargin;
         //     xMouseMax = xRange[1] + axisMargin;
@@ -962,87 +967,88 @@ export class RenderVisual {
         return xAxisHeight;
     }
 
-    private renderYAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, y: any, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
-        // if (!this.settings.yAxis.show) return;
-        // let yAxis: d3.svg.Axis;
-        // //format axis for its' position
-        // if (this.settings.yAxis.position == AxisPosition.Left) {
-        //     yAxis = d3.svg.axis().tickPadding(axisPadding)
-        //         .innerTickSize(plotSize.width - yAxisWidth - axisPadding)
-        //         .ticks(Math.max(Math.floor(plotSize.height / 80), 2)).orient("left");
-        // } else {
-        //     yAxis = d3.svg.axis().tickPadding(axisPadding)
-        //         .innerTickSize(plotSize.width)
-        //         .outerTickSize(yAxisWidth + axisPadding)
-        //         .ticks(Math.max(Math.floor(plotSize.height / 80), 2)).orient("left");
-        // }
-        // let yFormatter = this.yFormatter;
-        // if (yFormatter) yAxis.tickFormat(function (d) {
-        //     return yFormatter.format(d);
-        // });
-        //
-        // let svgAxisContainer: Selection<SVGElement> = svgContainer
-        //     .append('svg')
-        //     .attr('width', plotSize.width);
-        //
-        // let axis = svgAxisContainer.selectAll("g.axis").data([1]);
-        //
-        // axis.enter().append("g")
-        //     .attr("class", "y axis")
-        //     .attr('transform', 'translate(' + plotSize.width + ',0)');
-        //
-        // axis.call(yAxis.scale(y));
-        // svgAxisContainer.selectAll(".domain").remove();
-        // let labels: UpdateSelection<number> = axis.selectAll('text').style({
-        //     'fill': this.settings.yAxis.axisColor,
-        //     'font-family': this.settings.yAxis.fontFamily,
-        //     'font-size': yAxisFontSize
-        // });
-        // if (this.settings.yAxis.axisScale == "linear") {
-        //     labels.call(TextUtility.wrapAxis, yAxisWidth, {
-        //         fontFamily: this.settings.xAxis.fontFamily,
-        //         fontSize: yAxisFontSize
-        //     });
-        // } else {
-        //     if (domainY.end / domainY.start > this.MaxYLogScaleShowDivider) {
-        //         labels.each((number: any, index: number) => {
-        //             let item: Selection<any> = d3.select(labels[0][index]);
-        //             let parent: Selection<any> = d3.select(item.node().parentElement);
-        //             let numberValue: number = number;
-        //             if (numberValue < 1) {
-        //                 while (numberValue < 1) {
-        //                     numberValue = numberValue * this.MaxLogScaleDivider;
-        //                 }
-        //             } else {
-        //                 while (numberValue > 1) {
-        //                     numberValue = numberValue / this.MaxLogScaleDivider;
-        //                 }
-        //             }
-        //             if (numberValue != 1) {
-        //                 item.text("");
-        //                 parent.select('line').remove();
-        //             }
-        //         });
-        //     }
-        // }
-        //
-        // //format gridlines
-        // let yAxisGridlinesStrokeWidth = (this.settings.yAxis.showGridlines) ? this.settings.yAxis.strokeWidth : 0;
-        // let strokeDasharray = VizUtility.getLineStyleParam(this.settings.yAxis.lineStyle);
-        // axis.selectAll('line').style({
-        //     "stroke": this.settings.yAxis.gridlinesColor,
-        //     "stroke-width": yAxisGridlinesStrokeWidth,
-        //     "stroke-dasharray": strokeDasharray
-        // });
-        //
-        // //format axis for its' position
-        // let titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
-        // if (this.settings.yAxis.position == AxisPosition.Right) {
-        //     let textTranslate = plotSize.width - titleHeight;
-        //     axis.selectAll('text').attr('transform', 'translate(' + textTranslate + ',0)');
-        //     let lineTranslate = yAxisWidth + axisPadding;
-        //     axis.selectAll('line').attr('transform', 'translate(-' + lineTranslate + ',0)');
-        // }
+    private renderYAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, y: AxisScale<AxisDomain>, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
+        if (!this.settings.yAxis.show) return;
+        let yAxis: d3Axis<AxisDomain>;
+        //format axis for its' position
+        if (this.settings.yAxis.position == AxisPosition.Left) {
+            yAxis = d3axisLeft(y)
+                .tickPadding(axisPadding)
+                .tickSizeInner(plotSize.width - yAxisWidth - axisPadding)
+                .ticks(Math.max(Math.floor(plotSize.height / 80), 2));
+        } else {
+            yAxis = d3axisLeft(y).tickPadding(axisPadding)
+                .tickSizeInner(plotSize.width)
+                .tickSizeOuter(yAxisWidth + axisPadding)
+                .ticks(Math.max(Math.floor(plotSize.height / 80), 2));
+        }
+
+        let yFormatter = this.yFormatter;
+        if (yFormatter) yAxis.tickFormat(function (d) {
+            return yFormatter.format(d);
+        });
+
+        let svgAxisContainer: d3Selection<SVGElement> = svgContainer
+            .append('svg')
+            .attr('width', plotSize.width);
+
+        let axisSvg = svgAxisContainer.selectAll("g.axis").data([1]);
+
+        const yAxisSvg = axisSvg.enter().append("g")
+            .attr("class", "y axis")
+            .attr('transform', 'translate(' + plotSize.width + ',0)');
+
+        yAxisSvg.call(yAxis.scale(y));
+        yAxisSvg.selectAll(".domain").remove();
+        let labels: d3Selection<any> = yAxisSvg.selectAll('text')
+            .style('fill', this.settings.yAxis.axisColor)
+            .style('font-family', this.settings.yAxis.fontFamily)
+            .style('font-size', yAxisFontSize);
+        if (this.settings.yAxis.axisScale == "linear") {
+            labels.call(wrapAxis, yAxisWidth, {
+                fontFamily: this.settings.xAxis.fontFamily,
+                fontSize: yAxisFontSize
+            });
+        } else {
+            if (domainY.end / domainY.start > this.MaxYLogScaleShowDivider) {
+                labels.each((number: any, index: number) => {
+                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    let parent: d3Selection<any> = d3select(item.node().parentElement);
+                    let numberValue: number = number;
+                    if (numberValue < 1) {
+                        while (numberValue < 1) {
+                            numberValue = numberValue * this.MaxLogScaleDivider;
+                        }
+                    } else {
+                        while (numberValue > 1) {
+                            numberValue = numberValue / this.MaxLogScaleDivider;
+                        }
+                    }
+                    if (numberValue != 1) {
+                        item.text("");
+                        parent.select('line').remove();
+                    }
+                });
+            }
+        }
+
+        //format gridlines
+        let yAxisGridlinesStrokeWidth = (this.settings.yAxis.showGridlines) ? this.settings.yAxis.strokeWidth : 0;
+        let strokeDasharray = getLineStyleParam(this.settings.yAxis.lineStyle);
+        yAxisSvg.selectAll('line')
+            .style("stroke", this.settings.yAxis.gridlinesColor)
+            .style("stroke-width", yAxisGridlinesStrokeWidth)
+            .style("stroke-dasharray", strokeDasharray);
+
+        //format axis for its' position
+        let titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
+        if (this.settings.yAxis.position == AxisPosition.Right) {
+            let textTranslate = plotSize.width - titleHeight;
+            yAxisSvg.selectAll('text').attr('transform', 'translate(' + textTranslate + ',0)');
+            let lineTranslate = yAxisWidth + axisPadding;
+            yAxisSvg.selectAll('line').attr('transform', 'translate(-' + lineTranslate + ',0)');
+        }
+
         // if (this.settings.yAxis.showTitle) {
         //     let titleTextFull: string = this.retrieveYAxisTitleText();
         //     let titleFontSize: string = this.settings.yAxis.titleFontSize + "px";
