@@ -627,23 +627,24 @@ export class RenderVisual {
         let hoverContainer: d3Selection<SVGElement>;
         let tooltipRect: d3Selection<SVGElement>;
 
-        // if (showVerticalLine) {
-        //     xMouseMin = xRange[0] - axisMargin;
-        //     xMouseMax = xRange[1] + axisMargin;
-        //     hoverContainer = svgContainer.append("svg");
-        //     tooltipRect = hoverContainer.append('rect')
-        //         .classed('clearCatcher', true)
-        //         .classed(Visual.LineChartRectSelector.className, true)
-        //         .attr('width', xMouseMax - xMouseMin)
-        //         .attr('height', yRangeMax)
-        //         .attr('x', xMouseMin)
-        //         .attr('y', 0)
-        //         .attr('opacity', '1e-06')
-        //         .attr('fill', '#fff');
-        // }
-        // //Render lines
-        // this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
-        //
+        if (showVerticalLine) {
+            xMouseMin = xRange[0] - axisMargin;
+            xMouseMax = xRange[1] + axisMargin;
+            hoverContainer = svgContainer.append("svg");
+            tooltipRect = hoverContainer.append('rect')
+                .classed('clearCatcher', true)
+                .classed(Visual.LineChartRectSelector.className, true)
+                .attr('width', xMouseMax - xMouseMin)
+                .attr('height', yRangeMax)
+                .attr('x', xMouseMin)
+                .attr('y', 0)
+                .attr('opacity', '1e-06')
+                .attr('fill', '#fff');
+        }
+
+        //Render lines
+        this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
+
         // this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
         // //Render vertical line
         // if (!showVerticalLine) return;
@@ -1189,18 +1190,10 @@ export class RenderVisual {
 
     private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<[number, number]>) {
         //Trend lines
-        let svgLinesContainer: d3Selection<SVGElement> = svgContainer
+        let svgLinesContainerE: d3Selection<SVGElement> = svgContainer
             .append('svg')
             .attr('width', width)
             .attr('height', height);
-        let lineGroupSelection: d3Selection<LineDataPoint> = svgLinesContainer
-            .selectAll(Visual.SimpleLineSelector.selectorName)
-            .data(lines);
-
-        lineGroupSelection
-            .enter()
-            .append("path")
-            .classed(Visual.SimpleLineSelector.className, true);
 
         let shapes = this.settings.shapes;
         let hasSelection = this.hasSelection;
@@ -1211,8 +1204,12 @@ export class RenderVisual {
             let lineD: string = line(points);
             lineDD.push(lineD);
         }
-        let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
-        lineGroupSelection
+
+        svgLinesContainerE
+            .selectAll(Visual.SimpleLineSelector.selectorName)
+            .data(lines)
+            .join("path")
+            .classed(Visual.SimpleLineSelector.className, true)
             .attr("d", (dataPoint: LineDataPoint, index: number) => {
                 let lineD = lineDD[index];
                 let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
@@ -1249,94 +1246,97 @@ export class RenderVisual {
                     : shapes.stepped;
                 if (showMarkers && stepped) {
                     let markerPathId: string = MarkersUtility.retrieveMarkerName(dataPoint.lineKey, Visual.MarkerLineSelector.className);
-                    svgLinesContainer.selectAll('#' + markerPathId).style("opacity", opacity);
+                    svgLinesContainerE.selectAll('#' + markerPathId).style("opacity", opacity);
                 }
                 return opacity;
             });
-        for (let i = 0; i < lines.length; i++) {
-            let dataPoint: LineDataPoint = lines[i];
-            let marker: string = lineNamesWithMarkers[dataPoint.name];
-            if (marker) {
-                let item: d3Selection<any> = d3select(lineGroupSelection[0][i]);
-                item.attr('marker-start', marker);
-                item.attr('marker-mid', marker);
-                item.attr('marker-end', marker);
-            }
-        }
-        lineGroupSelection.exit().remove();
-        let dots: LineDataPoint[] = [];
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].points && lines[i].points.length == 1)
-                dots.push(lines[i]);
-        }
-        let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainer
-            .append("g")
-            .selectAll(Visual.SimpleLineSelector.selectorName)
-            .data(dots);
 
-        dotsGroupSelection
-            .enter()
-            .append("circle")
-            .classed(Visual.DotSelector.className, true);
-
-        dotsGroupSelection
-            .attr('cx', (dataPoint: LineDataPoint) => {
-                let points: any = dataPoint.points;
-                let lineD: string = line(points);
-                let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
-                return data[0];
-            })
-            .attr('cy', (dataPoint: LineDataPoint) => {
-                let points: any = dataPoint.points;
-                let lineD: string = line(points);
-                let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
-                return data[1];
-            })
-            .attr('r', (dataPoint: LineDataPoint) => {
-                let strokeWidth: number = dataPoint.strokeWidth == undefined
-                    ? shapes.strokeWidth
-                    : dataPoint.strokeWidth;
-                return 2.5 + 0.5 * strokeWidth;
-            })
-            .style('fill', (dataPoint: LineDataPoint) => {
-                return dataPoint.color;
-            })
-            .style('fill-opacity', (dataPoint: LineDataPoint) => {
-                let showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
-                return showMarkers ? 0 : 1;
-            })
-            .style('opacity', (dataPoint: LineDataPoint) => {
-                let opacity: number = getOpacity(dataPoint.selected, hasSelection);
-                return opacity;
-            });
-
-        dotsGroupSelection.exit().remove();
-
-        let interactiveLineGroupSelection = svgLinesContainer
-            .selectAll(Visual.InteractivityLineSelector.selectorName)
-            .data(lines);
-
-        interactiveLineGroupSelection
-            .enter()
-            .append("path")
-            .classed(Visual.InteractivityLineSelector.className, true);
-
-        interactiveLineGroupSelection
-            .attr("d", (dataPoint: LineDataPoint) => {
-                let points: any = dataPoint.points;
-                let lineD: string = line(points);
-                let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                let dataLine: string = (stepped)
-                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                    : lineD
-                return dataLine;
-            })
-            .attr('stroke-width', '10')
-            .attr("stroke-linejoin", "round")
-            .attr('stroke', 'red')
-            .attr('stroke-opacity', '0')
-            .attr('fill', 'none');
-        interactiveLineGroupSelection.exit().remove();
+        // let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainer, lineDD, this.settings.shapes, lines);
+        //
+        // for (let i = 0; i < lines.length; i++) {
+        //     let dataPoint: LineDataPoint = lines[i];
+        //     let marker: string = lineNamesWithMarkers[dataPoint.name];
+        //     if (marker) {
+        //         let item: d3Selection<any> = d3select(lineGroupSelection[0][i]);
+        //         item.attr('marker-start', marker);
+        //         item.attr('marker-mid', marker);
+        //         item.attr('marker-end', marker);
+        //     }
+        // }
+        // lineGroupSelection.exit().remove();
+        // let dots: LineDataPoint[] = [];
+        // for (let i = 0; i < lines.length; i++) {
+        //     if (lines[i].points && lines[i].points.length == 1)
+        //         dots.push(lines[i]);
+        // }
+        // let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainer
+        //     .append("g")
+        //     .selectAll(Visual.SimpleLineSelector.selectorName)
+        //     .data(dots);
+        //
+        // dotsGroupSelection
+        //     .enter()
+        //     .append("circle")
+        //     .classed(Visual.DotSelector.className, true);
+        //
+        // dotsGroupSelection
+        //     .attr('cx', (dataPoint: LineDataPoint) => {
+        //         let points: any = dataPoint.points;
+        //         let lineD: string = line(points);
+        //         let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
+        //         return data[0];
+        //     })
+        //     .attr('cy', (dataPoint: LineDataPoint) => {
+        //         let points: any = dataPoint.points;
+        //         let lineD: string = line(points);
+        //         let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
+        //         return data[1];
+        //     })
+        //     .attr('r', (dataPoint: LineDataPoint) => {
+        //         let strokeWidth: number = dataPoint.strokeWidth == undefined
+        //             ? shapes.strokeWidth
+        //             : dataPoint.strokeWidth;
+        //         return 2.5 + 0.5 * strokeWidth;
+        //     })
+        //     .style('fill', (dataPoint: LineDataPoint) => {
+        //         return dataPoint.color;
+        //     })
+        //     .style('fill-opacity', (dataPoint: LineDataPoint) => {
+        //         let showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
+        //         return showMarkers ? 0 : 1;
+        //     })
+        //     .style('opacity', (dataPoint: LineDataPoint) => {
+        //         let opacity: number = getOpacity(dataPoint.selected, hasSelection);
+        //         return opacity;
+        //     });
+        //
+        // dotsGroupSelection.exit().remove();
+        //
+        // let interactiveLineGroupSelection = svgLinesContainer
+        //     .selectAll(Visual.InteractivityLineSelector.selectorName)
+        //     .data(lines);
+        //
+        // interactiveLineGroupSelection
+        //     .enter()
+        //     .append("path")
+        //     .classed(Visual.InteractivityLineSelector.className, true);
+        //
+        // interactiveLineGroupSelection
+        //     .attr("d", (dataPoint: LineDataPoint) => {
+        //         let points: any = dataPoint.points;
+        //         let lineD: string = line(points);
+        //         let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+        //         let dataLine: string = (stepped)
+        //             ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+        //             : lineD
+        //         return dataLine;
+        //     })
+        //     .attr('stroke-width', '10')
+        //     .attr("stroke-linejoin", "round")
+        //     .attr('stroke', 'red')
+        //     .attr('stroke-opacity', '0')
+        //     .attr('fill', 'none');
+        // interactiveLineGroupSelection.exit().remove();
     }
 
     private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3Line<[number, number]>, svgContainer: d3Selection<any>): void {
