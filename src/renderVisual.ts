@@ -24,7 +24,6 @@ import {Visual} from "./visual";
 import {
     scaleLinear as d3scaleLinear,
     scaleLog as d3scaleLog,
-    scaleOrdinal as d3scaleOrdinal,
     scalePoint as d3scalePoint,
     scaleTime as d3scaleTime,
 } from "d3-scale";
@@ -37,16 +36,14 @@ import {
     wrapAxis
 } from "./utilities/textUtility";
 import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
-import {Line as d3Line} from 'd3-shape';
-import {axisBottom as d3axisBottom, axisLeft as d3axisLeft, AxisDomain, AxisScale} from "d3-axis";
+import {curveLinear as d3curveLinear, line as d3line, Line as d3Line} from 'd3-shape';
+import {Axis as d3Axis, axisBottom as d3axisBottom, AxisDomain, axisLeft as d3axisLeft, AxisScale} from "d3-axis";
 import {MarkersUtility} from "./utilities/markersUtility";
 import {getOpacity} from "./behavior";
 import {select as d3select} from "d3-selection";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {line as d3line, curveLinear as d3curveLinear} from "d3-shape";
-import {Axis as d3Axis} from "d3-axis";
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -1049,44 +1046,41 @@ export class RenderVisual {
             yAxisSvg.selectAll('line').attr('transform', 'translate(-' + lineTranslate + ',0)');
         }
 
-        // if (this.settings.yAxis.showTitle) {
-        //     let titleTextFull: string = this.retrieveYAxisTitleText();
-        //     let titleFontSize: string = this.settings.yAxis.titleFontSize + "px";
-        //     let textProp: TextProperties = {
-        //         text: titleTextFull,
-        //         fontFamily: this.settings.yAxis.titleFontFamily,
-        //         fontSize: titleFontSize,
-        //     };
-        //     let titleText: string = TextUtility.getTailoredTextOrDefault(textProp, plotSize.height);
-        //
-        //     let translateX: number;
-        //     let transform: string;
-        //     translateX = titleHeight - axisPadding < axisPadding ? axisPadding : titleHeight - axisPadding;
-        //     if (this.settings.yAxis.position == AxisPosition.Right) {
-        //         translateX = -translateX + plotSize.width;
-        //         ;
-        //         transform = 'rotate(90)';
-        //     } else {
-        //         transform = 'rotate(-90)';
-        //     }
-        //     let translateY: number = plotSize.height / 2;
-        //     svgAxisContainer.append("g").attr('transform', 'translate(' + translateX + ',' + translateY + ')')
-        //         .append("text")
-        //         .attr({
-        //             'transform': transform,
-        //             'font-family': this.settings.yAxis.titleFontFamily,
-        //             'font-size': titleFontSize,
-        //             'fill': this.settings.yAxis.axisTitleColor,
-        //             'text-anchor': 'middle'
-        //         })
-        //         .text(titleText)
-        //         .append('title').text(titleTextFull);
-        // }
+        if (this.settings.yAxis.showTitle) {
+            let titleTextFull: string = this.retrieveYAxisTitleText();
+            let titleFontSize: string = this.settings.yAxis.titleFontSize + "px";
+            let textProp: TextProperties = {
+                text: titleTextFull,
+                fontFamily: this.settings.yAxis.titleFontFamily,
+                fontSize: titleFontSize,
+            };
+            let titleText: string = getTailoredTextOrDefault(textProp, plotSize.height);
+
+            let translateX: number;
+            let transform: string;
+            translateX = titleHeight - axisPadding < axisPadding ? axisPadding : titleHeight - axisPadding;
+            if (this.settings.yAxis.position == AxisPosition.Right) {
+                translateX = -translateX + plotSize.width;
+                transform = 'rotate(90)';
+            } else {
+                transform = 'rotate(-90)';
+            }
+
+            let translateY: number = plotSize.height / 2;
+            svgAxisContainer.append("g").attr('transform', 'translate(' + translateX + ',' + translateY + ')')
+                .append("text")
+                .attr('transform', transform)
+                .attr('font-family', this.settings.yAxis.titleFontFamily)
+                .attr('font-size', titleFontSize)
+                .attr('fill', this.settings.yAxis.axisTitleColor)
+                .attr('text-anchor', 'middle')
+                .text(titleText)
+                .append('title').text(titleTextFull);
+        }
     }
 
     private retrieveFormattedXValue(x: number): number {
-        let xFormatted: number = +this.xFormatter.format(x).replace(/[^.0-9]/g, '');
-        return xFormatted;
+        return +this.xFormatter.format(x).replace(/[^.0-9]/g, '');
     }
 
     private retrieveXDisplayUnitsForTitle(displayUnits: number): string {
