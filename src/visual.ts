@@ -7,18 +7,24 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import {
     CategoryType,
-    d3Selection, LegendDataExtended,
+    d3Selection,
+    LegendDataExtended,
     LegendDataPointExtended,
-    LineDataPoint, LineKeyIndex, VerticalLineDataItemsGlobalWithKey,
-    VisualDataPoint, VisualDomain,
+    LineDataPoint,
+    LineKeyIndex,
+    VisualDataPoint,
+    VisualDomain,
     VisualViewModel
 } from "./visualInterfaces";
 import {
-    DefaultSeparator, LegendSettings,
+    DefaultSeparator,
+    LegendSettings,
     MaximumSizeEndValue,
-    MaximumSizeStartValue, MinCategoryWidthEndValue,
+    MaximumSizeStartValue,
+    MinCategoryWidthEndValue,
     MinCategoryWidthStartValue,
-    MinStrokeWidth, NiceDateFormat,
+    MinStrokeWidth,
+    NiceDateFormat,
     PrecisionMinValue,
     VisualSettings
 } from "./settings";
@@ -55,6 +61,7 @@ import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInst
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 import {EnumerateObject} from "./utilities/objectEnumerationUtility";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
+import {IMargin} from "powerbi-visuals-utils-svgutils";
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format: string = category.source.format;
@@ -203,7 +210,7 @@ export class Visual implements IVisual {
             this.element.selectAll('div, svg:not(.legend)').remove();
             if (this.model.categories.length == 0) return;
             this.legendBehavior.addLegendData(this.model.settings.legend, this.model.legendDataPoint);
-            let margin = {top: 0, left: 0, bottom: 0, right: 0};
+            let margin: IMargin = {top: 0, left: 0, bottom: 0, right: 0};
 
             //Legend
             renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
@@ -522,10 +529,9 @@ export class Visual implements IVisual {
 
                     if (legendPosition == newLegendPosition) {
                         break;
-                    } else {
-                        legendPosition = newLegendPosition;
                     }
 
+                    legendPosition = newLegendPosition;
                     stepCount = stepCount + 1;
                 }
 

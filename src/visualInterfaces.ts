@@ -13,6 +13,8 @@ import {SelectableDataPoint} from "powerbi-visuals-utils-interactivityutils/lib/
 import {BaseDataPoint, IBehaviorOptions} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
 import {LegendIconType} from "./legendIconType";
+import {ScaleOrdinal} from "d3-scale";
+import {AxisDomain, AxisScale} from "d3-axis";
 
 export type d3Selection<T> = Selection<any, T, any, any>;
 
@@ -95,7 +97,7 @@ export interface LinePoint {
 }
 
 export class XAxisData {
-    x: any;
+    x: AxisScale<AxisDomain>;
     xAxisDataPoints: any[];
     lines: LineDataPoint[];
     start: number;

@@ -1,11 +1,12 @@
 "use strict";
 
 import powerbi from "powerbi-visuals-api";
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import {
     Coordinates,
-    d3Selection, LabelsAction,
-    LineDataPoint, SimplePoint, VerticalLineDataItem,
+    d3Selection,
+    LabelsAction,
+    LineDataPoint,
+    SimplePoint,
     VerticalLineDataItemsGlobalWithKey,
     VisualDomain,
     VisualViewModel,
@@ -14,7 +15,6 @@ import {
 import {IInteractivityService} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
 import {ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
 import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from "./settings";
-import PrimitiveValue = powerbi.PrimitiveValue;
 import {IValueFormatter, ValueFormatterOptions} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
 import {Formatter, getLineStyleParam} from "./utilities/vizUtility";
 import {
@@ -22,23 +22,29 @@ import {
 } from "powerbi-visuals-utils-formattingutils/lib/src/displayUnitSystem/displayUnitSystemType";
 import {Visual} from "./visual";
 import {
+    scaleLinear as d3scaleLinear,
+    scaleLog as d3scaleLog,
     scaleOrdinal as d3scaleOrdinal,
     scalePoint as d3scalePoint,
     scaleTime as d3scaleTime,
-    scaleLinear as d3scaleLinear,
-    scaleLog as d3scaleLog, ScaleLinear, ScaleContinuousNumeric,
 } from "d3-scale";
-import {fromPoint, fromPointToPixel, measureTextWidth, TextProperties} from "./utilities/textUtility";
+import {
+    fromPoint,
+    fromPointToPixel,
+    measureTextWidth,
+    TextProperties,
+    truncateAxis,
+    wrapAxis
+} from "./utilities/textUtility";
 import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
-import {curveLinear, Line as d3Line, line as d3line} from 'd3-shape';
-import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from "./verticalLine";
-import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
-import {axisBottom as d3axisBottom} from "d3-axis";
+import {Line as d3Line} from 'd3-shape';
+import {axisBottom as d3axisBottom, AxisDomain, AxisScale} from "d3-axis";
 import {MarkersUtility} from "./utilities/markersUtility";
-import {MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import {getOpacity} from "./behavior";
 import {select as d3select} from "d3-selection";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import PrimitiveValue = powerbi.PrimitiveValue;
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -74,7 +80,7 @@ export class RenderVisual {
         this.settings = model.settings;
         this.domainY = domainY;
         this.isSeparateDomainY = model.settings.yAxis.chartRangeType == "separate";
-//
+
         if (model.categoryIsScalar) {
             this.xFormatter = Formatter.getFormatter({
                 format: model.categoryFormat,
@@ -125,54 +131,60 @@ export class RenderVisual {
         container.selectAll(Visual.SmallMultipleSelector.selectorName).remove();
     }
 
-    public renderSmallMultipleWithTitle(itemContainer: d3Selection<SVGElement>, itemWidth: number, itemHeight: number,
-                                        titleHeight: number, title: string,
-                                        lines: LineDataPoint[], lineKey: string,
-                                        rectGlobalX: number, rectGlobalY: number) {
-        itemContainer.classed(Visual.SmallMultipleSelector.className, true);
-        if (this.settings.smallMultiple.showChartTitle) {
-            let textContainer: d3Selection<SVGElement> = itemContainer.append("g")
-                .attr('width', itemWidth)
-                .attr('height', titleHeight);
-            textContainer.append('rect')
-                .classed('clearCatcher', true)
-                .attr('width', itemWidth)
-                .attr('height', titleHeight);
+    // public renderSmallMultipleWithTitle(itemContainer: d3Selection<SVGElement>, itemWidth: number, itemHeight: number,
+    //                                     titleHeight: number, title: string,
+    //                                     lines: LineDataPoint[], lineKey: string,
+    //                                     rectGlobalX: number, rectGlobalY: number) {
+    //     itemContainer.classed(Visual.SmallMultipleSelector.className, true);
+    //     if (this.settings.smallMultiple.showChartTitle) {
+    //         let textContainer: d3Selection<SVGElement> = itemContainer.append("g")
+    //             .attr('width', itemWidth)
+    //             .attr('height', titleHeight);
+    //         textContainer.append('rect')
+    //             .classed('clearCatcher', true)
+    //             .attr('width', itemWidth)
+    //             .attr('height', titleHeight);
+    //
+    //         let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
+    //         let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
+    //         let titleTextProp: TextProperties = {
+    //             text: title,
+    //             fontFamily: titleFontFamily,
+    //             fontSize: titleFontSize
+    //         };
+    //         let titleWidth: number = measureTextWidth(titleTextProp);
+    //         let titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
+    //         let shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
+    //
+    //         textContainer.append("text")
+    //             .classed(Visual.SmallMultipleNameSelector.className, true)
+    //             .attr("font-family", titleFontFamily)
+    //             .attr("font-size", titleFontSize)
+    //             .attr("fill", this.settings.smallMultiple.smColor)
+    //             .attr('height', titleHeight)
+    //             .attr("x", titleX)
+    //             .attr("y", titleHeight * 2 / 3)
+    //             .text(shortTitle);
+    //         textContainer.append("title").text(title);
+    //
+    //         let svgContainer: d3Selection<SVGElement> = itemContainer
+    //             .append('g')
+    //             .attr('width', itemWidth)
+    //             .attr('height', itemHeight)
+    //             .attr('transform', 'translate(0,' + titleHeight + ')');
+    //         this.renderSmallMultiple(svgContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY + titleHeight);
+    //     } else {
+    //         this.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY);
+    //     }
+    // }
 
-            let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
-            let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
-            let titleTextProp: TextProperties = {
-                text: title,
-                fontFamily: titleFontFamily,
-                fontSize: titleFontSize
-            };
-            let titleWidth: number = measureTextWidth(titleTextProp);
-            let titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
-            let shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
-
-            textContainer.append("text")
-                .classed(Visual.SmallMultipleNameSelector.className, true)
-                .attr("font-family", titleFontFamily)
-                .attr("font-size", titleFontSize)
-                .attr("fill", this.settings.smallMultiple.smColor)
-                .attr('height', titleHeight)
-                .attr("x", titleX)
-                .attr("y", titleHeight * 2 / 3)
-                .text(shortTitle);
-            textContainer.append("title").text(title);
-
-            let svgContainer: d3Selection<SVGElement> = itemContainer
-                .append('g')
-                .attr('width', itemWidth)
-                .attr('height', itemHeight)
-                .attr('transform', 'translate(0,' + titleHeight + ')');
-            this.renderSmallMultiple(svgContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY + titleHeight);
-        } else {
-            this.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY);
-        }
-    }
-
-    public retrieveNewLegendPosition(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, legendPosition: string, legendHeight: number): string {
+    public retrieveNewLegendPosition(
+        svgContainer: d3Selection<SVGElement>,
+        lines: LineDataPoint[],
+        width: number,
+        height: number,
+        legendPosition: string,
+        legendHeight: number): string {
         if (!this.settings.general.responsive || legendPosition == "None")
             return legendPosition;
         let resultLegendPosition: string = legendPosition;
@@ -199,7 +211,7 @@ export class RenderVisual {
         }
         totalXWidth = width - yAxisWidth - axisPadding - 2 * axisMargin;
 
-        let xAxisDataPoints: any[] = this.categories;
+        let xAxisDataPoints = this.categories;
         let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
         let xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
         let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
@@ -241,8 +253,7 @@ export class RenderVisual {
             text: longestXAxis
         });
 
-        let axisMargin: number = xAxisWidth / 2;
-        return axisMargin;
+        return xAxisWidth / 2;
     }
 
     private retrieveYAxisWidth(lines: LineDataPoint[], svgContainer: d3Selection<SVGElement>): number {
@@ -323,12 +334,20 @@ export class RenderVisual {
         return xRange;
     }
 
-    private retrieveXData(xIsCategorical: boolean, lines: LineDataPoint[], xAxisDataPoints: any[], xRange: number[]): XAxisData {
-        let x;
+    private retrieveXData(
+        xIsCategorical: boolean,
+        lines: LineDataPoint[],
+        xAxisDataPoints: PrimitiveValue[],
+        xRange: number[]): XAxisData {
+        let x: AxisScale<AxisDomain>;
         //set x
         let chartRangeType: string = this.settings.xAxis.chartRangeType;
+        console.log(chartRangeType)
+
         let start: number;
         let end: number;
+
+        console.log(this.categoryIsDate)
         if (this.categoryIsDate) {
             let lastIndex: number = this.categories.length - 1;
             let minDate: Date = new Date(this.categories[0].toString());
@@ -351,7 +370,7 @@ export class RenderVisual {
                 let newxAxisDataPoints: Date[] = [];
                 let keys: string[] = []
                 for (let i = 0; i < xAxisDataPoints.length; i++) {
-                    let item: Date = xAxisDataPoints[i];
+                    let item: Date = xAxisDataPoints[i] as Date;
                     let itemKey: string = this.convertCategoryItemToString(item);
                     if ((minDate <= item) && (item <= maxDate) && (keys.indexOf(itemKey) == -1)) {
                         keys.push(itemKey);
@@ -363,13 +382,9 @@ export class RenderVisual {
                 xAxisDataPoints = newxAxisDataPoints;
             }
             if (xIsCategorical) {
-                x = d3scalePoint()
-                    .domain(xAxisDataPoints)
-                    .range(<any>xRange);
+                x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
             } else {
-                x = d3scaleTime()
-                    .domain([minDate, maxDate])
-                    .range(xRange);
+                x = d3scaleTime([minDate, maxDate], xRange);
             }
         } else {
             if (this.categoryIsScalar) {
@@ -387,7 +402,7 @@ export class RenderVisual {
                         for (let i = 0; i < xAxisDataPoints.length; i++) {
                             let item: number = +xAxisDataPoints[i];
                             if ((start <= item) && (item <= end) && (newxAxisDataPoints.indexOf(item) == -1)) {
-                                newxAxisDataPoints.push(xAxisDataPoints[i]);
+                                newxAxisDataPoints.push(xAxisDataPoints[i] as number);
                             }
                         }
                         xAxisDataPoints = newxAxisDataPoints;
@@ -416,6 +431,9 @@ export class RenderVisual {
                     }
                 }
             }
+
+            console.log('chartRangeType')
+            console.log(chartRangeType)
             if (chartRangeType == "separate") {
                 let newxAxisDataPoints: any[] = [];
                 for (let k = 0; k < xAxisDataPoints.length; k++) {
@@ -439,39 +457,44 @@ export class RenderVisual {
                 }
                 xAxisDataPoints = newxAxisDataPoints;
             }
+
+            console.log('xIsCategorical')
+            console.log(xIsCategorical)
             if (xIsCategorical) {
-                x = d3scaleOrdinal()
-                    .domain(xAxisDataPoints)
-                    .range(<any>xRange);
+                x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange)
             } else {
                 if (start <= 0)
                     this.settings.xAxis.axisScale = "linear";
                 if (this.settings.xAxis.axisScale == "linear") {
-                    x = d3scaleLinear()
-                        .domain([start, end])
-                        .range(xRange);
+                    x = d3scaleLinear([start, end], xRange);
                 } else {
                     if (chartRangeType != "custom" && end / this.MaxLogScaleDivider <= start)
                         start = start / this.MaxLogScaleDivider;
-                    x = d3scaleLog()
-                        .domain([start, end])
-                        .range(xRange);
+                    x = d3scaleLog([start, end], xRange);
                 }
             }
         }
+
+        console.log('xAxisDataPoints')
+        console.log(xAxisDataPoints)
+
         if (xAxisDataPoints.length == 1) {
-            x = d3scaleOrdinal()
-                .domain(xAxisDataPoints)
-                .range(<any>xRange);
+            x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
         }
-        let xAxisData: XAxisData = {
+
+
+        // // TODO Remove test
+        // x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
+        // console.log('test')
+        // console.log(x('Feb-14'))
+
+        return {
             x: x,
             xAxisDataPoints: xAxisDataPoints,
             lines: lines,
             start: start,
             end: end
         };
-        return xAxisData;
     }
 
     private retrieveResponsiveIcon(svgContainer: d3Selection<SVGElement>) {
@@ -492,6 +515,7 @@ export class RenderVisual {
 
     public renderSmallMultiple(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
                                isResponsive: boolean, legendHeight: number, isLegendHidden: boolean, rectGlobalX: number, rectGlobalY: number) {
+        console.log('renderSmallMultiple')
         svgContainer.classed(Visual.SmallMultipleSelector.className, true);
         svgContainer = svgContainer.append("svg");
         let plotSize = {width: width, height: height};
@@ -503,6 +527,7 @@ export class RenderVisual {
 
         let showYAxis: boolean = true;
         let totalXWidth: number = width - yAxisWidth - axisPadding - 2 * axisMargin;
+
         if (totalXWidth < this.ResponsiveMinWidth) {
             yAxisWidth = plotSize.width - this.ResponsiveMinWidth - axisPadding - 2 * axisMargin;
             let minYAxisWidth: number = measureTextWidth({
@@ -521,12 +546,16 @@ export class RenderVisual {
                 }
             }
         }
+
         totalXWidth = width - yAxisWidth - axisPadding - 2 * axisMargin;
+
         //X
         let xAxisDataPoints: any[] = this.categories;
         let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
         let xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
         let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
+        console.log(xAxisData)
+
         let x = xAxisData.x;
         xAxisDataPoints = xAxisData.xAxisDataPoints;
         lines = xAxisData.lines;
@@ -535,393 +564,402 @@ export class RenderVisual {
             ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
             : 0;
         let xAxisHeight = this.renderXAxis(svgContainer, plotSize, x, xIsCategorical, xAxisDataPoints, tickMaxWidth, xRange, axisPadding, xAxisData.start, xAxisData.end);
-        if (isResponsive && (plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight || isLegendHidden)) {
-            svgContainer.selectAll("svg").remove();
-            xAxisHeight = 0;
-            axisMargin = 5;
-            //recount
-            xRange = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
-            xAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
-            x = xAxisData.x;
-            xAxisDataPoints = xAxisData.xAxisDataPoints;
-            lines = xAxisData.lines;
-            tickMaxWidth = xAxisDataPoints.length > 0
-                ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
-                : 0;
-        }
-
-        //Y
-        let yRangeMax: number = isLegendHidden
-            ? plotSize.height - axisPadding - xAxisHeight + legendHeight
-            : plotSize.height - axisPadding - xAxisHeight;
-        if (yRangeMax < 0)
-            yRangeMax = 0;
-
-        let yRange: number[] = [axisPadding, yRangeMax];
-        let domainY: VisualDomain = this.retrieveDomainY(lines);
-        let y: ScaleContinuousNumeric<number, number>;
-        if (this.settings.yAxis.axisScale == "linear") {
-            y = d3scaleLinear()
-                .domain([domainY.end, domainY.start])
-                .range(yRange).nice().nice();
-        } else {
-            y = d3scaleLog()
-                .domain([domainY.end, domainY.start])
-                .range(yRange);
-        }
-        if (showYAxis)
-            this.renderYAxis(svgContainer, plotSize, y, domainY, axisPadding, yAxisWidth, yAxisFontSize);
-
-        if (isResponsive && ((totalXWidth < this.ResponsiveMinWidth) || (plotSize.height - xAxisHeight - axisPadding < this.ResponsiveMinHeight))) {
-            //draw image
-            svgContainer.selectAll("svg").remove();
-            this.retrieveResponsiveIcon(svgContainer);
-            return;
-        }
-        //Draw line
-        if (lines.length == 0)
-            return;
-        let line: d3Line<[number, number]> = d3line()
-            .x(function (d: any) {
-                return x(d.x);
-            })
-            .y(function (d: any) {
-                return y(d.y);
-            })
-            .curve(curveLinear);
-        //prepare vertical line
-        let showVerticalLine: boolean = (tickMaxWidth > 1);
-        let xMouseMin: number;
-        let xMouseMax: number;
-        let hoverContainer: d3Selection<SVGElement>;
-        let tooltipRect: d3Selection<SVGElement>;
-
-        if (showVerticalLine) {
-            xMouseMin = xRange[0] - axisMargin;
-            xMouseMax = xRange[1] + axisMargin;
-            hoverContainer = svgContainer.append("svg");
-            tooltipRect = hoverContainer.append('rect')
-                .classed('clearCatcher', true)
-                .classed(Visual.LineChartRectSelector.className, true)
-                .attr('width', xMouseMax - xMouseMin)
-                .attr('height', yRangeMax)
-                .attr('x', xMouseMin)
-                .attr('y', 0)
-                .attr('opacity', '1e-06')
-                .attr('fill', '#fff');
-        }
-        //Render lines
-        this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
-
-        this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
-        //Render vertical line
-        if (!showVerticalLine) return;
-
-        let hoverLine: d3Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
-            .classed(Visual.HoverLineSelector.className, true)
-            .style("opacity", 0);
-        let hoverLineData: d3Selection<number> = hoverLine.data([0]);
-
-        let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
-        let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
-            lines, xAxisDataPoints, line, shapesShowMarkers, rectGlobalX, rectGlobalY);
-
-        this.verticalLineDataItemsGlobal[lineKey] = {
-            verticalLineDataItems: verticalLineDataItems,
-            hoverLineData: hoverLineData
-        };
-
-        let tooltipServiceWrapper = this.tooltipServiceWrapper;
-        svgContainer.on('mouseout', function () {
-            tooltipServiceWrapper.hide();
-            hoverLine.style("opacity", 0);
-            hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
-        });
-        let is: IInteractivityService<any> = this.interactivityService;
-        svgContainer.on('click', function (e: MouseEvent) {
-            let mouseX: number = e.x;
-            let mouseY: number = e.y;
-            if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
-                is.clearSelection();
-            }
-        });
-        svgContainer.on('mousemove', function (e: MouseEvent) {
-            let mouseX: number = e.x;
-            let mouseY: number = e.y;
-            if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
-                tooltipServiceWrapper.hide();
-                hoverLine.style("opacity", 0);
-                hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
-            } else {
-                let index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
-                hoverLineData = hoverLine.data([index]);
-                let verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
-                if (verticalLineDataItem) {
-                    let xValue: number = verticalLineDataItem.x;
-                    drawPointsForVerticalLine(hoverContainer, xValue, verticalLineDataItem.linePoints);
-                    let d: string = "M" + xValue + "," + yRangeMax + "V0";
-                    hoverLine.attr("d", d).style("opacity", 1);
-                }
-            }
-        });
-        tooltipServiceWrapper.addTooltip(tooltipRect,
-            () => {
-                let index: number = hoverLineData.data()[0];
-                let tooltips: VisualTooltipDataItem[] = null;
-                if (verticalLineDataItems[index])
-                    tooltips = verticalLineDataItems[index].tooltips;
-                return tooltips;
-            },
-            null,
-            true);
+        // if (isResponsive && (plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight || isLegendHidden)) {
+        //     svgContainer.selectAll("svg").remove();
+        //     xAxisHeight = 0;
+        //     axisMargin = 5;
+        //     //recount
+        //     xRange = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
+        //     xAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
+        //     x = xAxisData.x;
+        //     xAxisDataPoints = xAxisData.xAxisDataPoints;
+        //     lines = xAxisData.lines;
+        //     tickMaxWidth = xAxisDataPoints.length > 0
+        //         ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
+        //         : 0;
+        // }
+        //
+        // //Y
+        // let yRangeMax: number = isLegendHidden
+        //     ? plotSize.height - axisPadding - xAxisHeight + legendHeight
+        //     : plotSize.height - axisPadding - xAxisHeight;
+        // if (yRangeMax < 0)
+        //     yRangeMax = 0;
+        //
+        // let yRange: number[] = [axisPadding, yRangeMax];
+        // let domainY: VisualDomain = this.retrieveDomainY(lines);
+        // let y: ScaleContinuousNumeric<number, number>;
+        // if (this.settings.yAxis.axisScale == "linear") {
+        //     y = d3scaleLinear()
+        //         .domain([domainY.end, domainY.start])
+        //         .range(yRange).nice().nice();
+        // } else {
+        //     y = d3scaleLog()
+        //         .domain([domainY.end, domainY.start])
+        //         .range(yRange);
+        // }
+        // if (showYAxis)
+        //     this.renderYAxis(svgContainer, plotSize, y, domainY, axisPadding, yAxisWidth, yAxisFontSize);
+        //
+        // if (isResponsive && ((totalXWidth < this.ResponsiveMinWidth) || (plotSize.height - xAxisHeight - axisPadding < this.ResponsiveMinHeight))) {
+        //     //draw image
+        //     svgContainer.selectAll("svg").remove();
+        //     this.retrieveResponsiveIcon(svgContainer);
+        //     return;
+        // }
+        // //Draw line
+        // if (lines.length == 0)
+        //     return;
+        // let line: d3Line<[number, number]> = d3line()
+        //     .x(function (d: any) {
+        //         return x(d.x);
+        //     })
+        //     .y(function (d: any) {
+        //         return y(d.y);
+        //     })
+        //     .curve(curveLinear);
+        // //prepare vertical line
+        // let showVerticalLine: boolean = (tickMaxWidth > 1);
+        // let xMouseMin: number;
+        // let xMouseMax: number;
+        // let hoverContainer: d3Selection<SVGElement>;
+        // let tooltipRect: d3Selection<SVGElement>;
+        //
+        // if (showVerticalLine) {
+        //     xMouseMin = xRange[0] - axisMargin;
+        //     xMouseMax = xRange[1] + axisMargin;
+        //     hoverContainer = svgContainer.append("svg");
+        //     tooltipRect = hoverContainer.append('rect')
+        //         .classed('clearCatcher', true)
+        //         .classed(Visual.LineChartRectSelector.className, true)
+        //         .attr('width', xMouseMax - xMouseMin)
+        //         .attr('height', yRangeMax)
+        //         .attr('x', xMouseMin)
+        //         .attr('y', 0)
+        //         .attr('opacity', '1e-06')
+        //         .attr('fill', '#fff');
+        // }
+        // //Render lines
+        // this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
+        //
+        // this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
+        // //Render vertical line
+        // if (!showVerticalLine) return;
+        //
+        // let hoverLine: d3Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
+        //     .classed(Visual.HoverLineSelector.className, true)
+        //     .style("opacity", 0);
+        // let hoverLineData: d3Selection<number> = hoverLine.data([0]);
+        //
+        // let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
+        // let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
+        //     lines, xAxisDataPoints, line, shapesShowMarkers, rectGlobalX, rectGlobalY);
+        //
+        // this.verticalLineDataItemsGlobal[lineKey] = {
+        //     verticalLineDataItems: verticalLineDataItems,
+        //     hoverLineData: hoverLineData
+        // };
+        //
+        // let tooltipServiceWrapper = this.tooltipServiceWrapper;
+        // svgContainer.on('mouseout', function () {
+        //     tooltipServiceWrapper.hide();
+        //     hoverLine.style("opacity", 0);
+        //     hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
+        // });
+        // let is: IInteractivityService<any> = this.interactivityService;
+        // svgContainer.on('click', function (e: MouseEvent) {
+        //     let mouseX: number = e.x;
+        //     let mouseY: number = e.y;
+        //     if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
+        //         is.clearSelection();
+        //     }
+        // });
+        // svgContainer.on('mousemove', function (e: MouseEvent) {
+        //     let mouseX: number = e.x;
+        //     let mouseY: number = e.y;
+        //     if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
+        //         tooltipServiceWrapper.hide();
+        //         hoverLine.style("opacity", 0);
+        //         hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
+        //     } else {
+        //         let index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
+        //         hoverLineData = hoverLine.data([index]);
+        //         let verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
+        //         if (verticalLineDataItem) {
+        //             let xValue: number = verticalLineDataItem.x;
+        //             drawPointsForVerticalLine(hoverContainer, xValue, verticalLineDataItem.linePoints);
+        //             let d: string = "M" + xValue + "," + yRangeMax + "V0";
+        //             hoverLine.attr("d", d).style("opacity", 1);
+        //         }
+        //     }
+        // });
+        // tooltipServiceWrapper.addTooltip(tooltipRect,
+        //     () => {
+        //         let index: number = hoverLineData.data()[0];
+        //         let tooltips: VisualTooltipDataItem[] = null;
+        //         if (verticalLineDataItems[index])
+        //             tooltips = verticalLineDataItems[index].tooltips;
+        //         return tooltips;
+        //     },
+        //     null,
+        //     true);
     };
 
-    private renderXAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, x: any, xIsCategorical: boolean, xAxisDataPoints: any[],
-                        tickMaxWidth: number, xRange: number[], axisPadding: number, start: number, end: number): number {
-        // TODO Remove and fix
-        return 0;
+    private renderXAxis(
+        svgContainer: d3Selection<SVGElement>,
+        plotSize: any,
+        x: AxisScale<AxisDomain>,
+        xIsCategorical: boolean,
+        xAxisDataPoints: PrimitiveValue[],
+        tickMaxWidth: number,
+        xRange: number[],
+        axisPadding: number,
+        start: number,
+        end: number): number {
+        if (!this.settings.xAxis.show) return 0;
+        let svgAxisContainer: d3Selection<SVGElement> = svgContainer
+            .append('svg');
 
-        // if (!this.settings.xAxis.show) return 0;
-        // let svgAxisContainer: d3Selection<SVGElement> = svgContainer
-        //     .append('svg');
-        //
-        // let axis = svgAxisContainer.selectAll("g.axis").data([0]);
-        //
-        // axis.enter().append("g").attr("class", "x axis");
-        //
-        // let xSpecial = x;
-        // let numTicks: number;
-        // let actionWithLabels: LabelsAction = LabelsAction.Simple;
-        //
-        // let longestXAxis: string = null;
-        //
-        // for (let i = 1; i < xAxisDataPoints.length; i++) {
-        //     let value: PrimitiveValue = this.categoryIsDate ? new Date(xAxisDataPoints[i].toString()) : xAxisDataPoints[i];
-        //     let item: string = this.xFormatter.format(value);
-        //     if (longestXAxis == null || item.length > longestXAxis.length)
-        //         longestXAxis = item;
-        // }
-        // let xAxisFontSize = this.settings.xAxis.fontSize.toString() + "px";
-        // let xAxisWidth: number = measureTextWidth({
-        //     fontSize: xAxisFontSize,
-        //     fontFamily: this.settings.xAxis.fontFamily,
-        //     text: longestXAxis
-        // });
-        //
-        // if (xIsCategorical) {
-        //     numTicks = xAxisDataPoints.length;
-        //     let fontWidth = this.settings.xAxis.fontSize;
-        //
-        //     if (tickMaxWidth < fontWidth) {
-        //         actionWithLabels = LabelsAction.Rotate90;
-        //         numTicks = xAxisDataPoints.length;
-        //         xSpecial = d3scaleOrdinal()
-        //             .domain(xAxisDataPoints)
-        //             .range(<any>xRange);
-        //     } else if (tickMaxWidth < 1.9 * fontWidth) {
-        //         actionWithLabels = LabelsAction.Rotate90;
-        //
-        //     } else if (tickMaxWidth < 1.1 * xAxisWidth) {
-        //         actionWithLabels = LabelsAction.Rotate35;
-        //     }
-        // } else {
-        //     let divider: number = 1.8 * xAxisWidth;
-        //     numTicks = Math.floor((xRange[1] - xRange[0]) / divider);
-        //     if (numTicks < 2)
-        //         numTicks = 2;
-        //     if (numTicks > xAxisDataPoints.length)
-        //         numTicks = xAxisDataPoints.length;
-        //     if (numTicks == 1 && this.settings.xAxis.axisScale == "linear")
-        //         xSpecial = d3scaleOrdinal().range(<any>xRange).domain(xAxisDataPoints);
-        // }
-        //
-        // let xAxis = (this.categoryIsDate)
-        //     ? d3axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0)
-        //     : ((this.settings.xAxis.axisScale == "log")
-        //         ? d3axisBottom(xSpecial)
-        //         : d3axisBottom(xSpecial).ticks(numTicks).tickSizeOuter(0));
-        //
-        // if (this.categoryIsDate) {
-        //     if (xIsCategorical) {
-        //         xAxis.tickFormat(d => this.xFormatter.format(d));
-        //     }
-        //     axis.call(xAxis);
-        // } else {
-        //     if (this.categoryIsScalar) {
-        //         xAxis.tickFormat(d => this.xFormatter.format(d));
-        //     }
-        //     axis.call(xAxis.scale(xSpecial));
-        // }
-        //
-        // axis.selectAll('.domain').remove();
-        //
-        // let labels = axis.selectAll('text')
-        //     .style({
-        //         'fill': this.settings.xAxis.axisColor,
-        //         'font-family': this.settings.xAxis.fontFamily,
-        //         'font-size': xAxisFontSize
-        //     });
-        // switch (actionWithLabels) {
-        //     case LabelsAction.Simple: {
-        //         let count: number = (labels.data().length == 0)
-        //             ? 1
-        //             : labels.data().length;
-        //         if (this.settings.xAxis.axisScale == "linear") {
-        //             let tickMaxWidth = (xRange[1] - xRange[0]) / count;
-        //             labels.call(TextUtility.wrapAxis, tickMaxWidth, {
-        //                 fontFamily: this.settings.xAxis.fontFamily,
-        //                 fontSize: xAxisFontSize
-        //             });
-        //         } else {
-        //             let labelXArray: number[] = [];
-        //             labels.each((number: any, index: number) => {
-        //                 let item: Selection<any> = d3.select(labels[0][index]);
-        //                 let parent: Selection<any> = d3.select(item.node().parentElement);
-        //                 let numberValue: number = number;
-        //                 if (numberValue < 1) {
-        //                     while (numberValue < 1) {
-        //                         numberValue = numberValue * this.MaxLogScaleDivider;
-        //                     }
-        //                 } else {
-        //                     while (numberValue > 1) {
-        //                         numberValue = numberValue / this.MaxLogScaleDivider;
-        //                     }
-        //                 }
-        //                 if (end / start > this.MaxLogScaleDivider && numberValue != 1) {
-        //                     item.text("");
-        //                     parent.select('line').remove();
-        //                 } else {
-        //                     let transform: string = parent.attr('transform');
-        //                     let labelX: number = +transform.replace('translate(', '').split(',')[0];
-        //                     labelXArray.push(labelX);
-        //                     item.text(this.xFormatter.format(number));
-        //                 }
-        //             });
-        //             for (let i = 0; i < labelXArray.length - 1; i++) {
-        //                 labelXArray[i] = labelXArray[i + 1] - labelXArray[i];
-        //             }
-        //             labelXArray[labelXArray.length - 1] = plotSize.width - labelXArray[labelXArray.length - 1];
-        //             let labelIndex: number = 0;
-        //             labels.each((number: any, index: number) => {
-        //                 let item: Selection<any> = d3.select(labels[0][index]);
-        //                 let textTitle: string = item.text();
-        //                 if (textTitle) {
-        //                     let textProp: TextProperties = {
-        //                         text: textTitle,
-        //                         fontFamily: this.settings.xAxis.fontFamily,
-        //                         fontSize: xAxisFontSize
-        //                     };
-        //                     let maxTextWidth: number = labelXArray[labelIndex];
-        //                     labelIndex = labelIndex + 1;
-        //                     let text: string = TextUtility.getTailoredTextOrDefault(textProp, maxTextWidth);
-        //                     item.text(text).append('title').text(textTitle);
-        //                 }
-        //             });
-        //         }
-        //         break;
-        //     }
-        //     case LabelsAction.Rotate35: {
-        //         labels.attr("transform", function (d) {
-        //             return "translate(" + this.getBBox().height * -2 + "," + this.getBBox().height + ")rotate(-35)";
-        //         }).attr('dy', '0').attr('dx', '2.5em').style("text-anchor", "end")
-        //             .call(TextUtility.truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
-        //                 fontFamily: this.settings.xAxis.fontFamily,
-        //                 fontSize: xAxisFontSize
-        //             });
-        //         break;
-        //     }
-        //     case LabelsAction.Rotate90: {
-        //         labels.attr("transform", "rotate(-90)").attr('dy', '-0.5em').style("text-anchor", "end")
-        //             .call(TextUtility.truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
-        //                 fontFamily: this.settings.xAxis.fontFamily,
-        //                 fontSize: xAxisFontSize
-        //             });
-        //         let labelStartX: number = null;
-        //         let removedIndexes: number[] = [];
-        //         labels.each((number: any, index: number) => {
-        //             let item: Selection<any> = d3.select(labels[0][index]);
-        //             let parent: Selection<any> = d3.select(item.node().parentElement);
-        //             let transform: string = parent.attr('transform');
-        //             let labelX: number = +transform.replace('translate(', '').split(',')[0];
-        //             if (labelStartX == null) {
-        //                 labelStartX = labelX;
-        //             } else {
-        //                 if (labelX - labelStartX < this.settings.xAxis.fontSize)
-        //                     removedIndexes.push(index);
-        //                 else
-        //                     labelStartX = labelX;
-        //             }
-        //         });
-        //         for (let i = 0; i < removedIndexes.length; i++) {
-        //             let index = removedIndexes[i];
-        //             let item: Selection<any> = d3.select(labels[0][index]);
-        //             item.remove();
-        //         }
-        //         break;
-        //     }
-        // }
-        //
-        // let n = <any>axis.node();
-        // let xAxisHeight: number = n.getBBox().height;
-        //
-        // if (this.settings.xAxis.showTitle) {
-        //     let titleTextFull: string = this.settings.xAxis.axisTitle ? this.settings.xAxis.axisTitle : this.categoryName;
-        //     let titleStyle: string = (this.categoryIsScalar && (this.settings.xAxis.displayUnits == 1000 ||
-        //         this.settings.xAxis.displayUnits == 1000000 || this.settings.xAxis.displayUnits == 1000000000 || this.settings.xAxis.displayUnits == 1000000000000))
-        //         ? this.settings.xAxis.titleStyleFull
-        //         : this.settings.xAxis.titleStyle;
-        //     switch (titleStyle) {
-        //         case "showUnitOnly": {
-        //             titleTextFull = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
-        //             break;
-        //         }
-        //         case "showBoth": {
-        //             let displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
-        //             titleTextFull = titleTextFull + " (" + displayUnits + ")";
-        //             break;
-        //         }
-        //     }
-        //
-        //     let titleFontSize: string = this.settings.xAxis.titleFontSize + "px";
-        //     let textProp: TextProperties = {
-        //         text: titleTextFull,
-        //         fontFamily: this.settings.xAxis.titleFontFamily,
-        //         fontSize: titleFontSize,
-        //     };
-        //     let titleText: string = TextUtility.getTailoredTextOrDefault(textProp, xRange[1] - xRange[0]);
-        //     let titleCont: Selection<any> = axis.append("g");
-        //     titleCont.append("text")
-        //         .attr({
-        //             'font-family': this.settings.xAxis.titleFontFamily,
-        //             'font-size': titleFontSize,
-        //             'fill': this.settings.xAxis.axisTitleColor,
-        //             'text-anchor': 'middle'
-        //         })
-        //         .text(titleText)
-        //         .append('title').text(titleTextFull);
-        //
-        //     n = <any>titleCont.node();
-        //     let titleHeight: number = n.getBBox().height;
-        //
-        //     let titleX: number = (xRange[1] + xRange[0]) / 2;
-        //     let delta: number = (titleHeight - this.settings.xAxis.titleFontSize) / 2;
-        //     let titleY: number = xAxisHeight + titleHeight - delta;
-        //     titleCont.attr('transform', 'translate(' + titleX + ',' + titleY + ')');
-        //     xAxisHeight = xAxisHeight + titleHeight + delta;
-        // }
-        // axis.attr('transform', 'translate(0,' + (plotSize.height - xAxisHeight) + ')');
-        //
-        // if (this.settings.xAxis.showGridlines) {
-        //     let grid = svgAxisContainer.selectAll("g.x.axis").data([0]);
-        //     let strokeDasharray = VizUtility.getLineStyleParam(this.settings.xAxis.lineStyle);
-        //     grid.selectAll('line').attr("y2", -plotSize.height + xAxisHeight + axisPadding)
-        //         .style({
-        //             "stroke": this.settings.xAxis.gridlinesColor,
-        //             "stroke-width": this.settings.xAxis.strokeWidth,
-        //             "stroke-dasharray": strokeDasharray
-        //         });
-        // }
-        // return xAxisHeight;
+        let axisSvg = svgAxisContainer
+            .selectAll("g.axis")
+            .data([0]);
+
+        let xAxisSvg = axisSvg.enter().append("g").attr("class", "x axis");
+
+        let xSpecial = x;
+        let numTicks: number;
+        let actionWithLabels: LabelsAction = LabelsAction.Simple;
+
+        let longestXAxis: string = null;
+
+        for (let i = 1; i < xAxisDataPoints.length; i++) {
+            let value: PrimitiveValue = this.categoryIsDate ? new Date(xAxisDataPoints[i].toString()) : xAxisDataPoints[i];
+            let item: string = this.xFormatter.format(value);
+            if (longestXAxis == null || item.length > longestXAxis.length)
+                longestXAxis = item;
+        }
+
+        let xAxisFontSize = this.settings.xAxis.fontSize.toString() + "px";
+        let xAxisWidth: number = measureTextWidth({
+            fontSize: xAxisFontSize,
+            fontFamily: this.settings.xAxis.fontFamily,
+            text: longestXAxis
+        });
+
+        console.log('xIsCategorical')
+        console.log(xIsCategorical)
+
+        if (xIsCategorical) {
+            numTicks = xAxisDataPoints.length;
+            let fontWidth = this.settings.xAxis.fontSize;
+
+            if (tickMaxWidth < fontWidth) {
+                actionWithLabels = LabelsAction.Rotate90;
+                numTicks = xAxisDataPoints.length;
+                xSpecial = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
+            } else if (tickMaxWidth < 1.9 * fontWidth) {
+                actionWithLabels = LabelsAction.Rotate90;
+
+            } else if (tickMaxWidth < 1.1 * xAxisWidth) {
+                actionWithLabels = LabelsAction.Rotate35;
+            }
+        } else {
+            let divider: number = 1.8 * xAxisWidth;
+            numTicks = Math.floor((xRange[1] - xRange[0]) / divider);
+            if (numTicks < 2)
+                numTicks = 2;
+            if (numTicks > xAxisDataPoints.length)
+                numTicks = xAxisDataPoints.length;
+            if (numTicks == 1 && this.settings.xAxis.axisScale == "linear")
+                xSpecial = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
+        }
+
+        let xAxis = (this.categoryIsDate)
+            ? d3axisBottom(xSpecial).ticks(numTicks).tickSize(0)
+            : ((this.settings.xAxis.axisScale == "log")
+                ? d3axisBottom(xSpecial)
+                : d3axisBottom(xSpecial).ticks(numTicks).tickSize(0));
+
+        if (this.categoryIsDate) {
+            if (xIsCategorical) {
+                xAxis.tickFormat(d => this.xFormatter.format(d));
+            }
+            xAxisSvg.call(xAxis);
+        } else {
+            if (this.categoryIsScalar) {
+                xAxis.tickFormat(d => this.xFormatter.format(d));
+            }
+            xAxisSvg.call(xAxis.scale(xSpecial));
+        }
+
+        xAxisSvg.selectAll('.domain').remove();
+
+        let labels = xAxisSvg.selectAll('text')
+            .style('fill', this.settings.xAxis.axisColor)
+            .style('font-family', this.settings.xAxis.fontFamily,)
+            .style('font-size', xAxisFontSize);
+
+        switch (actionWithLabels) {
+            case LabelsAction.Simple: {
+                let count: number = (labels.data().length == 0)
+                    ? 1
+                    : labels.data().length;
+                if (this.settings.xAxis.axisScale == "linear") {
+                    let tickMaxWidth = (xRange[1] - xRange[0]) / count;
+                    labels.call(wrapAxis, tickMaxWidth, {
+                        fontFamily: this.settings.xAxis.fontFamily,
+                        fontSize: xAxisFontSize
+                    });
+                } else {
+                    let labelXArray: number[] = [];
+                    labels.each((number: any, index: number) => {
+                        let item: d3Selection<any> = d3select(labels[0][index]);
+                        let parent: d3Selection<any> = d3select(item.node().parentElement);
+                        let numberValue: number = number;
+                        if (numberValue < 1) {
+                            while (numberValue < 1) {
+                                numberValue = numberValue * this.MaxLogScaleDivider;
+                            }
+                        } else {
+                            while (numberValue > 1) {
+                                numberValue = numberValue / this.MaxLogScaleDivider;
+                            }
+                        }
+                        if (end / start > this.MaxLogScaleDivider && numberValue != 1) {
+                            item.text("");
+                            parent.select('line').remove();
+                        } else {
+                            let transform: string = parent.attr('transform');
+                            let labelX: number = +transform.replace('translate(', '').split(',')[0];
+                            labelXArray.push(labelX);
+                            item.text(this.xFormatter.format(number));
+                        }
+                    });
+                    for (let i = 0; i < labelXArray.length - 1; i++) {
+                        labelXArray[i] = labelXArray[i + 1] - labelXArray[i];
+                    }
+                    labelXArray[labelXArray.length - 1] = plotSize.width - labelXArray[labelXArray.length - 1];
+                    let labelIndex: number = 0;
+                    labels.each((number: any, index: number) => {
+                        let item: d3Selection<any> = d3select(labels[0][index]);
+                        let textTitle: string = item.text();
+                        if (textTitle) {
+                            let textProp: TextProperties = {
+                                text: textTitle,
+                                fontFamily: this.settings.xAxis.fontFamily,
+                                fontSize: xAxisFontSize
+                            };
+                            let maxTextWidth: number = labelXArray[labelIndex];
+                            labelIndex = labelIndex + 1;
+                            let text: string = getTailoredTextOrDefault(textProp, maxTextWidth);
+                            item.text(text).append('title').text(textTitle);
+                        }
+                    });
+                }
+                break;
+            }
+            case LabelsAction.Rotate35: {
+                labels.attr("transform", function (d) {
+                    return "translate(" + (<any>this).getBBox().height * -2 + "," + (<any>this).getBBox().height + ")rotate(-35)";
+                }).attr('dy', '0').attr('dx', '2.5em').style("text-anchor", "end")
+                    .call(truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
+                        fontFamily: this.settings.xAxis.fontFamily,
+                        fontSize: xAxisFontSize
+                    });
+                break;
+            }
+            case LabelsAction.Rotate90: {
+                labels.attr("transform", "rotate(-90)")
+                    .attr('dy', '-0.5em')
+                    .style("text-anchor", "end")
+                    .call(truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
+                        fontFamily: this.settings.xAxis.fontFamily,
+                        fontSize: xAxisFontSize
+                    });
+                let labelStartX: number = null;
+                let removedIndexes: number[] = [];
+                labels.each((number: any, index: number) => {
+                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    let parent: d3Selection<any> = d3select(item.node().parentElement);
+                    let transform: string = parent.attr('transform');
+                    let labelX: number = +transform.replace('translate(', '').split(',')[0];
+                    if (labelStartX == null) {
+                        labelStartX = labelX;
+                    } else {
+                        if (labelX - labelStartX < this.settings.xAxis.fontSize)
+                            removedIndexes.push(index);
+                        else
+                            labelStartX = labelX;
+                    }
+                });
+                for (let i = 0; i < removedIndexes.length; i++) {
+                    let index = removedIndexes[i];
+                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    item.remove();
+                }
+                break;
+            }
+        }
+
+        let n = <any>xAxisSvg.node();
+        let xAxisHeight: number = n.getBBox().height;
+
+        if (this.settings.xAxis.showTitle) {
+            let titleTextFull: string = this.settings.xAxis.axisTitle ? this.settings.xAxis.axisTitle : this.categoryName;
+            let titleStyle: string = (this.categoryIsScalar && (this.settings.xAxis.displayUnits == 1000 ||
+                this.settings.xAxis.displayUnits == 1000000 || this.settings.xAxis.displayUnits == 1000000000 || this.settings.xAxis.displayUnits == 1000000000000))
+                ? this.settings.xAxis.titleStyleFull
+                : this.settings.xAxis.titleStyle;
+            switch (titleStyle) {
+                case "showUnitOnly": {
+                    titleTextFull = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
+                    break;
+                }
+                case "showBoth": {
+                    let displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
+                    titleTextFull = titleTextFull + " (" + displayUnits + ")";
+                    break;
+                }
+            }
+
+            let titleFontSize: string = this.settings.xAxis.titleFontSize + "px";
+            let textProp: TextProperties = {
+                text: titleTextFull,
+                fontFamily: this.settings.xAxis.titleFontFamily,
+                fontSize: titleFontSize,
+            };
+            let titleText: string = getTailoredTextOrDefault(textProp, xRange[1] - xRange[0]);
+            let titleCont: d3Selection<any> = xAxisSvg.append("g");
+            titleCont.append("text")
+                .attr('font-family', this.settings.xAxis.titleFontFamily)
+                .attr('font-size', titleFontSize)
+                .attr('fill', this.settings.xAxis.axisTitleColor)
+                .attr('text-anchor', 'middle')
+                .text(titleText)
+                .append('title').text(titleTextFull);
+
+            n = <any>titleCont.node();
+            let titleHeight: number = n.getBBox().height;
+
+            let titleX: number = (xRange[1] + xRange[0]) / 2;
+            let delta: number = (titleHeight - this.settings.xAxis.titleFontSize) / 2;
+            let titleY: number = xAxisHeight + titleHeight - delta;
+            titleCont.attr('transform', 'translate(' + titleX + ',' + titleY + ')');
+            xAxisHeight = xAxisHeight + titleHeight + delta;
+        }
+        xAxisSvg.attr('transform', 'translate(0,' + (plotSize.height - xAxisHeight) + ')');
+
+        if (this.settings.xAxis.showGridlines) {
+            let grid = svgAxisContainer.selectAll("g.x.axis").data([0]);
+            let strokeDasharray = getLineStyleParam(this.settings.xAxis.lineStyle);
+            grid.selectAll('line')
+                .attr("y2", -plotSize.height + xAxisHeight + axisPadding)
+                .style("stroke", this.settings.xAxis.gridlinesColor)
+                .style("stroke-width", this.settings.xAxis.strokeWidth)
+                .style("stroke-dasharray", strokeDasharray);
+        }
+
+        return xAxisHeight;
     }
 
     private renderYAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, y: any, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {

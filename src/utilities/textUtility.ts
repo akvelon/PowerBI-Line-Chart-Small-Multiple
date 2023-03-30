@@ -1,3 +1,5 @@
+import {select as d3select} from "d3-selection";
+
 export interface TextProperties {
     text?: string;
     fontFamily: string;
@@ -33,75 +35,81 @@ export function measureTextWidth(textProperties: TextProperties): number {
     return canvasCtx.measureText(textProperties.text).width;
 }
 
-//         /**
-//          * Compares labels text size to the available size and renders ellipses when the available size is smaller.
-//          * @param textProperties The text properties (including text content) to use for text measurement.
-//          * @param maxWidth The maximum width available for rendering the text.
-//          */
-//         export function getTailoredTextOrDefault(textProperties: TextProperties, maxWidth: number): string {
-//             ensureCanvas();
-//             let strLength = textProperties.text.length;
-//             if (strLength === 0)
-//                 return textProperties.text;
-//             let width = measureTextWidth(textProperties);
-//             if (width < maxWidth)
-//                 return textProperties.text;
-//             // Create a copy of the textProperties so we don't modify the one that's passed in.
-//             let copiedTextProperties: TextProperties = Object.create(textProperties);
-//             // Take the properties and apply them to svgTextElement
-//             // Then, do the binary search to figure out the substring we want
-//             // Set the substring on textElement argument
-//             let text = copiedTextProperties.text = ellipsis + copiedTextProperties.text;
-//             let min = 1;
-//             let max = text.length;
-//             let i = ellipsis.length;
-//             while (min <= max) {
-//                 // num | 0 prefered to Math.floor(num) for performance benefits
-//                 i = (min + max) / 2 | 0;
-//                 copiedTextProperties.text = text.substr(0, i);
-//                 width = measureTextWidth(copiedTextProperties);
-//                 if (maxWidth > width)
-//                     min = i + 1;
-//                 else if (maxWidth < width)
-//                     max = i - 1;
-//                 else
-//                     break;
-//             }
-//             // Since the search algorithm almost never finds an exact match,
-//             // it will pick one of the closest two, which could result in a
-//             // value bigger with than 'maxWidth' thus we need to go back by
-//             // one to guarantee a smaller width than 'maxWidth'.
-//             copiedTextProperties.text = text.substr(0, i);
-//             width = measureTextWidth(copiedTextProperties);
-//             if (width > maxWidth)
-//                 i--;
-//             return text.substr(ellipsis.length, i - ellipsis.length) + ellipsis;
-//         }
-//
-//         export function truncateAxis(text, width, textProperties?: TextProperties) {
-//              text.each(function() {
-//                 var text = d3.select(this);
-//                 var title = text.text();
-//                 var truncatedText = TextUtility.getTailoredTextOrDefault({text: title, fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'), fontSize: (textProperties ? textProperties.fontSize  : '11px')}, width);
-//                 text.text(truncatedText);
-//                 text.append("title").text(title);
-//              });
-//         }
-//
-//         export function wrapAxis(text, width, textProperties?: TextProperties, notEnclose?: boolean) {
-//             text.each(function() {
-//                 var text = d3.select(this),
-//                     title = text.text(),
-//                     newText;
-//                 newText = notEnclose
-//                     ? text
-//                     : TextUtility.getTailoredTextOrDefault({ text: title, fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'), fontSize: (textProperties ? textProperties.fontSize : '11px')}, width);
-//                 text.text(newText);
-//                 text.append("title").text(title);
-//
-//             });
-//         }
-//     }
+/**
+ * Compares labels text size to the available size and renders ellipses when the available size is smaller.
+ * @param textProperties The text properties (including text content) to use for text measurement.
+ * @param maxWidth The maximum width available for rendering the text.
+ */
+export function getTailoredTextOrDefault(textProperties: TextProperties, maxWidth: number): string {
+    ensureCanvas();
+    let strLength = textProperties.text.length;
+    if (strLength === 0)
+        return textProperties.text;
+    let width = measureTextWidth(textProperties);
+    if (width < maxWidth)
+        return textProperties.text;
+    // Create a copy of the textProperties so we don't modify the one that's passed in.
+    let copiedTextProperties: TextProperties = Object.create(textProperties);
+    // Take the properties and apply them to svgTextElement
+    // Then, do the binary search to figure out the substring we want
+    // Set the substring on textElement argument
+    let text = copiedTextProperties.text = ellipsis + copiedTextProperties.text;
+    let min = 1;
+    let max = text.length;
+    let i = ellipsis.length;
+    while (min <= max) {
+        // num | 0 prefered to Math.floor(num) for performance benefits
+        i = (min + max) / 2 | 0;
+        copiedTextProperties.text = text.substr(0, i);
+        width = measureTextWidth(copiedTextProperties);
+        if (maxWidth > width)
+            min = i + 1;
+        else if (maxWidth < width)
+            max = i - 1;
+        else
+            break;
+    }
+    // Since the search algorithm almost never finds an exact match,
+    // it will pick one of the closest two, which could result in a
+    // value bigger with than 'maxWidth' thus we need to go back by
+    // one to guarantee a smaller width than 'maxWidth'.
+    copiedTextProperties.text = text.substr(0, i);
+    width = measureTextWidth(copiedTextProperties);
+    if (width > maxWidth)
+        i--;
+    return text.substr(ellipsis.length, i - ellipsis.length) + ellipsis;
+}
+
+export function truncateAxis(text, width, textProperties?: TextProperties) {
+    text.each(function () {
+        var text = d3select(this);
+        var title = text.text();
+        var truncatedText = getTailoredTextOrDefault({
+            text: title,
+            fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'),
+            fontSize: (textProperties ? textProperties.fontSize : '11px')
+        }, width);
+        text.text(truncatedText);
+        text.append("title").text(title);
+    });
+}
+
+export function wrapAxis(text, width, textProperties?: TextProperties, notEnclose?: boolean) {
+    text.each(function () {
+        var text = d3select(this),
+            title = text.text(),
+            newText;
+        newText = notEnclose
+            ? text
+            : getTailoredTextOrDefault({
+                text: title,
+                fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'),
+                fontSize: (textProperties ? textProperties.fontSize : '11px')
+            }, width);
+        text.text(newText);
+        text.append("title").text(title);
+    });
+}
 
 const PxPtRatio: number = 4 / 3;
 const PixelString: string = 'px';
@@ -140,12 +148,12 @@ export function fromPixelToPoint(px: number): number {
     return (px / PxPtRatio);
 }
 
-//         /**
-//          * Converts pixel value (px) to pt
-//          * e.g. toPoint(24) => 8
-//          */
-//         export function toPoint(px: number): number {
-//             return px / PxPtRatio;
-//         }
-//     }
-// }
+/**
+ * Converts pixel value (px) to pt
+ * e.g. toPoint(24) => 8
+ */
+export function toPoint(px: number): number {
+    return px / PxPtRatio;
+}
+
+

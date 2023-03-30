@@ -29,13 +29,19 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IViewport = powerbi.IViewport;
 import {MarkersUtility} from "./markersUtility";
 import {LegendBehavior} from "../legendBehavior";
+import {IMargin} from "powerbi-visuals-utils-svgutils";
 
 const paddingText: number = 10;
 const arrowWidth: number = 7.5;
 let lineLen: number = 30;
 let circleD: number = 10;
 
-export function renderLegend(legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[], legend: ILegend, options: VisualUpdateOptions, margin: any) {
+export function renderLegend(
+    legendSettings: LegendSettings,
+    dataPoints: LegendDataPointExtended[],
+    legend: ILegend,
+    options: VisualUpdateOptions,
+    margin: IMargin) {
     let legendData: LegendData = {
         dataPoints: []
     };
@@ -707,7 +713,7 @@ function buildLegendDataForMultipleValues(
     };
 }
 
-function appendLegendMargins(legend: ILegend, margins) {
+function appendLegendMargins(legend: ILegend, margins: IMargin) {
 
     if (legend) {
         let legendViewPort: IViewport = legend.getMargins();
