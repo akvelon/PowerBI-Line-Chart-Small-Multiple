@@ -636,56 +636,56 @@ export class RenderVisual {
         this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
 
         this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
-        // //Render vertical line
-        // if (!showVerticalLine) return;
+        //Render vertical line
+        if (!showVerticalLine) return;
         //
-        // let hoverLine: d3Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
-        //     .classed(Visual.HoverLineSelector.className, true)
-        //     .style("opacity", 0);
-        // let hoverLineData: d3Selection<number> = hoverLine.data([0]);
-        //
-        // let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
-        // let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
-        //     lines, xAxisDataPoints, line, shapesShowMarkers, rectGlobalX, rectGlobalY);
-        //
-        // this.verticalLineDataItemsGlobal[lineKey] = {
-        //     verticalLineDataItems: verticalLineDataItems,
-        //     hoverLineData: hoverLineData
-        // };
-        //
-        // let tooltipServiceWrapper = this.tooltipServiceWrapper;
-        // svgContainer.on('mouseout', function () {
-        //     tooltipServiceWrapper.hide();
-        //     hoverLine.style("opacity", 0);
-        //     hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
-        // });
-        // let is: IInteractivityService<any> = this.interactivityService;
-        // svgContainer.on('click', function (e: MouseEvent) {
-        //     let mouseX: number = e.x;
-        //     let mouseY: number = e.y;
-        //     if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
-        //         is.clearSelection();
-        //     }
-        // });
-        // svgContainer.on('mousemove', function (e: MouseEvent) {
-        //     let mouseX: number = e.x;
-        //     let mouseY: number = e.y;
-        //     if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
-        //         tooltipServiceWrapper.hide();
-        //         hoverLine.style("opacity", 0);
-        //         hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
-        //     } else {
-        //         let index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
-        //         hoverLineData = hoverLine.data([index]);
-        //         let verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
-        //         if (verticalLineDataItem) {
-        //             let xValue: number = verticalLineDataItem.x;
-        //             drawPointsForVerticalLine(hoverContainer, xValue, verticalLineDataItem.linePoints);
-        //             let d: string = "M" + xValue + "," + yRangeMax + "V0";
-        //             hoverLine.attr("d", d).style("opacity", 1);
-        //         }
-        //     }
-        // });
+        let hoverLine: d3Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
+            .classed(Visual.HoverLineSelector.className, true)
+            .style("opacity", 0);
+        let hoverLineData: d3Selection<number> = hoverLine.data([0]);
+
+        let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
+        let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
+            lines, xAxisDataPoints, line, shapesShowMarkers, rectGlobalX, rectGlobalY);
+
+        this.verticalLineDataItemsGlobal[lineKey] = {
+            verticalLineDataItems: verticalLineDataItems,
+            hoverLineData: hoverLineData
+        };
+
+        let tooltipServiceWrapper = this.tooltipServiceWrapper;
+        svgContainer.on('mouseout', function () {
+            tooltipServiceWrapper.hide();
+            hoverLine.style("opacity", 0);
+            hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
+        });
+        let is: IInteractivityService<any> = this.interactivityService;
+        svgContainer.on('click', function (e: MouseEvent) {
+            let mouseX: number = e.x;
+            let mouseY: number = e.y;
+            if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
+                is.clearSelection();
+            }
+        });
+        svgContainer.on('mousemove', function (e: MouseEvent) {
+            let mouseX: number = e.x;
+            let mouseY: number = e.y;
+            if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
+                tooltipServiceWrapper.hide();
+                hoverLine.style("opacity", 0);
+                hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
+            } else {
+                let index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
+                hoverLineData = hoverLine.data([index]);
+                let verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
+                if (verticalLineDataItem) {
+                    let xValue: number = verticalLineDataItem.x;
+                    drawPointsForVerticalLine(hoverContainer, xValue, verticalLineDataItem.linePoints);
+                    let d: string = "M" + xValue + "," + yRangeMax + "V0";
+                    hoverLine.attr("d", d).style("opacity", 1);
+                }
+            }
+        });
         // tooltipServiceWrapper.addTooltip(tooltipRect,
         //     () => {
         //         let index: number = hoverLineData.data()[0];

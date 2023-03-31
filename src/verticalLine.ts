@@ -80,8 +80,9 @@ export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IV
     return verticalLineDataItems;
 }
 
-export function findNearestVerticalLineIndex(mouseX: number, verticalLineDataItems: VerticalLineDataItem[]): number {
-
+export function findNearestVerticalLineIndex(
+    mouseX: number,
+    verticalLineDataItems: VerticalLineDataItem[]): number {
     let index: number = 0;
     let count: number = verticalLineDataItems.length;
     let xValue: number = count > 0
@@ -96,6 +97,7 @@ export function findNearestVerticalLineIndex(mouseX: number, verticalLineDataIte
             index = j;
         }
     }
+
     return index;
 }
 
