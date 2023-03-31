@@ -130,52 +130,58 @@ export class RenderVisual {
         container.selectAll(Visual.SmallMultipleSelector.selectorName).remove();
     }
 
-    // public renderSmallMultipleWithTitle(itemContainer: d3Selection<SVGElement>, itemWidth: number, itemHeight: number,
-    //                                     titleHeight: number, title: string,
-    //                                     lines: LineDataPoint[], lineKey: string,
-    //                                     rectGlobalX: number, rectGlobalY: number) {
-    //     itemContainer.classed(Visual.SmallMultipleSelector.className, true);
-    //     if (this.settings.smallMultiple.showChartTitle) {
-    //         let textContainer: d3Selection<SVGElement> = itemContainer.append("g")
-    //             .attr('width', itemWidth)
-    //             .attr('height', titleHeight);
-    //         textContainer.append('rect')
-    //             .classed('clearCatcher', true)
-    //             .attr('width', itemWidth)
-    //             .attr('height', titleHeight);
-    //
-    //         let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
-    //         let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
-    //         let titleTextProp: TextProperties = {
-    //             text: title,
-    //             fontFamily: titleFontFamily,
-    //             fontSize: titleFontSize
-    //         };
-    //         let titleWidth: number = measureTextWidth(titleTextProp);
-    //         let titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
-    //         let shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
-    //
-    //         textContainer.append("text")
-    //             .classed(Visual.SmallMultipleNameSelector.className, true)
-    //             .attr("font-family", titleFontFamily)
-    //             .attr("font-size", titleFontSize)
-    //             .attr("fill", this.settings.smallMultiple.smColor)
-    //             .attr('height', titleHeight)
-    //             .attr("x", titleX)
-    //             .attr("y", titleHeight * 2 / 3)
-    //             .text(shortTitle);
-    //         textContainer.append("title").text(title);
-    //
-    //         let svgContainer: d3Selection<SVGElement> = itemContainer
-    //             .append('g')
-    //             .attr('width', itemWidth)
-    //             .attr('height', itemHeight)
-    //             .attr('transform', 'translate(0,' + titleHeight + ')');
-    //         this.renderSmallMultiple(svgContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY + titleHeight);
-    //     } else {
-    //         this.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY);
-    //     }
-    // }
+    public renderSmallMultipleWithTitle(
+        itemContainer: d3Selection<SVGElement>,
+        itemWidth: number,
+        itemHeight: number,
+        titleHeight: number,
+        title: string,
+        lines: LineDataPoint[],
+        lineKey: string,
+        rectGlobalX: number,
+        rectGlobalY: number) {
+        itemContainer.classed(Visual.SmallMultipleSelector.className, true);
+        if (this.settings.smallMultiple.showChartTitle) {
+            let textContainer: d3Selection<SVGElement> = itemContainer.append("g")
+                .attr('width', itemWidth)
+                .attr('height', titleHeight);
+            textContainer.append('rect')
+                .classed('clearCatcher', true)
+                .attr('width', itemWidth)
+                .attr('height', titleHeight);
+
+            let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
+            let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
+            let titleTextProp: TextProperties = {
+                text: title,
+                fontFamily: titleFontFamily,
+                fontSize: titleFontSize
+            };
+            let titleWidth: number = measureTextWidth(titleTextProp);
+            let titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
+            let shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
+
+            textContainer.append("text")
+                .classed(Visual.SmallMultipleNameSelector.className, true)
+                .attr("font-family", titleFontFamily)
+                .attr("font-size", titleFontSize)
+                .attr("fill", this.settings.smallMultiple.smColor)
+                .attr('height', titleHeight)
+                .attr("x", titleX)
+                .attr("y", titleHeight * 2 / 3)
+                .text(shortTitle);
+            textContainer.append("title").text(title);
+
+            let svgContainer: d3Selection<SVGElement> = itemContainer
+                .append('g')
+                .attr('width', itemWidth)
+                .attr('height', itemHeight)
+                .attr('transform', 'translate(0,' + titleHeight + ')');
+            this.renderSmallMultiple(svgContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY + titleHeight);
+        } else {
+            this.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, rectGlobalX, rectGlobalY);
+        }
+    }
 
     public retrieveNewLegendPosition(
         svgContainer: d3Selection<SVGElement>,
