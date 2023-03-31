@@ -118,13 +118,20 @@ export class LegendBehavior implements IInteractiveBehavior {
     }
 
     private setCustomLegendIcon(item: d3Selection<any>, fill: string, label: string, markerIds: string[]) {
-        let itemLegendLine: d3Selection<LegendDataPoint> = item.select('.legend-item-line');
-        itemLegendLine.style('fill', fill);
-        itemLegendLine.style('stroke', fill);
+        console.log('setCustomLegendIcon')
+        console.log(item)
+
+        item.select('.legend-item-line')
+            .style('fill', fill)
+            .style('stroke', fill);
+
         let itemLegendMarker: d3Selection<LegendDataPoint> = item.select('.legend-item-marker');
         let markerId: string = itemLegendMarker && itemLegendMarker.size() > 0 && itemLegendMarker.nodes()[0] ? itemLegendMarker.style('marker-start') : null;
+        console.log(itemLegendMarker)
+        console.log(markerId)
         if (markerId) {
             let labelText: string = MarkersUtility.retrieveMarkerName(label + LegendBehavior.legendMarkerSuffix, "");
+            console.log(labelText)
             for (let i = 0; i < markerIds.length; i++) {
                 let item: string = markerIds[i];
                 if (item.indexOf(labelText) != -1) {

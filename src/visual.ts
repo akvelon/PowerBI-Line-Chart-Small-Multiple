@@ -595,18 +595,18 @@ export class Visual implements IVisual {
                 let hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             }
-            let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
-            arrowLeft.on('click', () => {
-                legendBehavior.leftOrRightClick(true, legendBehavior);
-                let hasSelection: boolean = is.hasSelection();
-                legendBehavior.renderSelection(hasSelection);
-            });
-            let arrowRight: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
-            arrowRight.on('click', () => {
-                legendBehavior.leftOrRightClick(false, legendBehavior);
-                let hasSelection: boolean = is.hasSelection();
-                legendBehavior.renderSelection(hasSelection);
-            });
+            // let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
+            // arrowLeft.on('click', () => {
+            //     legendBehavior.leftOrRightClick(true, legendBehavior);
+            //     let hasSelection: boolean = is.hasSelection();
+            //     legendBehavior.renderSelection(hasSelection);
+            // });
+            // let arrowRight: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
+            // arrowRight.on('click', () => {
+            //     legendBehavior.leftOrRightClick(false, legendBehavior);
+            //     let hasSelection: boolean = is.hasSelection();
+            //     legendBehavior.renderSelection(hasSelection);
+            // });
             //end legend changing by click
 
             console.log('=== UPDATE END ===')
