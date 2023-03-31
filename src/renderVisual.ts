@@ -1254,7 +1254,6 @@ export class RenderVisual {
                 dots.push(lines[i]);
         }
 
-        console.log(dots)
         // let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainerE
         //     .append("g")
         //     .selectAll(Visual.SimpleLineSelector.selectorName)
@@ -1337,9 +1336,6 @@ export class RenderVisual {
         dataLabelsContext.selectAll("*").remove();
 
         let labelSettings = this.settings.dataLabels;
-        console.log('labelSettings')
-        console.log(labelSettings)
-
         if (!labelSettings.show) return;
 
         let dataPoints: SimplePoint[] = [];
@@ -1349,9 +1345,6 @@ export class RenderVisual {
                 for (let j = 0; j < points.length; j++)
                     dataPoints.push(points[j]);
         }
-
-        console.log('dataPoints')
-        console.log(dataPoints)
 
         let fontSizeInPx: string = fromPoint(labelSettings.fontSize);
         let fontFamily: string = labelSettings.fontFamily;
@@ -1371,11 +1364,6 @@ export class RenderVisual {
             let lineD: string = line(point);
             let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
             let value = this.dataLabelFormatter.format(dataPoints[i].y);
-
-            console.log(lineD)
-            console.log(data)
-            console.log(value)
-
             let width: number = measureTextWidth({
                 fontFamily: fontFamily,
                 fontSize: fontSizeInPx,
@@ -1390,12 +1378,11 @@ export class RenderVisual {
                 bgX: +data[0] - width / 2 - labelBackgroundWidthPadding / 2,
                 bgY: +data[1] - height - labelBackgroundYShift - deltaY
             };
-            console.log(coord)
 
             if (coord.bgX + coord.bgWidth > maxRangeX || coord.bgX < minRangeX || coord.bgY + coord.bgHeight > yRangeMax || coord.bgY < 0) {
-                console.log('continue early')
                 continue;
             }
+
             let goToBottom: boolean = false;
             for (let j = 0; j < coords.length; j++) {
                 let isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);

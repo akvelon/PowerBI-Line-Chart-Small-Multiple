@@ -226,8 +226,7 @@ export class Visual implements IVisual {
                 .style('height', containerSize.height + 'px');
 
             positionChartArea(container, this.legend);
-            // TODO Fix
-            // this.interactivityService.applySelectionStateToData(this.model.lines);
+            this.interactivityService.applySelectionStateToData(this.model.lines);
 
             let renderSimpleVisual = new RenderVisual(this.host, this.element, this.model, this.model.domain, this.interactivityService, this.tooltipServiceWrapper);
 
@@ -282,7 +281,6 @@ export class Visual implements IVisual {
             let lassoContainer: d3Selection<any>;
 
             if (this.model.settings.smallMultiple.enable) {
-                console.log(this.model.settings.smallMultiple.layoutMode)
                 container.style('overflow', 'auto');
                 switch (this.model.settings.smallMultiple.layoutMode) {
                     case "Matrix": {
@@ -577,8 +575,8 @@ export class Visual implements IVisual {
                 behavior: this.behavior,
             };
 
-            // this.interactivityService.bind(behaviorOptions);
-            //
+            this.interactivityService.bind(behaviorOptions);
+
             // let clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
             // let behavior: WebBehavior = this.behavior;
             // clearContainer.on('click', function () {

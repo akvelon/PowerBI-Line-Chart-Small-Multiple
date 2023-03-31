@@ -7,10 +7,14 @@ import {
 
 import {d3Selection, LegendBehaviorOptions, LegendDataPointExtended} from "./visualInterfaces";
 import {LegendSettings} from "./settings";
-import {calculateItemWidth, generateLegendItemsForLeftOrRightClick} from "./utilities/legendUtility";
+import {
+    calculateItemWidth,
+    drawCustomLegendIcons,
+    generateLegendItemsForLeftOrRightClick
+} from "./utilities/legendUtility";
 import {LegendDataPoint} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 import {MarkersUtility} from "./utilities/markersUtility";
-import {select as d3select} from "d3-selection";
+import {select as d3select, selectAll as d3selectAll} from "d3-selection";
 
 export class LegendBehavior implements IInteractiveBehavior {
     public static dimmedLegendColor: string = "#A6A6A6";
@@ -42,78 +46,77 @@ export class LegendBehavior implements IInteractiveBehavior {
     }
 
     public leftOrRightClick(isLeft: boolean, legendBehavior: LegendBehavior) {
-        // let legendItems: d3Selection<any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);
-        // if (legendItems) {
-        //     let data = legendItems.data();
-        //     let legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
-        //     let legendIcons: d3Selection<any> = legendGroup.selectAll('circle').data(data);
-        //     let newOptions: LegendBehaviorOptions = {
-        //         legendItems: legendItems,
-        //         legendIcons: legendIcons,
-        //         clearCatcher: LegendBehavior.clearCatcher,
-        //         behavior: this,
-        //         dataPoints: this.dataPoints,
-        //     }
-        //     legendBehavior.bindEvents(newOptions, LegendBehavior.selectionHandler);
-        // }
+        let legendItems: d3Selection<any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);
+        if (legendItems) {
+            let data = legendItems.data();
+            let legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
+            let legendIcons: d3Selection<any> = legendGroup.selectAll('circle').data(data);
+            let newOptions: LegendBehaviorOptions = {
+                legendItems: legendItems,
+                legendIcons: legendIcons,
+                clearCatcher: LegendBehavior.clearCatcher,
+                behavior: this,
+                dataPoints: this.dataPoints,
+            }
+            legendBehavior.bindEvents(newOptions, LegendBehavior.selectionHandler);
+        }
     }
 
     public bindEvents(options: LegendBehaviorOptions, selectionHandler: ISelectionHandler): void {
-//             this.legendItems = options.legendItems;
-//             this.legendIcons = options.legendIcons;
-//             LegendBehavior.clearCatcher = options.clearCatcher;
-//             LegendBehavior.selectionHandler = selectionHandler;
-//
-//             //interactivityUtils.registerStandardSelectionHandler(options.legendItems, selectionHandler);
-//
-//             this.appendLegendFontFamily();
-//             if (this.legendSettings && this.dataPoints) {
-//                 drawCustomLegendIcons(this.legendItems, this.legendSettings, this.dataPoints);
-//             }
-//
-//             let setCustomLegendIcon = this.setCustomLegendIcon;
-//
-//             options.legendItems.on("click", (d: LegendDataPoint) => {
-//                 let mouseEvent: MouseEvent = d3.event as MouseEvent;
-//                 let multiSelect: boolean = mouseEvent.ctrlKey;
-//                 let index: number = this.selectedLegendNames.indexOf(d.label);
-//                 if (index == -1) {
-//                     if (multiSelect)
-//                         this.selectedLegendNames.push(d.label);
-//                     else
-//                         this.selectedLegendNames = [d.label];
-//                 } else {
-//                     let ar1: string[] = this.selectedLegendNames.slice(0, index);
-//                     let ar2: string[] = this.selectedLegendNames.slice(index + 1, this.selectedLegendNames.length);
-//                     this.selectedLegendNames = ar1.concat(ar2);
-//                 }
-//                 if (this.selectedLegendNames.length == 0) {
-//                     selectionHandler.handleClearSelection();
-//                 } else {
-//                     selectionHandler.handleSelection(d, multiSelect);
-//                 }
-//
-//             });
-//
-//             let markers: Selection<any> = d3.selectAll('svg.legend  marker');
-//             let markersLen: number = markers && markers.length > 0 && markers[0] ? markers[0].length : 0;
-//             this.markerIds = [];
-//             for(let i=0;i<markersLen;i++) {
-//                 let item: EventTarget = markers[0][i];
-//                 let marker: Selection<any> = d3.select(item);
-//                 let markerId: string = marker.attr('id');
-//                 this.markerIds.push(markerId);
-//             }
-//             let markerIds: string[] = this.markerIds;
-//
-//             options.clearCatcher.on("click", () => {
-//                 selectionHandler.handleClearSelection();
-//                 let legendItems: Selection<LegendDataPoint> = this.legendItems;
-//                 options.legendIcons.each((d: LegendDataPoint, index: number) => {
-//                     let item: Selection<any> = d3.select(legendItems[0][index]);
-//                     setCustomLegendIcon(item, d.color, d.label, markerIds);
-//                 });
-//             });
+        this.legendItems = options.legendItems;
+        this.legendIcons = options.legendIcons;
+        LegendBehavior.clearCatcher = options.clearCatcher;
+        LegendBehavior.selectionHandler = selectionHandler;
+
+        //interactivityUtils.registerStandardSelectionHandler(options.legendItems, selectionHandler);
+
+        this.appendLegendFontFamily();
+        if (this.legendSettings && this.dataPoints) {
+            drawCustomLegendIcons(this.legendItems, this.legendSettings, this.dataPoints);
+        }
+
+        let setCustomLegendIcon = this.setCustomLegendIcon;
+
+        options.legendItems.on("click", (e: MouseEvent, d: LegendDataPoint) => {
+            let multiSelect: boolean = e.ctrlKey;
+            let index: number = this.selectedLegendNames.indexOf(d.label);
+            if (index == -1) {
+                if (multiSelect)
+                    this.selectedLegendNames.push(d.label);
+                else
+                    this.selectedLegendNames = [d.label];
+            } else {
+                let ar1: string[] = this.selectedLegendNames.slice(0, index);
+                let ar2: string[] = this.selectedLegendNames.slice(index + 1, this.selectedLegendNames.length);
+                this.selectedLegendNames = ar1.concat(ar2);
+            }
+            if (this.selectedLegendNames.length == 0) {
+                selectionHandler.handleClearSelection();
+            } else {
+                selectionHandler.handleSelection(d, multiSelect);
+            }
+        });
+
+        let markers: d3Selection<any> = d3selectAll('svg.legend  marker');
+        let markersLen: number = markers && markers.size() > 0 ? markers.size() : 0;
+        this.markerIds = [];
+        for (let i = 0; i < markersLen; i++) {
+            let item = markers.nodes()[i];
+            let marker: d3Selection<any> = d3select(item);
+            let markerId: string = marker.attr('id');
+            this.markerIds.push(markerId);
+        }
+
+        let markerIds: string[] = this.markerIds;
+
+        options.clearCatcher.on("click", () => {
+            selectionHandler.handleClearSelection();
+            let legendItems: d3Selection<LegendDataPoint> = this.legendItems;
+            options.legendIcons.each((d: LegendDataPoint, index: number) => {
+                let item: d3Selection<any> = d3select(legendItems[0][index]);
+                setCustomLegendIcon(item, d.color, d.label, markerIds);
+            });
+        });
     }
 
     private setCustomLegendIcon(item: d3Selection<any>, fill: string, label: string, markerIds: string[]) {
@@ -140,15 +143,15 @@ export class LegendBehavior implements IInteractiveBehavior {
     }
 
     public renderSelection(hasSelection: boolean): void {
-        // this.renderLassoSelection(this.selectedLegendNames, hasSelection, false);
+        this.renderLassoSelection(this.selectedLegendNames, hasSelection, false);
     }
 
-//         private appendLegendFontFamily() {
-//             let fontFamily: string = this.legendSettings.fontFamily;
-//             this.legendItems.selectAll('.legendText').style('font-family', fontFamily);
-//             d3.select('svg.legend .legendTitle').style('font-family', fontFamily);
-//         }
-//
+    private appendLegendFontFamily() {
+        let fontFamily: string = this.legendSettings.fontFamily;
+        this.legendItems.selectAll('.legendText').style('font-family', fontFamily);
+        d3select('svg.legend .legendTitle').style('font-family', fontFamily);
+    }
+
 //         public getSelected(): string[] {
 //             return this.selectedLegendNames;
 //         }
