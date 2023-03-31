@@ -577,36 +577,36 @@ export class Visual implements IVisual {
 
             this.interactivityService.bind(behaviorOptions);
 
-            // let clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
-            // let behavior: WebBehavior = this.behavior;
-            // clearContainer.on('click', function () {
-            //     behavior.clearCather();
-            // });
-            // //lasso
+            let clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
+            let behavior: WebBehavior = this.behavior;
+            clearContainer.on('click', function () {
+                behavior.clearCather();
+            });
+            //lasso
             // let lassoColor: string = this.model.settings.selectionColor.fill;
             // implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
             //     this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
-            // //start legend changing by click
-            // let legendBehavior = this.legendBehavior;
-            // let legendPosition: string = this.model.settings.legend.position;
-            // let is = this.interactivityService;
-            // if (legendPosition == "Top" || legendPosition == "TopCenter" || legendPosition == "Bottom" || legendPosition == "BottomCenter") {
-            //     legendBehavior.leftOrRightClick(true, legendBehavior);
-            //     let hasSelection: boolean = is.hasSelection();
-            //     legendBehavior.renderSelection(hasSelection);
-            // }
-            // let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
-            // arrowLeft.on('click', () => {
-            //     legendBehavior.leftOrRightClick(true, legendBehavior);
-            //     let hasSelection: boolean = is.hasSelection();
-            //     legendBehavior.renderSelection(hasSelection);
-            // });
-            // let arrowRight: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
-            // arrowRight.on('click', () => {
-            //     legendBehavior.leftOrRightClick(false, legendBehavior);
-            //     let hasSelection: boolean = is.hasSelection();
-            //     legendBehavior.renderSelection(hasSelection);
-            // });
+            //start legend changing by click
+            let legendBehavior = this.legendBehavior;
+            let legendPosition: string = this.model.settings.legend.position;
+            let is = this.interactivityService;
+            if (legendPosition == "Top" || legendPosition == "TopCenter" || legendPosition == "Bottom" || legendPosition == "BottomCenter") {
+                legendBehavior.leftOrRightClick(true, legendBehavior);
+                let hasSelection: boolean = is.hasSelection();
+                legendBehavior.renderSelection(hasSelection);
+            }
+            let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
+            arrowLeft.on('click', () => {
+                legendBehavior.leftOrRightClick(true, legendBehavior);
+                let hasSelection: boolean = is.hasSelection();
+                legendBehavior.renderSelection(hasSelection);
+            });
+            let arrowRight: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
+            arrowRight.on('click', () => {
+                legendBehavior.leftOrRightClick(false, legendBehavior);
+                let hasSelection: boolean = is.hasSelection();
+                legendBehavior.renderSelection(hasSelection);
+            });
             //end legend changing by click
 
             console.log('=== UPDATE END ===')

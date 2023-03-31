@@ -801,7 +801,7 @@ export class RenderVisual {
                 } else {
                     let labelXArray: number[] = [];
                     labels.each((number: any, index: number) => {
-                        let item: d3Selection<any> = d3select(labels[0][index]);
+                        let item: d3Selection<any> = d3select(labels.nodes()[index]);
                         let parent: d3Selection<any> = d3select(item.node().parentElement);
                         let numberValue: number = number;
                         if (numberValue < 1) {
@@ -829,7 +829,7 @@ export class RenderVisual {
                     labelXArray[labelXArray.length - 1] = plotSize.width - labelXArray[labelXArray.length - 1];
                     let labelIndex: number = 0;
                     labels.each((number: any, index: number) => {
-                        let item: d3Selection<any> = d3select(labels[0][index]);
+                        let item: d3Selection<any> = d3select(labels.nodes()[index]);
                         let textTitle: string = item.text();
                         if (textTitle) {
                             let textProp: TextProperties = {
