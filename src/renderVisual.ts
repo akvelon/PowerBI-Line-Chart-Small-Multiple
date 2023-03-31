@@ -1237,11 +1237,12 @@ export class RenderVisual {
             });
 
         let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
+        const svgLines = svgLinesContainerE.selectAll(Visual.SimpleLineSelector.selectorName);
         for (let i = 0; i < lines.length; i++) {
             let dataPoint: LineDataPoint = lines[i];
             let marker: string = lineNamesWithMarkers[dataPoint.name];
             if (marker) {
-                let item: d3Selection<any> = d3select(svgLinesContainerE.nodes()[i]);
+                let item: d3Selection<any> = d3select(svgLines.nodes()[i]);
                 item.attr('marker-start', marker);
                 item.attr('marker-mid', marker);
                 item.attr('marker-end', marker);
