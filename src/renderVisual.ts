@@ -686,16 +686,16 @@ export class RenderVisual {
                 }
             }
         });
-        // tooltipServiceWrapper.addTooltip(tooltipRect,
-        //     () => {
-        //         let index: number = hoverLineData.data()[0];
-        //         let tooltips: VisualTooltipDataItem[] = null;
-        //         if (verticalLineDataItems[index])
-        //             tooltips = verticalLineDataItems[index].tooltips;
-        //         return tooltips;
-        //     },
-        //     null,
-        //     true);
+        tooltipServiceWrapper.addTooltip(tooltipRect,
+            () => {
+                let index: number = hoverLineData.data()[0];
+                let tooltips: VisualTooltipDataItem[] = null;
+                if (verticalLineDataItems[index])
+                    tooltips = verticalLineDataItems[index].tooltips;
+                return tooltips;
+            },
+            null,
+            true);
     };
 
     private renderXAxis(
