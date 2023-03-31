@@ -6,7 +6,7 @@ import {
     d3Selection,
     LabelsAction,
     LineDataPoint,
-    SimplePoint,
+    SimplePoint, VerticalLineDataItem,
     VerticalLineDataItemsGlobalWithKey,
     VisualDomain,
     VisualViewModel,
@@ -44,6 +44,8 @@ import {select as d3select} from "d3-selection";
 import {SeriesMarkerShape} from "./seriesMarkerShape";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
+import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from "./verticalLine";
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -1255,17 +1257,11 @@ export class RenderVisual {
                 dots.push(lines[i]);
         }
 
-        // let dotsGroupSelection: d3Selection<LineDataPoint> = svgLinesContainerE
-        //     .append("g")
+        // svgLinesContainerE.append("g")
         //     .selectAll(Visual.SimpleLineSelector.selectorName)
-        //     .data(dots);
-
-        // dotsGroupSelection
-        //     .enter()
-        //     .append("circle")
-        //     .classed(Visual.DotSelector.className, true);
-        //
-        // dotsGroupSelection
+        //     .data(dots)
+        //     .join("circle")
+        //     .classed(Visual.DotSelector.className, true)
         //     .attr('cx', (dataPoint: LineDataPoint) => {
         //         let points: any = dataPoint.points;
         //         let lineD: string = line(points);
@@ -1296,18 +1292,10 @@ export class RenderVisual {
         //         return opacity;
         //     });
         //
-        // dotsGroupSelection.exit().remove();
-        //
-        // let interactiveLineGroupSelection = svgLinesContainer
-        //     .selectAll(Visual.InteractivityLineSelector.selectorName)
-        //     .data(lines);
-        //
-        // interactiveLineGroupSelection
-        //     .enter()
-        //     .append("path")
-        //     .classed(Visual.InteractivityLineSelector.className, true);
-        //
-        // interactiveLineGroupSelection
+        // svgLinesContainerE.selectAll(Visual.InteractivityLineSelector.selectorName)
+        //     .data(lines)
+        //     .join("path")
+        //     .classed(Visual.InteractivityLineSelector.className, true)
         //     .attr("d", (dataPoint: LineDataPoint) => {
         //         let points: any = dataPoint.points;
         //         let lineD: string = line(points);
@@ -1322,11 +1310,9 @@ export class RenderVisual {
         //     .attr('stroke', 'red')
         //     .attr('stroke-opacity', '0')
         //     .attr('fill', 'none');
-        // interactiveLineGroupSelection.exit().remove();
     }
 
     private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3Line<[number, number]>, svgContainer: d3Selection<any>): void {
-
         let dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g')
             .classed("labelBackgroundGraphicsContext", true);
         dataLabelsBackgroundContext.selectAll("*").remove();

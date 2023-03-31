@@ -306,6 +306,7 @@ export function implementLassoSelection(mainCont: d3Selection<any>, lassoContain
 //             let ldp: LineDataPoint = newLines[i];
 //             let marker: string = lineNamesWithMarkers[ldp.name];
 //             if (marker) {
+                    // TODO Fix selection
 //                 let item: Selection<any> = d3.select(lineGroupSelection[0][i]);
 //                 item.attr('marker-start', marker);
 //                 item.attr('marker-mid', marker);

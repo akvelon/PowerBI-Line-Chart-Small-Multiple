@@ -150,10 +150,10 @@ export class LegendBehavior implements IInteractiveBehavior {
         d3select('svg.legend .legendTitle').style('font-family', fontFamily);
     }
 
-//         public getSelected(): string[] {
-//             return this.selectedLegendNames;
-//         }
-//
+    public getSelected(): string[] {
+        return this.selectedLegendNames;
+    }
+
     public renderLassoSelection(selectedLegendNames: string[], hasSelection: boolean, multiSelect: boolean) {
         if (!selectedLegendNames)
             selectedLegendNames = [];

@@ -14,7 +14,7 @@ import {
     IInteractiveBehavior,
     ISelectionHandler
 } from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {ITooltipServiceWrapper, TooltipEventArgs} from "powerbi-visuals-utils-tooltiputils";
+import {ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
 import {LegendBehavior} from "./legendBehavior";
 import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
 import {DefaultOpacity, DimmedOpacity, Shapes} from "./settings";
@@ -23,6 +23,7 @@ import {local as d3local} from "d3-selection";
 import powerbi from "powerbi-visuals-api";
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import PrimitiveValue = powerbi.PrimitiveValue;
+import {MarkersUtility} from "./utilities/markersUtility";
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     selectionLines: LineDataPoint[];
@@ -88,8 +89,8 @@ export class WebBehavior implements IInteractiveBehavior {
                 }
             });
         options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
-            (args: TooltipEventArgs<LineDataPoint>) => {
-                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
+            (lineDataPoint: LineDataPoint) => {
+                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
                 return tooltips;
             },
             null,
@@ -114,8 +115,8 @@ export class WebBehavior implements IInteractiveBehavior {
                 }
             });
         options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
-            (args: TooltipEventArgs<LineDataPoint>) => {
-                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(args, options.verticalLineDataItemsGlobal);
+            (lineDataPoint: LineDataPoint) => {
+                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
                 return tooltips;
             },
             null,
@@ -124,8 +125,7 @@ export class WebBehavior implements IInteractiveBehavior {
         this.hasLasso = false;
     }
 
-    private retrieveTooltipFromArgument(args: TooltipEventArgs<LineDataPoint>, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
-        let lineDataPoint: LineDataPoint = args.data;
+    private retrieveTooltipFromArgument(lineDataPoint: LineDataPoint, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
         let lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
         let data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
         let tooltips: VisualTooltipDataItem[] = null;
@@ -145,41 +145,41 @@ export class WebBehavior implements IInteractiveBehavior {
     }
 
     public renderSelection(hasSelection: boolean): void {
-//             let selectedLegendNames: string[] = [];
-//             let legendType: CategoryType = this.legendType;
-//             let legendFormatter: IValueFormatter = this.legendFormatter;
-//             let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
-//             let selectedList: string[] = this.legendBehavior.getSelected();
-//
-//             this.lineGroupSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
-//                 let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
-//                 let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
-//                 if (selected && selectedLegendNames.indexOf(legendName) == -1)
-//                     selectedLegendNames.push(legendName);
-//                 let opacity: number = getOpacity(selected, hasSelection);
-//                 let showMarkers: boolean = lineDataPoint.showMarkers != null
-//                     ? lineDataPoint.showMarkers
-//                     : this.shapes.showMarkers;
-//                 let stepped: boolean = lineDataPoint.stepped != null
-//                     ? lineDataPoint.stepped
-//                     : this.shapes.stepped;
-//                 if (showMarkers && stepped) {
-//                     let markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-//                     let markers = this.container.select("#" + markerPathId);
-//                     markers.style("opacity", opacity);
-//                 }
-//                 return opacity;
-//             });
-//             this.dotsSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
-//                 let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
-//                 let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
-//                 if (selected && selectedLegendNames.indexOf(legendName) == -1)
-//                     selectedLegendNames.push(legendName);
-//                 let opacity: number = getOpacity(selected, hasSelection);
-//                 return opacity;
-//             });
-//             if (hasSelection)
-//                 this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
+        // let selectedLegendNames: string[] = [];
+        // let legendType: CategoryType = this.legendType;
+        // let legendFormatter: IValueFormatter = this.legendFormatter;
+        // let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
+        // let selectedList: string[] = this.legendBehavior.getSelected();
+        //
+        // this.lineGroupSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
+        //     let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
+        //     let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
+        //     if (selected && selectedLegendNames.indexOf(legendName) == -1)
+        //         selectedLegendNames.push(legendName);
+        //     let opacity: number = getOpacity(selected, hasSelection);
+        //     let showMarkers: boolean = lineDataPoint.showMarkers != null
+        //         ? lineDataPoint.showMarkers
+        //         : this.shapes.showMarkers;
+        //     let stepped: boolean = lineDataPoint.stepped != null
+        //         ? lineDataPoint.stepped
+        //         : this.shapes.stepped;
+        //     if (showMarkers && stepped) {
+        //         let markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+        //         let markers = this.container.select("#" + markerPathId);
+        //         markers.style("opacity", opacity);
+        //     }
+        //     return opacity;
+        // });
+        // this.dotsSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
+        //     let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
+        //     let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
+        //     if (selected && selectedLegendNames.indexOf(legendName) == -1)
+        //         selectedLegendNames.push(legendName);
+        //     let opacity: number = getOpacity(selected, hasSelection);
+        //     return opacity;
+        // });
+        // if (hasSelection)
+        //     this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
     }
 
     public renderLassoSelection(hasSelection: boolean): void {

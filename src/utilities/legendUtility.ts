@@ -385,17 +385,18 @@ export function calculateItemWidth(legendSettings: LegendSettings, dataPoints: L
 
 export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<any>, dataPoints: LegendDataPointExtended[], itemWidth: number, isLeft: boolean): d3Selection<any> {
     if (!legendItems || !dataPoints || itemWidth == 0) return;
-    // let legendItemsLen: number = legendItems && legendItems.length>0 && legendItems[0] ? legendItems[0].length : 0;
+
+    // let legendItemsLen: number = legendItems && !legendItems.empty() ? legendItems.size() : 0;
     // if (legendItemsLen < 1) return;
-    // let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-    // let legend: Selection<any> = d3.select(legendGroup.node().parentElement);
+    // let legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
+    // let legend: d3Selection<any> = d3select(legendGroup.node().parentElement);
     //
-    // let titleElement: Selection<any> = legendGroup.select('.legendTitle');
+    // let titleElement: d3Selection<any> = legendGroup.select('.legendTitle');
     // let titleWidth: number = 0;
-    // let simpleTextElement: Selection<any> = legendGroup.select('text');
+    // let simpleTextElement: d3Selection<any> = legendGroup.select('text');
     // let fontFamily: string = simpleTextElement.style('font-family');
     // let fontSize: string = simpleTextElement.style('font-size');
-    // if (titleElement && titleElement[0] && titleElement[0][0]) {
+    // if (titleElement && !titleElement.empty() && titleElement.node()) {
     //     let innerTitle: string = titleElement.select('title').text();
     //     let text: string = titleElement.text().split(innerTitle)[0];
     //     let textProp: TextProperties = {
@@ -403,12 +404,13 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
     //         fontFamily: fontFamily,
     //         fontSize: fontSize
     //     };
-    //     titleWidth = TextUtility.measureTextWidth(textProp);
+    //     titleWidth = measureTextWidth(textProp);
     // }
-    // let svgLegendWidth: number = +legend.attr('width');
-    // let width: number = svgLegendWidth - titleWidth - paddingText - 2*arrowWidth;
     //
-    // let numberOfItems: number = width/itemWidth;
+    // let svgLegendWidth: number = +legend.attr('width');
+    // let width: number = svgLegendWidth - titleWidth - paddingText - 2 * arrowWidth;
+    //
+    // let numberOfItems: number = width / itemWidth;
     // let numberOfItemsInt: number = Math.ceil(numberOfItems);
     // numberOfItems = numberOfItemsInt > numberOfItems ? numberOfItemsInt - 1 : numberOfItemsInt;
     // if (numberOfItems <= 0)
@@ -416,12 +418,12 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
     //
     // let start: number;
     // let end: number;
-    // let parent: Selection<any>;
+    // let parent: d3Selection<any>;
     // if (isLeft) {
-    //     parent = d3.select(legendItems[0][0]);
+    //     parent = d3select(legendItems.node());
     //     let firstName: string = parent.select('title').text();
     //     let legendItemsFirstIndex: number = 0;
-    //     for(let j=0;j<dataPoints.length;j++) {
+    //     for (let j = 0; j < dataPoints.length; j++) {
     //         if (dataPoints[j].label == firstName) {
     //             legendItemsFirstIndex = j;
     //             break;
@@ -434,10 +436,10 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
     //         end = numberOfItems;
     //     }
     // } else {
-    //     parent = d3.select(legendItems[0][legendItemsLen-1]);
+    //     parent = d3select(legendItems.nodes()[legendItemsLen - 1]);
     //     let lastName: string = parent.select('title').text();
     //     let legendItemsLastIndex: number;
-    //     for(let j=0;j<dataPoints.length;j++) {
+    //     for (let j = 0; j < dataPoints.length; j++) {
     //         if (dataPoints[j].label == lastName) {
     //             legendItemsLastIndex = j;
     //             break;
@@ -452,40 +454,47 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
     // return legendItems;
 }
 
-//     function generateLegendItems(legendItems: Selection<any>, newDataPoints: LegendDataPointExtended[]): Selection<any> {
-//         let circleY: string = legendItems.select('circle').attr('cy');
-//         let text: Selection<any> = legendItems.select('text');
-//         let textY: string = text.attr('y');
-//         let textFill: string = text.style('fill');
-//         let textFontSize: string = text.style('font-size');
-//
-//         let legendGroup: Selection<any> = d3.select(legendItems.node().parentElement);
-//         legendItems.remove();
-//         for(let i=0; i<newDataPoints.length; i++) {
-//             let dataPoint: LegendDataPointExtended = newDataPoints[i];
-//             let legendItem: Selection<any> = legendGroup.append("g").classed('legendItem', true);
-//             legendItem.append('circle')
-//                 .classed('legendIcon', true)
-//                 .attr({
-//                     cx:0,
-//                     cy: circleY,
-//                     r: 5
-//                 }).style('fill', LegendBehavior.dimmedLegendColor);
-//             legendItem.append('text')
-//                 .classed('legendText', true)
-//                 .attr({
-//                     x: 0,
-//                     y: textY
-//                 }).style({
-//                     'fill': textFill,
-//                     'font-size': textFontSize
-//                 })
-//                 .text(dataPoint.label);
-//             legendItem.append('title').text(dataPoint.label);
-//         }
-//         legendItems = legendGroup.selectAll('.legendItem').data(newDataPoints);
-//         return legendItems;
-//     }
+function generateLegendItems(legendItems: d3Selection<any>, newDataPoints: LegendDataPointExtended[]): d3Selection<any> {
+    console.log(legendItems)
+    console.log(newDataPoints)
+
+    // const legendIconElement = legendItems.select('.legendIcon')
+    // const legendIconElementTransform = legendIconElement.attr('transform')
+    // const translate = parseTranslateTransform(legendIconElementTransform);
+    // const circleY = +translate.y;
+    //
+    // let text: d3Selection<any> = legendItems.select('text');
+    // let textY: string = text.attr('y');
+    // let textFill: string = text.style('fill');
+    // let textFontSize: string = text.style('font-size');
+    //
+    // let legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
+    // legendItems.remove();
+    // for (let i = 0; i < newDataPoints.length; i++) {
+    //     let dataPoint: LegendDataPointExtended = newDataPoints[i];
+    //     let legendItem: d3Selection<any> = legendGroup.append("g").classed('legendItem', true);
+    //     legendItem.append('circle')
+    //         .classed('legendIcon', true)
+    //         .attr('cx', 0)
+    //         .attr('cy', circleY)
+    //         .attr('r', 5)
+    //         .style('fill', LegendBehavior.dimmedLegendColor);
+    //     legendItem.append('text')
+    //         .classed('legendText', true)
+    //         .attr('x', 0)
+    //         .attr('y', textY)
+    //         .style('fill', textFill)
+    //         .style('font-size', textFontSize)
+    //         .text(dataPoint.label);
+    //     legendItem.append('title').text(dataPoint.label);
+    //
+    //     // legendItem.append(() => legendIconElement.node())
+    //     // legendItem.append(() => text.node())
+    // }
+    //
+    // legendItems = legendGroup.selectAll('.legendItem').data(newDataPoints);
+    return legendItems;
+}
 
 export function getLegendData(dataView: DataView, host: IVisualHost, legend: LegendSettings): LegendDataExtended {
     let isLegendFilled: boolean = IsLegendFilled(dataView);
@@ -536,9 +545,6 @@ function buildLegendData(
     const grouped: DataViewValueColumnGroup[] = dataValues.grouped();
 
     let legendColumn = retrieveLegendCategoryColumn(dataView);
-    let legendTitle: string = legendColumn && legendColumn.source
-        ? legendColumn.source.displayName
-        : <string>legendObjectProperties.legendName;
     if (grouped.length > 1) {
         for (let i: number = 0, len: number = grouped.length; i < len; i++) {
             let grouping: DataViewValueColumnGroup = grouped[i];
@@ -598,7 +604,7 @@ function buildLegendData(
     }
 
     let column: DataViewMetadataColumn = retrieveLegendMetadataColumn(dataView);
-    legendTitle = column
+    const legendTitle = column
         ? column.displayName
         : legendObjectProperties.legendName;
 
