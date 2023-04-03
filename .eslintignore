@@ -7,3 +7,7 @@ karma.conf.ts
 webpack.config.js
 lib
 .tmp
+.eslintrc.js
+ios/
+android/
+*.config.js
