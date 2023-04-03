@@ -3,7 +3,6 @@
 import {
     CategoryType,
     d3Selection,
-    LegendDataPointExtended,
     LineDataPoint, VerticalLineDataItem, VerticalLineDataItemsGlobal,
     VerticalLineDataItemsGlobalWithKey,
     VisualDataPoint
@@ -24,6 +23,7 @@ import powerbi from "powerbi-visuals-api";
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import {MarkersUtility} from "./utilities/markersUtility";
+import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     selectionLines: LineDataPoint[];
@@ -34,7 +34,7 @@ export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     tooltipServiceWrapper: ITooltipServiceWrapper;
     verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey;
     legendBehavior: LegendBehavior;
-    legendDataPoints: LegendDataPointExtended[];
+    legendDataPoints: ScrollableLegendDataPoint[];
     legendFormatter: IValueFormatter;
     legendType: CategoryType;
     shapes: Shapes;
@@ -67,8 +67,8 @@ export class WebBehavior implements IInteractiveBehavior {
         this.legendType = options.legendType;
         this.shapes = options.shapes;
 
-        let retrieveTooltipFromArgument = this.retrieveTooltipFromArgument;
-        let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
+        const retrieveTooltipFromArgument = this.retrieveTooltipFromArgument;
+        const formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
 
         const indicesLineGroupSelection = d3local<number>();
         this.interactiveLineGroupSelection
@@ -79,7 +79,7 @@ export class WebBehavior implements IInteractiveBehavior {
                 const index = indicesLineGroupSelection.get(this);
                 options.selectionLines[index].selected = !options.selectionLines[index].selected;
                 if (options.selectionLines[index].selected) {
-                    let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+                    const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
                     options.legendBehavior.renderLassoSelection([legendName], true, false);
                     selectionHandler.handleSelection(lineDataPoint, false);
                     options.legendBehavior.renderLassoSelection([legendName], true, false);
@@ -90,7 +90,7 @@ export class WebBehavior implements IInteractiveBehavior {
             });
         options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
             (lineDataPoint: LineDataPoint) => {
-                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
+                const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
                 return tooltips;
             },
             null,
@@ -105,7 +105,7 @@ export class WebBehavior implements IInteractiveBehavior {
                 const index = indicesDotsSelection.get(this);
                 options.selectionLines[index].selected = !options.selectionLines[index].selected;
                 if (options.selectionLines[index].selected) {
-                    let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+                    const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
                     options.legendBehavior.renderLassoSelection([legendName], true, false);
                     selectionHandler.handleSelection(lineDataPoint, false);
                     options.legendBehavior.renderLassoSelection([legendName], true, false);
@@ -116,7 +116,7 @@ export class WebBehavior implements IInteractiveBehavior {
             });
         options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
             (lineDataPoint: LineDataPoint) => {
-                let tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
+                const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
                 return tooltips;
             },
             null,
@@ -126,21 +126,21 @@ export class WebBehavior implements IInteractiveBehavior {
     }
 
     private retrieveTooltipFromArgument(lineDataPoint: LineDataPoint, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
-        let lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
-        let data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
+        const lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
+        const data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
         let tooltips: VisualTooltipDataItem[] = null;
         if (data) {
-            let hoverLineData: d3Selection<number> = data.hoverLineData;
-            let verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
-            let index: number = hoverLineData.data()[0];
+            const hoverLineData: d3Selection<number> = data.hoverLineData;
+            const verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
+            const index: number = hoverLineData.data()[0];
             tooltips = verticalLineDataItems[index].tooltips;
         }
         return tooltips;
     }
 
     private formatItemWithLegendFormatter(lineDataPointName: string, legendType: CategoryType, legendFormatter: IValueFormatter) {
-        let item: PrimitiveValue = (legendType == CategoryType.Date) ? new Date(lineDataPointName) : lineDataPointName;
-        let legendName: string = (legendFormatter) ? legendFormatter.format(item) : item.toString();
+        const item: PrimitiveValue = (legendType == CategoryType.Date) ? new Date(lineDataPointName) : lineDataPointName;
+        const legendName: string = (legendFormatter) ? legendFormatter.format(item) : item.toString();
         return legendName;
     }
 

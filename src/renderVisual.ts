@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-import powerbi from "powerbi-visuals-api";
+import powerbi from 'powerbi-visuals-api';
 import {
     Coordinates,
     d3Selection,
@@ -10,41 +10,41 @@ import {
     VerticalLineDataItemsGlobalWithKey,
     VisualDomain,
     VisualViewModel,
-    XAxisData
-} from "./visualInterfaces";
-import {IInteractivityService} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
-import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from "./settings";
-import {IValueFormatter, ValueFormatterOptions} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {Formatter, getLineStyleParam} from "./utilities/vizUtility";
+    XAxisData,
+} from './visualInterfaces';
+import {IInteractivityService} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
+import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
+import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from './settings';
+import {IValueFormatter, ValueFormatterOptions} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {Formatter, getLineStyleParam} from './utilities/vizUtility';
 import {
-    DisplayUnitSystemType
-} from "powerbi-visuals-utils-formattingutils/lib/src/displayUnitSystem/displayUnitSystemType";
-import {Visual} from "./visual";
+    DisplayUnitSystemType,
+} from 'powerbi-visuals-utils-formattingutils/lib/src/displayUnitSystem/displayUnitSystemType';
+import {Visual} from './visual';
 import {
     scaleLinear as d3scaleLinear,
     scaleLog as d3scaleLog,
     scalePoint as d3scalePoint,
     scaleTime as d3scaleTime,
-} from "d3-scale";
+} from 'd3-scale';
 import {
     fromPoint,
     fromPointToPixel,
     measureTextWidth,
     TextProperties,
     truncateAxis,
-    wrapAxis
-} from "./utilities/textUtility";
-import {getTailoredTextOrDefault} from "powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService";
+    wrapAxis,
+} from './utilities/textUtility';
+import {getTailoredTextOrDefault} from 'powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService';
 import {curveLinear as d3curveLinear, line as d3line, Line as d3Line} from 'd3-shape';
-import {Axis as d3Axis, axisBottom as d3axisBottom, AxisDomain, axisLeft as d3axisLeft, AxisScale} from "d3-axis";
-import {MarkersUtility} from "./utilities/markersUtility";
-import {getOpacity} from "./behavior";
-import {select as d3select} from "d3-selection";
-import {SeriesMarkerShape} from "./seriesMarkerShape";
+import {Axis as d3Axis, axisBottom as d3axisBottom, AxisDomain, axisLeft as d3axisLeft, AxisScale} from 'd3-axis';
+import {MarkersUtility} from './utilities/markersUtility';
+import {getOpacity} from './behavior';
+import {select as d3select} from 'd3-selection';
+import {SeriesMarkerShape} from './seriesMarkerShape';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from "./verticalLine";
+import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 
 export class RenderVisual {
@@ -80,7 +80,7 @@ export class RenderVisual {
         this.valuesName = model.valuesName;
         this.settings = model.settings;
         this.domainY = domainY;
-        this.isSeparateDomainY = model.settings.yAxis.chartRangeType == "separate";
+        this.isSeparateDomainY = model.settings.yAxis.chartRangeType == 'separate';
 
         if (model.categoryIsScalar) {
             this.xFormatter = Formatter.getFormatter({
@@ -88,13 +88,13 @@ export class RenderVisual {
                 value: model.settings.xAxis.displayUnits,
                 precision: model.settings.xAxis.precision,
                 displayUnitSystemType: 0,
-                cultureSelector: host.locale
+                cultureSelector: host.locale,
             });
         } else {
-            let format: string = (model.categoryIsDate && !model.categoryFormat) ? NiceDateFormat : model.categoryFormat;
+            const format: string = (model.categoryIsDate && !model.categoryFormat) ? NiceDateFormat : model.categoryFormat;
             this.xFormatter = Formatter.getFormatter({
                 format: format,
-                cultureSelector: host.locale
+                cultureSelector: host.locale,
             });
         }
 
@@ -104,24 +104,24 @@ export class RenderVisual {
             formatSingleValues: (model.settings.yAxis.displayUnits == 0),
             precision: model.settings.yAxis.precision,
             displayUnitSystemType: 0,
-            cultureSelector: host.locale
+            cultureSelector: host.locale,
         });
-        let displayUnits: number = model.settings.dataLabels.displayUnits != 0 ? model.settings.dataLabels.displayUnits : model.settings.yAxis.displayUnits;
-        let precision: number = model.settings.dataLabels.precision != null ? model.settings.dataLabels.precision : 1;
-        let properties: ValueFormatterOptions = {
+        const displayUnits: number = model.settings.dataLabels.displayUnits != 0 ? model.settings.dataLabels.displayUnits : model.settings.yAxis.displayUnits;
+        const precision: number = model.settings.dataLabels.precision != null ? model.settings.dataLabels.precision : 1;
+        const properties: ValueFormatterOptions = {
             value: displayUnits,
             formatSingleValues: displayUnits == 0,
             allowFormatBeautification: true,
             displayUnitSystemType: DisplayUnitSystemType.DataLabels,
             precision: precision,
-            cultureSelector: host.locale
+            cultureSelector: host.locale,
         };
         this.dataLabelFormatter = Formatter.getFormatter(properties);
         this.tooltipFormatter = Formatter.getFormatter({
             value: 0,
             precision: null,
             displayUnitSystemType: 0,
-            cultureSelector: host.locale
+            cultureSelector: host.locale,
         });
         this.interactivityService = interactivityService;
         this.hasSelection = interactivityService && interactivityService.hasSelection();
@@ -144,7 +144,7 @@ export class RenderVisual {
         rectGlobalY: number) {
         itemContainer.classed(Visual.SmallMultipleSelector.className, true);
         if (this.settings.smallMultiple.showChartTitle) {
-            let textContainer: d3Selection<SVGElement> = itemContainer.append("g")
+            const textContainer: d3Selection<SVGElement> = itemContainer.append('g')
                 .attr('width', itemWidth)
                 .attr('height', titleHeight);
             textContainer.append('rect')
@@ -152,29 +152,29 @@ export class RenderVisual {
                 .attr('width', itemWidth)
                 .attr('height', titleHeight);
 
-            let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
-            let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
-            let titleTextProp: TextProperties = {
+            const titleFontFamily: string = this.settings.smallMultiple.fontFamily;
+            const titleFontSize: string = this.settings.smallMultiple.fontSize + 'px';
+            const titleTextProp: TextProperties = {
                 text: title,
                 fontFamily: titleFontFamily,
-                fontSize: titleFontSize
+                fontSize: titleFontSize,
             };
-            let titleWidth: number = measureTextWidth(titleTextProp);
-            let titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
-            let shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
+            const titleWidth: number = measureTextWidth(titleTextProp);
+            const titleX: number = (titleWidth > itemWidth) ? 0 : (itemWidth - titleWidth) / 2;
+            const shortTitle = getTailoredTextOrDefault(titleTextProp, itemWidth);
 
-            textContainer.append("text")
+            textContainer.append('text')
                 .classed(Visual.SmallMultipleNameSelector.className, true)
-                .attr("font-family", titleFontFamily)
-                .attr("font-size", titleFontSize)
-                .attr("fill", this.settings.smallMultiple.smColor)
+                .attr('font-family', titleFontFamily)
+                .attr('font-size', titleFontSize)
+                .attr('fill', this.settings.smallMultiple.smColor)
                 .attr('height', titleHeight)
-                .attr("x", titleX)
-                .attr("y", titleHeight * 2 / 3)
+                .attr('x', titleX)
+                .attr('y', titleHeight * 2 / 3)
                 .text(shortTitle);
-            textContainer.append("title").text(title);
+            textContainer.append('title').text(title);
 
-            let svgContainer: d3Selection<SVGElement> = itemContainer
+            const svgContainer: d3Selection<SVGElement> = itemContainer
                 .append('g')
                 .attr('width', itemWidth)
                 .attr('height', itemHeight)
@@ -192,7 +192,7 @@ export class RenderVisual {
         height: number,
         legendPosition: string,
         legendHeight: number): string {
-        if (!this.settings.general.responsive || legendPosition == "None")
+        if (!this.settings.general.responsive || legendPosition == 'None')
             return legendPosition;
         let resultLegendPosition: string = legendPosition;
 
@@ -203,39 +203,39 @@ export class RenderVisual {
 
         if ((width - yAxisWidth - axisPadding - 2 * axisMargin < this.ResponsiveMinWidth)) {
             yAxisWidth = width - this.ResponsiveMinWidth - axisPadding - 2 * axisMargin;
-            let minYAxisWidth: number = measureTextWidth({
-                fontSize: this.settings.yAxis.fontSize + "px",
+            const minYAxisWidth: number = measureTextWidth({
+                fontSize: this.settings.yAxis.fontSize + 'px',
                 fontFamily: this.settings.yAxis.fontFamily,
-                text: "..."
+                text: '...',
             });
             if (yAxisWidth < minYAxisWidth) {
                 axisPadding = 0;
                 axisMargin = 5;
                 yAxisWidth = 0;
             }
-            if (legendPosition != "Top" && legendPosition != "TopCenter")
-                return "Top";
+            if (legendPosition != 'Top' && legendPosition != 'TopCenter')
+                return 'Top';
         }
         totalXWidth = width - yAxisWidth - axisPadding - 2 * axisMargin;
 
-        let xAxisDataPoints = this.categories;
-        let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
-        let xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
-        let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
-        let x = xAxisData.x;
+        const xAxisDataPoints = this.categories;
+        const xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
+        const xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
+        const xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
+        const x = xAxisData.x;
 
-        let tickMaxWidth = xAxisDataPoints.length > 0
+        const tickMaxWidth = xAxisDataPoints.length > 0
             ? ((xRange[1] - xRange[0]) / xAxisDataPoints.length)
             : 0;
-        let plotSize = {width: width, height: height};
+        const plotSize = {width: width, height: height};
         let xAxisHeight = this.renderXAxis(svgContainer, plotSize, x, xIsCategorical, xAxisDataPoints, tickMaxWidth, xRange, axisPadding, xAxisData.start, xAxisData.end);
         if (height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight) {
             xAxisHeight = 0;
         }
-        svgContainer.selectAll("svg").remove();
+        svgContainer.selectAll('svg').remove();
 
         if ((totalXWidth < this.ResponsiveMinWidth) || plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight) {
-            resultLegendPosition = "None";
+            resultLegendPosition = 'None';
         }
         return resultLegendPosition;
     }
@@ -248,16 +248,16 @@ export class RenderVisual {
         let longestXAxis: string = null;
 
         for (let i = 1; i < this.categories.length; i++) {
-            let value: PrimitiveValue = this.categoryIsDate ? new Date(this.categories[i].toString()) : this.categories[i];
-            let item: string = this.xFormatter.format(value);
+            const value: PrimitiveValue = this.categoryIsDate ? new Date(this.categories[i].toString()) : this.categories[i];
+            const item: string = this.xFormatter.format(value);
             if (longestXAxis == null || item.length > longestXAxis.length)
                 longestXAxis = item;
         }
-        let xAxisFontSize = this.settings.xAxis.fontSize.toString() + "px";
-        let xAxisWidth: number = measureTextWidth({
+        const xAxisFontSize = this.settings.xAxis.fontSize.toString() + 'px';
+        const xAxisWidth: number = measureTextWidth({
             fontSize: xAxisFontSize,
             fontFamily: this.settings.xAxis.fontFamily,
-            text: longestXAxis
+            text: longestXAxis,
         });
 
         return xAxisWidth / 2;
@@ -266,26 +266,26 @@ export class RenderVisual {
     private retrieveYAxisWidth(lines: LineDataPoint[], svgContainer: d3Selection<SVGElement>): number {
         let yAxisWidth = 0;
         if (this.settings.yAxis.show) {
-            let yAxisFontSize = this.settings.yAxis.fontSize + "px";
+            const yAxisFontSize = this.settings.yAxis.fontSize + 'px';
 
-            let domainY: VisualDomain = this.retrieveDomainY(lines);
-            let yScale: number[] = d3scaleLinear()
+            const domainY: VisualDomain = this.retrieveDomainY(lines);
+            const yScale: number[] = d3scaleLinear()
                 .domain([domainY.end, domainY.start])
                 .nice()
                 .ticks();
             for (let i = 0; i < yScale.length; i++) {
-                let yValue: string = this.yFormatter ? this.yFormatter.format(yScale[i]) : yScale[i].toString();
-                let currentYValueLength: number = measureTextWidth({
+                const yValue: string = this.yFormatter ? this.yFormatter.format(yScale[i]) : yScale[i].toString();
+                const currentYValueLength: number = measureTextWidth({
                     fontSize: yAxisFontSize,
                     fontFamily: this.settings.yAxis.fontFamily,
-                    text: yValue
+                    text: yValue,
                 });
                 if (currentYValueLength > yAxisWidth)
                     yAxisWidth = currentYValueLength;
             }
             yAxisWidth = yAxisWidth + 5;
             if (this.settings.yAxis.showTitle) {
-                let titleHeight: number = this.retrieveYAxisTitleHeight(svgContainer);
+                const titleHeight: number = this.retrieveYAxisTitleHeight(svgContainer);
                 yAxisWidth = yAxisWidth + titleHeight;
             }
         }
@@ -293,33 +293,33 @@ export class RenderVisual {
     }
 
     private retrieveYAxisTitleHeight(svgContainer: d3Selection<SVGElement>): number {
-        let titleCont: d3Selection<any> = svgContainer.append("g");
-        let titleText: string = this.retrieveYAxisTitleText();
-        titleCont.append("text")
+        const titleCont: d3Selection<any> = svgContainer.append('g');
+        const titleText: string = this.retrieveYAxisTitleText();
+        titleCont.append('text')
             .attr('font-family', this.settings.yAxis.titleFontFamily)
-            .attr('font-size', this.settings.yAxis.titleFontSize + "px")
+            .attr('font-size', this.settings.yAxis.titleFontSize + 'px')
             .attr('fill', this.settings.yAxis.axisTitleColor)
             .text(titleText);
-        let n = <any>titleCont.node();
-        let titleHeight: number = n.getBBox().height;
+        const n = <any>titleCont.node();
+        const titleHeight: number = n.getBBox().height;
         titleCont.remove();
         return titleHeight;
     }
 
     private retrieveYAxisTitleText(): string {
         let titleText: string = this.settings.yAxis.axisTitle ? this.settings.yAxis.axisTitle : this.valuesName;
-        let titleStyle: string = (this.settings.yAxis.displayUnits == 1000 || this.settings.yAxis.displayUnits == 1000000 ||
+        const titleStyle: string = (this.settings.yAxis.displayUnits == 1000 || this.settings.yAxis.displayUnits == 1000000 ||
             this.settings.yAxis.displayUnits == 1000000000 || this.settings.yAxis.displayUnits == 1000000000000)
             ? this.settings.yAxis.titleStyleFull
             : this.settings.yAxis.titleStyle;
         switch (titleStyle) {
-            case "showUnitOnly": {
+            case 'showUnitOnly': {
                 titleText = this.retrieveXDisplayUnitsForTitle(this.settings.yAxis.displayUnits);
                 break;
             }
-            case "showBoth": {
-                let displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.yAxis.displayUnits);
-                titleText = titleText + " (" + displayUnits + ")";
+            case 'showBoth': {
+                const displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.yAxis.displayUnits);
+                titleText = titleText + ' (' + displayUnits + ')';
                 break;
             }
         }
@@ -334,7 +334,7 @@ export class RenderVisual {
             xRange = [axisMargin, width - axisMargin - axisPadding - yAxisWidth];
         }
         if (xRange[1] < xRange[0]) {
-            let n: number = xRange[0];
+            const n: number = xRange[0];
             xRange[0] = xRange[1];
             xRange[1] = n;
         }
@@ -354,17 +354,17 @@ export class RenderVisual {
         let end: number;
 
         if (this.categoryIsDate) {
-            let lastIndex: number = this.categories.length - 1;
+            const lastIndex: number = this.categories.length - 1;
             let minDate: Date = new Date(this.categories[0].toString());
             let maxDate: Date = new Date(this.categories[lastIndex].toString());
-            if (chartRangeType == "separate") {
+            if (chartRangeType == 'separate') {
                 minDate = null;
                 maxDate = null;
                 for (let i = 0; i < lines.length; i++) {
-                    let lineDataPoint: LineDataPoint = lines[i];
+                    const lineDataPoint: LineDataPoint = lines[i];
                     if (lineDataPoint.points) {
                         for (let j = 0; j < lineDataPoint.points.length; j++) {
-                            let item: Date = lineDataPoint.points[j].x as Date;
+                            const item: Date = lineDataPoint.points[j].x as Date;
                             if (minDate == null || item < minDate)
                                 minDate = item;
                             if (maxDate == null || item > maxDate)
@@ -372,11 +372,11 @@ export class RenderVisual {
                         }
                     }
                 }
-                let newxAxisDataPoints: Date[] = [];
-                let keys: string[] = []
+                const newxAxisDataPoints: Date[] = [];
+                const keys: string[] = [];
                 for (let i = 0; i < xAxisDataPoints.length; i++) {
-                    let item: Date = xAxisDataPoints[i] as Date;
-                    let itemKey: string = this.convertCategoryItemToString(item);
+                    const item: Date = xAxisDataPoints[i] as Date;
+                    const itemKey: string = this.convertCategoryItemToString(item);
                     if ((minDate <= item) && (item <= maxDate) && (keys.indexOf(itemKey) == -1)) {
                         keys.push(itemKey);
                         newxAxisDataPoints.push(item);
@@ -394,18 +394,18 @@ export class RenderVisual {
         } else {
             if (this.categoryIsScalar) {
                 chartRangeType = this.settings.xAxis.chartRangeTypeForScalarAxis;
-                let lastIndex: number = this.categories.length - 1;
+                const lastIndex: number = this.categories.length - 1;
                 switch (chartRangeType) {
-                    case "custom": {
-                        let startFormatted: number = (this.settings.xAxis.start != null) ? this.settings.xAxis.start : this.retrieveFormattedXValue(+this.categories[0]);
-                        let endFormatted: number = (this.settings.xAxis.end != null) ? this.settings.xAxis.end : this.retrieveFormattedXValue(+this.categories[lastIndex]);
-                        let precision = this.retrievexFormatPrecision();
+                    case 'custom': {
+                        const startFormatted: number = (this.settings.xAxis.start != null) ? this.settings.xAxis.start : this.retrieveFormattedXValue(+this.categories[0]);
+                        const endFormatted: number = (this.settings.xAxis.end != null) ? this.settings.xAxis.end : this.retrieveFormattedXValue(+this.categories[lastIndex]);
+                        const precision = this.retrievexFormatPrecision();
                         start = startFormatted * precision;
                         end = endFormatted * precision;
                         lines = this.changeLinesForStartAndEndXAxis(lines, start, end);
-                        let newxAxisDataPoints: number[] = [];
+                        const newxAxisDataPoints: number[] = [];
                         for (let i = 0; i < xAxisDataPoints.length; i++) {
-                            let item: number = +xAxisDataPoints[i];
+                            const item: number = +xAxisDataPoints[i];
                             if ((start <= item) && (item <= end) && (newxAxisDataPoints.indexOf(item) == -1)) {
                                 newxAxisDataPoints.push(xAxisDataPoints[i] as number);
                             }
@@ -413,14 +413,14 @@ export class RenderVisual {
                         xAxisDataPoints = newxAxisDataPoints;
                         break;
                     }
-                    case "separate": {
+                    case 'separate': {
                         start = null;
                         end = null;
                         for (let i = 0; i < lines.length; i++) {
-                            let lineItem: LineDataPoint = lines[i];
+                            const lineItem: LineDataPoint = lines[i];
                             if (lineItem.points)
                                 for (let j = 0; j < lineItem.points.length; j++) {
-                                    let pointX: number = +lineItem.points[j].x;
+                                    const pointX: number = +lineItem.points[j].x;
                                     if (start == null || pointX <= start)
                                         start = pointX;
                                     if (end == null || pointX >= end)
@@ -429,7 +429,7 @@ export class RenderVisual {
                         }
                         break;
                     }
-                    case "common": {
+                    case 'common': {
                         start = +this.categories[0];
                         end = +this.categories[lastIndex];
                         break;
@@ -437,16 +437,16 @@ export class RenderVisual {
                 }
             }
 
-            if (chartRangeType == "separate") {
-                let newxAxisDataPoints: any[] = [];
+            if (chartRangeType == 'separate') {
+                const newxAxisDataPoints: any[] = [];
                 for (let k = 0; k < xAxisDataPoints.length; k++) {
-                    let item: string = this.convertCategoryItemToString(xAxisDataPoints[k]);
+                    const item: string = this.convertCategoryItemToString(xAxisDataPoints[k]);
                     let isExisted: boolean = false;
                     for (let i = 0; i < lines.length; i++) {
-                        let lineItem: LineDataPoint = lines[i];
+                        const lineItem: LineDataPoint = lines[i];
                         if (lineItem.points)
                             for (let j = 0; j < lineItem.points.length; j++) {
-                                let pointX: string = this.convertCategoryItemToString(lineItem.points[j].x);
+                                const pointX: string = this.convertCategoryItemToString(lineItem.points[j].x);
                                 if (pointX == item) {
                                     isExisted = true;
                                     break;
@@ -462,14 +462,14 @@ export class RenderVisual {
             }
 
             if (xIsCategorical) {
-                x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange)
+                x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
             } else {
                 if (start <= 0)
-                    this.settings.xAxis.axisScale = "linear";
-                if (this.settings.xAxis.axisScale == "linear") {
+                    this.settings.xAxis.axisScale = 'linear';
+                if (this.settings.xAxis.axisScale == 'linear') {
                     x = d3scaleLinear([start, end], xRange);
                 } else {
-                    if (chartRangeType != "custom" && end / this.MaxLogScaleDivider <= start)
+                    if (chartRangeType != 'custom' && end / this.MaxLogScaleDivider <= start)
                         start = start / this.MaxLogScaleDivider;
                     x = d3scaleLog([start, end], xRange);
                 }
@@ -485,35 +485,35 @@ export class RenderVisual {
             xAxisDataPoints: xAxisDataPoints,
             lines: lines,
             start: start,
-            end: end
+            end: end,
         };
     }
 
     private retrieveResponsiveIcon(svgContainer: d3Selection<SVGElement>) {
-        let svgAxisContainer: d3Selection<SVGElement> = svgContainer
+        const svgAxisContainer: d3Selection<SVGElement> = svgContainer
             .append('svg')
-            .attr('width', "100%")
-            .attr('height', "100%")
-            .attr('viewBox', "0 0 24 24");
-        let g = svgAxisContainer.append('g').attr('fill', '#333');
-        g.append("path")
-            .attr("d", "M12,16.5703125 L13.140625,16.5703125 L13.140625,10.859375 L12,10.859375 L12,16.5703125 Z M10.8515625,9.7109375 L14.28125,9.7109375 L14.28125,17.7109375 L10.8515625,17.7109375 L10.8515625,9.7109375 Z M7.421875,16.5703125 L8.5703125,16.5703125 L8.5703125,8.5703125 L7.421875,8.5703125 L7.421875,16.5703125 Z M6.28125,7.4296875 L9.7109375,7.4296875 L9.7109375,17.7109375 L6.28125,17.7109375 L6.28125,7.4296875 Z M16.5703125,16.5703125 L17.7109375,16.5703125 L17.7109375,6.28125 L16.5703125,6.28125 L16.5703125,16.5703125 Z M15.421875,5.140625 L18.8515625,5.140625 L18.8515625,17.7109375 L15.421875,17.7109375 L15.421875,5.140625 Z M5.140625,4 L5.140625,18.859375 L20,18.859375 L20,20 L4,20 L4,4 L5.140625,4 Z");
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', '0 0 24 24');
+        const g = svgAxisContainer.append('g').attr('fill', '#333');
+        g.append('path')
+            .attr('d', 'M12,16.5703125 L13.140625,16.5703125 L13.140625,10.859375 L12,10.859375 L12,16.5703125 Z M10.8515625,9.7109375 L14.28125,9.7109375 L14.28125,17.7109375 L10.8515625,17.7109375 L10.8515625,9.7109375 Z M7.421875,16.5703125 L8.5703125,16.5703125 L8.5703125,8.5703125 L7.421875,8.5703125 L7.421875,16.5703125 Z M6.28125,7.4296875 L9.7109375,7.4296875 L9.7109375,17.7109375 L6.28125,17.7109375 L6.28125,7.4296875 Z M16.5703125,16.5703125 L17.7109375,16.5703125 L17.7109375,6.28125 L16.5703125,6.28125 L16.5703125,16.5703125 Z M15.421875,5.140625 L18.8515625,5.140625 L18.8515625,17.7109375 L15.421875,17.7109375 L15.421875,5.140625 Z M5.140625,4 L5.140625,18.859375 L20,18.859375 L20,20 L4,20 L4,4 L5.140625,4 Z');
     }
 
     public retrieveMaxCountOfXAxis(lines: LineDataPoint[]): number {
-        let xAxisData: XAxisData = this.retrieveXData(true, lines, this.categories, [0, 0]);
+        const xAxisData: XAxisData = this.retrieveXData(true, lines, this.categories, [0, 0]);
         return xAxisData.xAxisDataPoints.length;
     }
 
     public renderSmallMultiple(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
                                isResponsive: boolean, legendHeight: number, isLegendHidden: boolean, rectGlobalX: number, rectGlobalY: number) {
         svgContainer.classed(Visual.SmallMultipleSelector.className, true);
-        svgContainer = svgContainer.append("svg");
-        let plotSize = {width: width, height: height};
+        svgContainer = svgContainer.append('svg');
+        const plotSize = {width: width, height: height};
 
         let axisPadding: number = this.retrieveAxisPadding();
         let yAxisWidth = this.retrieveYAxisWidth(lines, svgContainer);
-        let yAxisFontSize = this.settings.yAxis.fontSize + "px";
+        const yAxisFontSize = this.settings.yAxis.fontSize + 'px';
         let axisMargin: number = this.retrieveAxisMargin();
 
         let showYAxis: boolean = true;
@@ -521,10 +521,10 @@ export class RenderVisual {
 
         if (totalXWidth < this.ResponsiveMinWidth) {
             yAxisWidth = plotSize.width - this.ResponsiveMinWidth - axisPadding - 2 * axisMargin;
-            let minYAxisWidth: number = measureTextWidth({
+            const minYAxisWidth: number = measureTextWidth({
                 fontSize: yAxisFontSize,
                 fontFamily: this.settings.yAxis.fontFamily,
-                text: "..."
+                text: '...',
             });
             if (yAxisWidth < minYAxisWidth) {
                 if (isResponsive) {
@@ -543,7 +543,7 @@ export class RenderVisual {
         //X
         let xAxisDataPoints: any[] = this.categories;
         let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
-        let xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
+        const xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
         let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
         let x = xAxisData.x;
         xAxisDataPoints = xAxisData.xAxisDataPoints;
@@ -554,7 +554,7 @@ export class RenderVisual {
             : 0;
         let xAxisHeight = this.renderXAxis(svgContainer, plotSize, x, xIsCategorical, xAxisDataPoints, tickMaxWidth, xRange, axisPadding, xAxisData.start, xAxisData.end);
         if (isResponsive && (plotSize.height - legendHeight - xAxisHeight - axisPadding < this.ResponsiveMinHeight || isLegendHidden)) {
-            svgContainer.selectAll("svg").remove();
+            svgContainer.selectAll('svg').remove();
             xAxisHeight = 0;
             axisMargin = 5;
             //recount
@@ -575,10 +575,10 @@ export class RenderVisual {
         if (yRangeMax < 0)
             yRangeMax = 0;
 
-        let yRange: number[] = [axisPadding, yRangeMax];
-        let domainY: VisualDomain = this.retrieveDomainY(lines);
+        const yRange: number[] = [axisPadding, yRangeMax];
+        const domainY: VisualDomain = this.retrieveDomainY(lines);
         let y: AxisScale<AxisDomain>;
-        if (this.settings.yAxis.axisScale == "linear") {
+        if (this.settings.yAxis.axisScale == 'linear') {
             y = d3scaleLinear()
                 .domain([domainY.end, domainY.start])
                 .range(yRange).nice().nice();
@@ -593,7 +593,7 @@ export class RenderVisual {
 
         if (isResponsive && ((totalXWidth < this.ResponsiveMinWidth) || (plotSize.height - xAxisHeight - axisPadding < this.ResponsiveMinHeight))) {
             //draw image
-            svgContainer.selectAll("svg").remove();
+            svgContainer.selectAll('svg').remove();
             this.retrieveResponsiveIcon(svgContainer);
             return;
         }
@@ -601,7 +601,7 @@ export class RenderVisual {
         //Draw line
         if (lines.length == 0)
             return;
-        let line: d3Line<[number, number]> = d3line()
+        const line: d3Line<[number, number]> = d3line()
             .x(function (d: any) {
                 return x(d.x);
             })
@@ -611,7 +611,7 @@ export class RenderVisual {
             .curve(d3curveLinear);
 
         //prepare vertical line
-        let showVerticalLine: boolean = (tickMaxWidth > 1);
+        const showVerticalLine: boolean = (tickMaxWidth > 1);
         let xMouseMin: number;
         let xMouseMax: number;
         let hoverContainer: d3Selection<SVGElement>;
@@ -620,7 +620,7 @@ export class RenderVisual {
         if (showVerticalLine) {
             xMouseMin = xRange[0] - axisMargin;
             xMouseMax = xRange[1] + axisMargin;
-            hoverContainer = svgContainer.append("svg");
+            hoverContainer = svgContainer.append('svg');
             tooltipRect = hoverContainer.append('rect')
                 .classed('clearCatcher', true)
                 .classed(Visual.LineChartRectSelector.className, true)
@@ -639,56 +639,56 @@ export class RenderVisual {
         //Render vertical line
         if (!showVerticalLine) return;
         //
-        let hoverLine: d3Selection<SVGElement> = hoverContainer.append("path") // this is the vertical line to follow mouse
+        const hoverLine: d3Selection<SVGElement> = hoverContainer.append('path') // this is the vertical line to follow mouse
             .classed(Visual.HoverLineSelector.className, true)
-            .style("opacity", 0);
+            .style('opacity', 0);
         let hoverLineData: d3Selection<number> = hoverLine.data([0]);
 
-        let shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
-        let verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
+        const shapesShowMarkers: boolean = this.settings.shapes.showMarkers;
+        const verticalLineDataItems: VerticalLineDataItem[] = generateVerticalLineData(this.categoryIsDate, this.xFormatter, this.tooltipFormatter,
             lines, xAxisDataPoints, line, shapesShowMarkers, rectGlobalX, rectGlobalY);
 
         this.verticalLineDataItemsGlobal[lineKey] = {
             verticalLineDataItems: verticalLineDataItems,
-            hoverLineData: hoverLineData
+            hoverLineData: hoverLineData,
         };
 
-        let tooltipServiceWrapper = this.tooltipServiceWrapper;
+        const tooltipServiceWrapper = this.tooltipServiceWrapper;
         svgContainer.on('mouseout', function () {
             tooltipServiceWrapper.hide();
-            hoverLine.style("opacity", 0);
+            hoverLine.style('opacity', 0);
             hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
         });
-        let is: IInteractivityService<any> = this.interactivityService;
+        const is: IInteractivityService<any> = this.interactivityService;
         svgContainer.on('click', function (e: MouseEvent) {
-            let mouseX: number = e.x;
-            let mouseY: number = e.y;
+            const mouseX: number = e.x;
+            const mouseY: number = e.y;
             if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
                 is.clearSelection();
             }
         });
         svgContainer.on('mousemove', function (e: MouseEvent) {
-            let mouseX: number = e.x;
-            let mouseY: number = e.y;
+            const mouseX: number = e.x;
+            const mouseY: number = e.y;
             if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
                 tooltipServiceWrapper.hide();
-                hoverLine.style("opacity", 0);
+                hoverLine.style('opacity', 0);
                 hoverContainer.selectAll(Visual.CircleSelector.selectorName).remove();
             } else {
-                let index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
+                const index: number = findNearestVerticalLineIndex(mouseX, verticalLineDataItems);
                 hoverLineData = hoverLine.data([index]);
-                let verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
+                const verticalLineDataItem: VerticalLineDataItem = verticalLineDataItems[index];
                 if (verticalLineDataItem) {
-                    let xValue: number = verticalLineDataItem.x;
+                    const xValue: number = verticalLineDataItem.x;
                     drawPointsForVerticalLine(hoverContainer, xValue, verticalLineDataItem.linePoints);
-                    let d: string = "M" + xValue + "," + yRangeMax + "V0";
-                    hoverLine.attr("d", d).style("opacity", 1);
+                    const d: string = 'M' + xValue + ',' + yRangeMax + 'V0';
+                    hoverLine.attr('d', d).style('opacity', 1);
                 }
             }
         });
         tooltipServiceWrapper.addTooltip(tooltipRect,
             () => {
-                let index: number = hoverLineData.data()[0];
+                const index: number = hoverLineData.data()[0];
                 let tooltips: VisualTooltipDataItem[] = null;
                 if (verticalLineDataItems[index])
                     tooltips = verticalLineDataItems[index].tooltips;
@@ -696,7 +696,7 @@ export class RenderVisual {
             },
             null,
             true);
-    };
+    }
 
     private renderXAxis(
         svgContainer: d3Selection<SVGElement>,
@@ -710,14 +710,14 @@ export class RenderVisual {
         start: number,
         end: number): number {
         if (!this.settings.xAxis.show) return 0;
-        let svgAxisContainer: d3Selection<SVGElement> = svgContainer
+        const svgAxisContainer: d3Selection<SVGElement> = svgContainer
             .append('svg');
 
-        let axisSvg = svgAxisContainer
-            .selectAll("g.axis")
+        const axisSvg = svgAxisContainer
+            .selectAll('g.axis')
             .data([0]);
 
-        let xAxisSvg = axisSvg.enter().append("g").attr("class", "x axis");
+        const xAxisSvg = axisSvg.enter().append('g').attr('class', 'x axis');
 
         let xSpecial = x;
         let numTicks: number;
@@ -726,22 +726,22 @@ export class RenderVisual {
         let longestXAxis: string = null;
 
         for (let i = 1; i < xAxisDataPoints.length; i++) {
-            let value: PrimitiveValue = this.categoryIsDate ? new Date(xAxisDataPoints[i].toString()) : xAxisDataPoints[i];
-            let item: string = this.xFormatter.format(value);
+            const value: PrimitiveValue = this.categoryIsDate ? new Date(xAxisDataPoints[i].toString()) : xAxisDataPoints[i];
+            const item: string = this.xFormatter.format(value);
             if (longestXAxis == null || item.length > longestXAxis.length)
                 longestXAxis = item;
         }
 
-        let xAxisFontSize = this.settings.xAxis.fontSize.toString() + "px";
-        let xAxisWidth: number = measureTextWidth({
+        const xAxisFontSize = this.settings.xAxis.fontSize.toString() + 'px';
+        const xAxisWidth: number = measureTextWidth({
             fontSize: xAxisFontSize,
             fontFamily: this.settings.xAxis.fontFamily,
-            text: longestXAxis
+            text: longestXAxis,
         });
 
         if (xIsCategorical) {
             numTicks = xAxisDataPoints.length;
-            let fontWidth = this.settings.xAxis.fontSize;
+            const fontWidth = this.settings.xAxis.fontSize;
 
             if (tickMaxWidth < fontWidth) {
                 actionWithLabels = LabelsAction.Rotate90;
@@ -754,19 +754,19 @@ export class RenderVisual {
                 actionWithLabels = LabelsAction.Rotate35;
             }
         } else {
-            let divider: number = 1.8 * xAxisWidth;
+            const divider: number = 1.8 * xAxisWidth;
             numTicks = Math.floor((xRange[1] - xRange[0]) / divider);
             if (numTicks < 2)
                 numTicks = 2;
             if (numTicks > xAxisDataPoints.length)
                 numTicks = xAxisDataPoints.length;
-            if (numTicks == 1 && this.settings.xAxis.axisScale == "linear")
+            if (numTicks == 1 && this.settings.xAxis.axisScale == 'linear')
                 xSpecial = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
         }
 
-        let xAxis = (this.categoryIsDate)
+        const xAxis = (this.categoryIsDate)
             ? d3axisBottom(xSpecial).ticks(numTicks).tickSize(0)
-            : ((this.settings.xAxis.axisScale == "log")
+            : ((this.settings.xAxis.axisScale == 'log')
                 ? d3axisBottom(xSpecial)
                 : d3axisBottom(xSpecial).ticks(numTicks).tickSize(0));
 
@@ -784,27 +784,27 @@ export class RenderVisual {
 
         xAxisSvg.selectAll('.domain').remove();
 
-        let labels = xAxisSvg.selectAll('text')
+        const labels = xAxisSvg.selectAll('text')
             .style('fill', this.settings.xAxis.axisColor)
-            .style('font-family', this.settings.xAxis.fontFamily,)
+            .style('font-family', this.settings.xAxis.fontFamily)
             .style('font-size', xAxisFontSize);
 
         switch (actionWithLabels) {
             case LabelsAction.Simple: {
-                let count: number = (labels.data().length == 0)
+                const count: number = (labels.data().length == 0)
                     ? 1
                     : labels.data().length;
-                if (this.settings.xAxis.axisScale == "linear") {
-                    let tickMaxWidth = (xRange[1] - xRange[0]) / count;
+                if (this.settings.xAxis.axisScale == 'linear') {
+                    const tickMaxWidth = (xRange[1] - xRange[0]) / count;
                     labels.call(wrapAxis, tickMaxWidth, {
                         fontFamily: this.settings.xAxis.fontFamily,
-                        fontSize: xAxisFontSize
+                        fontSize: xAxisFontSize,
                     });
                 } else {
-                    let labelXArray: number[] = [];
+                    const labelXArray: number[] = [];
                     labels.each((number: any, index: number) => {
-                        let item: d3Selection<any> = d3select(labels.nodes()[index]);
-                        let parent: d3Selection<any> = d3select(item.node().parentElement);
+                        const item: d3Selection<any> = d3select(labels.nodes()[index]);
+                        const parent: d3Selection<any> = d3select(item.node().parentElement);
                         let numberValue: number = number;
                         if (numberValue < 1) {
                             while (numberValue < 1) {
@@ -816,11 +816,11 @@ export class RenderVisual {
                             }
                         }
                         if (end / start > this.MaxLogScaleDivider && numberValue != 1) {
-                            item.text("");
+                            item.text('');
                             parent.select('line').remove();
                         } else {
-                            let transform: string = parent.attr('transform');
-                            let labelX: number = +transform.replace('translate(', '').split(',')[0];
+                            const transform: string = parent.attr('transform');
+                            const labelX: number = +transform.replace('translate(', '').split(',')[0];
                             labelXArray.push(labelX);
                             item.text(this.xFormatter.format(number));
                         }
@@ -831,17 +831,17 @@ export class RenderVisual {
                     labelXArray[labelXArray.length - 1] = plotSize.width - labelXArray[labelXArray.length - 1];
                     let labelIndex: number = 0;
                     labels.each((number: any, index: number) => {
-                        let item: d3Selection<any> = d3select(labels.nodes()[index]);
-                        let textTitle: string = item.text();
+                        const item: d3Selection<any> = d3select(labels.nodes()[index]);
+                        const textTitle: string = item.text();
                         if (textTitle) {
-                            let textProp: TextProperties = {
+                            const textProp: TextProperties = {
                                 text: textTitle,
                                 fontFamily: this.settings.xAxis.fontFamily,
-                                fontSize: xAxisFontSize
+                                fontSize: xAxisFontSize,
                             };
-                            let maxTextWidth: number = labelXArray[labelIndex];
+                            const maxTextWidth: number = labelXArray[labelIndex];
                             labelIndex = labelIndex + 1;
-                            let text: string = getTailoredTextOrDefault(textProp, maxTextWidth);
+                            const text: string = getTailoredTextOrDefault(textProp, maxTextWidth);
                             item.text(text).append('title').text(textTitle);
                         }
                     });
@@ -849,30 +849,30 @@ export class RenderVisual {
                 break;
             }
             case LabelsAction.Rotate35: {
-                labels.attr("transform", function (d) {
-                    return "translate(" + (<any>this).getBBox().height * -2 + "," + (<any>this).getBBox().height + ")rotate(-35)";
-                }).attr('dy', '0').attr('dx', '2.5em').style("text-anchor", "end")
+                labels.attr('transform', function (d) {
+                    return 'translate(' + (<any>this).getBBox().height * -2 + ',' + (<any>this).getBBox().height + ')rotate(-35)';
+                }).attr('dy', '0').attr('dx', '2.5em').style('text-anchor', 'end')
                     .call(truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
                         fontFamily: this.settings.xAxis.fontFamily,
-                        fontSize: xAxisFontSize
+                        fontSize: xAxisFontSize,
                     });
                 break;
             }
             case LabelsAction.Rotate90: {
-                labels.attr("transform", "rotate(-90)")
+                labels.attr('transform', 'rotate(-90)')
                     .attr('dy', '-0.5em')
-                    .style("text-anchor", "end")
+                    .style('text-anchor', 'end')
                     .call(truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {
                         fontFamily: this.settings.xAxis.fontFamily,
-                        fontSize: xAxisFontSize
+                        fontSize: xAxisFontSize,
                     });
                 let labelStartX: number = null;
-                let removedIndexes: number[] = [];
+                const removedIndexes: number[] = [];
                 labels.each((number: any, index: number) => {
-                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
-                    let parent: d3Selection<any> = d3select(item.node().parentElement);
-                    let transform: string = parent.attr('transform');
-                    let labelX: number = +transform.replace('translate(', '').split(',')[0];
+                    const item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    const parent: d3Selection<any> = d3select(item.node().parentElement);
+                    const transform: string = parent.attr('transform');
+                    const labelX: number = +transform.replace('translate(', '').split(',')[0];
                     if (labelStartX == null) {
                         labelStartX = labelX;
                     } else {
@@ -883,8 +883,8 @@ export class RenderVisual {
                     }
                 });
                 for (let i = 0; i < removedIndexes.length; i++) {
-                    let index = removedIndexes[i];
-                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    const index = removedIndexes[i];
+                    const item: d3Selection<any> = d3select(labels.nodes()[index]);
                     item.remove();
                 }
                 break;
@@ -896,31 +896,31 @@ export class RenderVisual {
 
         if (this.settings.xAxis.showTitle) {
             let titleTextFull: string = this.settings.xAxis.axisTitle ? this.settings.xAxis.axisTitle : this.categoryName;
-            let titleStyle: string = (this.categoryIsScalar && (this.settings.xAxis.displayUnits == 1000 ||
+            const titleStyle: string = (this.categoryIsScalar && (this.settings.xAxis.displayUnits == 1000 ||
                 this.settings.xAxis.displayUnits == 1000000 || this.settings.xAxis.displayUnits == 1000000000 || this.settings.xAxis.displayUnits == 1000000000000))
                 ? this.settings.xAxis.titleStyleFull
                 : this.settings.xAxis.titleStyle;
             switch (titleStyle) {
-                case "showUnitOnly": {
+                case 'showUnitOnly': {
                     titleTextFull = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
                     break;
                 }
-                case "showBoth": {
-                    let displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
-                    titleTextFull = titleTextFull + " (" + displayUnits + ")";
+                case 'showBoth': {
+                    const displayUnits: string = this.retrieveXDisplayUnitsForTitle(this.settings.xAxis.displayUnits);
+                    titleTextFull = titleTextFull + ' (' + displayUnits + ')';
                     break;
                 }
             }
 
-            let titleFontSize: string = this.settings.xAxis.titleFontSize + "px";
-            let textProp: TextProperties = {
+            const titleFontSize: string = this.settings.xAxis.titleFontSize + 'px';
+            const textProp: TextProperties = {
                 text: titleTextFull,
                 fontFamily: this.settings.xAxis.titleFontFamily,
                 fontSize: titleFontSize,
             };
-            let titleText: string = getTailoredTextOrDefault(textProp, xRange[1] - xRange[0]);
-            let titleCont: d3Selection<any> = xAxisSvg.append("g");
-            titleCont.append("text")
+            const titleText: string = getTailoredTextOrDefault(textProp, xRange[1] - xRange[0]);
+            const titleCont: d3Selection<any> = xAxisSvg.append('g');
+            titleCont.append('text')
                 .attr('font-family', this.settings.xAxis.titleFontFamily)
                 .attr('font-size', titleFontSize)
                 .attr('fill', this.settings.xAxis.axisTitleColor)
@@ -929,24 +929,24 @@ export class RenderVisual {
                 .append('title').text(titleTextFull);
 
             n = <any>titleCont.node();
-            let titleHeight: number = n.getBBox().height;
+            const titleHeight: number = n.getBBox().height;
 
-            let titleX: number = (xRange[1] + xRange[0]) / 2;
-            let delta: number = (titleHeight - this.settings.xAxis.titleFontSize) / 2;
-            let titleY: number = xAxisHeight + titleHeight - delta;
+            const titleX: number = (xRange[1] + xRange[0]) / 2;
+            const delta: number = (titleHeight - this.settings.xAxis.titleFontSize) / 2;
+            const titleY: number = xAxisHeight + titleHeight - delta;
             titleCont.attr('transform', 'translate(' + titleX + ',' + titleY + ')');
             xAxisHeight = xAxisHeight + titleHeight + delta;
         }
         xAxisSvg.attr('transform', 'translate(0,' + (plotSize.height - xAxisHeight) + ')');
 
         if (this.settings.xAxis.showGridlines) {
-            let grid = svgAxisContainer.selectAll("g.x.axis").data([0]);
-            let strokeDasharray = getLineStyleParam(this.settings.xAxis.lineStyle);
+            const grid = svgAxisContainer.selectAll('g.x.axis').data([0]);
+            const strokeDasharray = getLineStyleParam(this.settings.xAxis.lineStyle);
             grid.selectAll('line')
-                .attr("y2", -plotSize.height + xAxisHeight + axisPadding)
-                .style("stroke", this.settings.xAxis.gridlinesColor)
-                .style("stroke-width", this.settings.xAxis.strokeWidth)
-                .style("stroke-dasharray", strokeDasharray);
+                .attr('y2', -plotSize.height + xAxisHeight + axisPadding)
+                .style('stroke', this.settings.xAxis.gridlinesColor)
+                .style('stroke-width', this.settings.xAxis.strokeWidth)
+                .style('stroke-dasharray', strokeDasharray);
         }
 
         return xAxisHeight;
@@ -968,37 +968,37 @@ export class RenderVisual {
                 .ticks(Math.max(Math.floor(plotSize.height / 80), 2));
         }
 
-        let yFormatter = this.yFormatter;
+        const yFormatter = this.yFormatter;
         if (yFormatter) yAxis.tickFormat(function (d) {
             return yFormatter.format(d);
         });
 
-        let svgAxisContainer: d3Selection<SVGElement> = svgContainer
+        const svgAxisContainer: d3Selection<SVGElement> = svgContainer
             .append('svg')
             .attr('width', plotSize.width);
 
-        let axisSvg = svgAxisContainer.selectAll("g.axis").data([1]);
+        const axisSvg = svgAxisContainer.selectAll('g.axis').data([1]);
 
-        const yAxisSvg = axisSvg.enter().append("g")
-            .attr("class", "y axis")
+        const yAxisSvg = axisSvg.enter().append('g')
+            .attr('class', 'y axis')
             .attr('transform', 'translate(' + plotSize.width + ',0)');
 
         yAxisSvg.call(yAxis.scale(y));
-        yAxisSvg.selectAll(".domain").remove();
-        let labels: d3Selection<any> = yAxisSvg.selectAll('text')
+        yAxisSvg.selectAll('.domain').remove();
+        const labels: d3Selection<any> = yAxisSvg.selectAll('text')
             .style('fill', this.settings.yAxis.axisColor)
             .style('font-family', this.settings.yAxis.fontFamily)
             .style('font-size', yAxisFontSize);
-        if (this.settings.yAxis.axisScale == "linear") {
+        if (this.settings.yAxis.axisScale == 'linear') {
             labels.call(wrapAxis, yAxisWidth, {
                 fontFamily: this.settings.xAxis.fontFamily,
-                fontSize: yAxisFontSize
+                fontSize: yAxisFontSize,
             });
         } else {
             if (domainY.end / domainY.start > this.MaxYLogScaleShowDivider) {
                 labels.each((number: any, index: number) => {
-                    let item: d3Selection<any> = d3select(labels.nodes()[index]);
-                    let parent: d3Selection<any> = d3select(item.node().parentElement);
+                    const item: d3Selection<any> = d3select(labels.nodes()[index]);
+                    const parent: d3Selection<any> = d3select(item.node().parentElement);
                     let numberValue: number = number;
                     if (numberValue < 1) {
                         while (numberValue < 1) {
@@ -1010,7 +1010,7 @@ export class RenderVisual {
                         }
                     }
                     if (numberValue != 1) {
-                        item.text("");
+                        item.text('');
                         parent.select('line').remove();
                     }
                 });
@@ -1018,31 +1018,31 @@ export class RenderVisual {
         }
 
         //format gridlines
-        let yAxisGridlinesStrokeWidth = (this.settings.yAxis.showGridlines) ? this.settings.yAxis.strokeWidth : 0;
-        let strokeDasharray = getLineStyleParam(this.settings.yAxis.lineStyle);
+        const yAxisGridlinesStrokeWidth = (this.settings.yAxis.showGridlines) ? this.settings.yAxis.strokeWidth : 0;
+        const strokeDasharray = getLineStyleParam(this.settings.yAxis.lineStyle);
         yAxisSvg.selectAll('line')
-            .style("stroke", this.settings.yAxis.gridlinesColor)
-            .style("stroke-width", yAxisGridlinesStrokeWidth)
-            .style("stroke-dasharray", strokeDasharray);
+            .style('stroke', this.settings.yAxis.gridlinesColor)
+            .style('stroke-width', yAxisGridlinesStrokeWidth)
+            .style('stroke-dasharray', strokeDasharray);
 
         //format axis for its' position
-        let titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
+        const titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
         if (this.settings.yAxis.position == AxisPosition.Right) {
-            let textTranslate = plotSize.width - titleHeight;
+            const textTranslate = plotSize.width - titleHeight;
             yAxisSvg.selectAll('text').attr('transform', 'translate(' + textTranslate + ',0)');
-            let lineTranslate = yAxisWidth + axisPadding;
+            const lineTranslate = yAxisWidth + axisPadding;
             yAxisSvg.selectAll('line').attr('transform', 'translate(-' + lineTranslate + ',0)');
         }
 
         if (this.settings.yAxis.showTitle) {
-            let titleTextFull: string = this.retrieveYAxisTitleText();
-            let titleFontSize: string = this.settings.yAxis.titleFontSize + "px";
-            let textProp: TextProperties = {
+            const titleTextFull: string = this.retrieveYAxisTitleText();
+            const titleFontSize: string = this.settings.yAxis.titleFontSize + 'px';
+            const textProp: TextProperties = {
                 text: titleTextFull,
                 fontFamily: this.settings.yAxis.titleFontFamily,
                 fontSize: titleFontSize,
             };
-            let titleText: string = getTailoredTextOrDefault(textProp, plotSize.height);
+            const titleText: string = getTailoredTextOrDefault(textProp, plotSize.height);
 
             let translateX: number;
             let transform: string;
@@ -1054,9 +1054,9 @@ export class RenderVisual {
                 transform = 'rotate(-90)';
             }
 
-            let translateY: number = plotSize.height / 2;
-            svgAxisContainer.append("g").attr('transform', 'translate(' + translateX + ',' + translateY + ')')
-                .append("text")
+            const translateY: number = plotSize.height / 2;
+            svgAxisContainer.append('g').attr('transform', 'translate(' + translateX + ',' + translateY + ')')
+                .append('text')
                 .attr('transform', transform)
                 .attr('font-family', this.settings.yAxis.titleFontFamily)
                 .attr('font-size', titleFontSize)
@@ -1072,22 +1072,22 @@ export class RenderVisual {
     }
 
     private retrieveXDisplayUnitsForTitle(displayUnits: number): string {
-        let displayUnitsText: string = "No Units";
+        let displayUnitsText: string = 'No Units';
         switch (displayUnits) {
             case 1000: {
-                displayUnitsText = "Thousands";
+                displayUnitsText = 'Thousands';
                 break;
             }
             case 1000000: {
-                displayUnitsText = "Millions";
+                displayUnitsText = 'Millions';
                 break;
             }
             case 1000000000: {
-                displayUnitsText = "Billions";
+                displayUnitsText = 'Billions';
                 break;
             }
             case 1000000000000: {
-                displayUnitsText = "Trillions";
+                displayUnitsText = 'Trillions';
                 break;
             }
         }
@@ -1097,15 +1097,15 @@ export class RenderVisual {
     private retrievexFormatPrecision(): number {
         let precision: number = 1;
         if (this.categoryIsScalar) {
-            let customFormatter: IValueFormatter = Formatter.getFormatter({
+            const customFormatter: IValueFormatter = Formatter.getFormatter({
                 format: this.xFormatter.options.format,
                 value: 0,
                 precision: null,
                 displayUnitSystemType: 0,
-                cultureSelector: this.xFormatter.options.cultureSelector
+                cultureSelector: this.xFormatter.options.cultureSelector,
             });
-            let simpleFormatX: string = customFormatter.format(1);
-            let x: number = +simpleFormatX.replace(/[^.0-9]/g, '');
+            const simpleFormatX: string = customFormatter.format(1);
+            const x: number = +simpleFormatX.replace(/[^.0-9]/g, '');
             precision = 1 / x;
         }
         return precision;
@@ -1113,13 +1113,13 @@ export class RenderVisual {
 
     private changeLinesForStartAndEndXAxis(lines: LineDataPoint[], start: number, end: number): LineDataPoint[] {
         for (let i = 0; i < lines.length; i++) {
-            let lineItem: LineDataPoint = lines[i];
-            let newPoints: any[] = [];
-            let keys: string[] = [];
+            const lineItem: LineDataPoint = lines[i];
+            const newPoints: any[] = [];
+            const keys: string[] = [];
             if (lineItem.points)
                 for (let j = 0; j < lineItem.points.length; j++) {
-                    let point: any = lineItem.points[j];
-                    let x: number = +point.x;
+                    const point: any = lineItem.points[j];
+                    const x: number = +point.x;
                     if (start <= x && x <= end && keys.indexOf(point.x) == -1) {
                         keys.push(point.x);
                         newPoints.push(point);
@@ -1137,9 +1137,9 @@ export class RenderVisual {
         let endForced: boolean = false;
         if (this.isSeparateDomainY) {
             for (let i = 0; i < lines.length; i++) {
-                let points: any[] = lines[i].points;
+                const points: any[] = lines[i].points;
                 for (let j = 0; j < points.length; j++) {
-                    let yValue = points[j].y;
+                    const yValue = points[j].y;
                     if (yValue < start || start == null)
                         start = yValue;
                     if (end < yValue || end == null)
@@ -1153,8 +1153,8 @@ export class RenderVisual {
             endForced = this.domainY.endForced;
         }
         if (start <= 0)
-            this.settings.yAxis.axisScale = "linear";
-        if (this.settings.yAxis.axisScale == "linear") {
+            this.settings.yAxis.axisScale = 'linear';
+        if (this.settings.yAxis.axisScale == 'linear') {
             if (start == end) {
                 let delta: number = Math.abs(start / 2);
                 if (delta < 1)
@@ -1163,95 +1163,95 @@ export class RenderVisual {
                 end = end + delta;
             }
         } else {
-            if (this.settings.yAxis.chartRangeType != "custom" && end / this.MaxYLogScaleShowDivider <= start)
+            if (this.settings.yAxis.chartRangeType != 'custom' && end / this.MaxYLogScaleShowDivider <= start)
                 start = start / this.MaxLogScaleDivider;
         }
-        let domainY: VisualDomain = {
+        const domainY: VisualDomain = {
             start: start,
             end: end,
             startForced: startForced,
-            endForced: endForced
+            endForced: endForced,
         };
         return domainY;
     }
 
     private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<[number, number]>) {
         //Trend lines
-        let svgLinesContainerE: d3Selection<SVGElement> = svgContainer
+        const svgLinesContainerE: d3Selection<SVGElement> = svgContainer
             .append('svg')
             .attr('width', width)
             .attr('height', height);
 
-        let shapes = this.settings.shapes;
-        let hasSelection = this.hasSelection;
-        let lineDD: string[] = [];
+        const shapes = this.settings.shapes;
+        const hasSelection = this.hasSelection;
+        const lineDD: string[] = [];
         for (let i = 0; i < lines.length; i++) {
-            let dataPoint: LineDataPoint = lines[i];
-            let points: any = dataPoint.points;
-            let lineD: string = line(points);
+            const dataPoint: LineDataPoint = lines[i];
+            const points: any = dataPoint.points;
+            const lineD: string = line(points);
             lineDD.push(lineD);
         }
 
         svgLinesContainerE
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(lines)
-            .join("path")
+            .join('path')
             .classed(Visual.SimpleLineSelector.className, true)
-            .attr("d", (dataPoint: LineDataPoint, index: number) => {
-                let lineD = lineDD[index];
-                let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                let dataLine: string = (stepped)
-                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                    : lineD
-                return dataLine;
-            })
-            .attr("stroke", (dataPoint: LineDataPoint) => {
+            // .attr('d', (dataPoint: LineDataPoint, index: number) => {
+            //     const lineD = lineDD[index];
+            //     const stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                // const dataLine: string = (stepped)
+                //     ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                //     : lineD;
+                // return dataLine;
+            // })
+            .attr('stroke', (dataPoint: LineDataPoint) => {
                 return dataPoint.color;
             })
             .attr('stroke-width', (dataPoint: LineDataPoint) => {
-                let strokeWidth: number = (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth;
+                const strokeWidth: number = (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth;
                 return strokeWidth;
             })
-            .attr("stroke-linejoin", (dataPoint: LineDataPoint) => {
-                let strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
+            .attr('stroke-linejoin', (dataPoint: LineDataPoint) => {
+                const strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
                 return strokeLineJoin;
             })
-            .attr("stroke-dasharray", (dataPoint: LineDataPoint) => {
-                let strokeDasharray: string = (dataPoint.lineStyle == undefined) ?
+            .attr('stroke-dasharray', (dataPoint: LineDataPoint) => {
+                const strokeDasharray: string = (dataPoint.lineStyle == undefined) ?
                     getLineStyleParam(this.settings.shapes.lineStyle) :
                     getLineStyleParam(dataPoint.lineStyle);
                 return strokeDasharray;
             })
             .attr('fill', 'none')
-            .style("opacity", (dataPoint: LineDataPoint) => {
-                let opacity: number = getOpacity(dataPoint.selected, hasSelection);
-                let showMarkers: boolean = dataPoint.showMarkers != null
+            .style('opacity', (dataPoint: LineDataPoint) => {
+                const opacity: number = getOpacity(dataPoint.selected, hasSelection);
+                const showMarkers: boolean = dataPoint.showMarkers != null
                     ? dataPoint.showMarkers
                     : shapes.showMarkers;
-                let stepped: boolean = dataPoint.stepped != null
+                const stepped: boolean = dataPoint.stepped != null
                     ? dataPoint.stepped
                     : shapes.stepped;
-                if (showMarkers && stepped) {
-                    let markerPathId: string = MarkersUtility.retrieveMarkerName(dataPoint.lineKey, Visual.MarkerLineSelector.className);
-                    svgLinesContainerE.selectAll('#' + markerPathId).style("opacity", opacity);
-                }
+                // if (showMarkers && stepped) {
+                //     const markerPathId: string = MarkersUtility.retrieveMarkerName(dataPoint.lineKey, Visual.MarkerLineSelector.className);
+                //     svgLinesContainerE.selectAll('#' + markerPathId).style('opacity', opacity);
+                // }
                 return opacity;
             });
 
-        let lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
-        const svgLines = svgLinesContainerE.selectAll(Visual.SimpleLineSelector.selectorName);
-        for (let i = 0; i < lines.length; i++) {
-            let dataPoint: LineDataPoint = lines[i];
-            let marker: string = lineNamesWithMarkers[dataPoint.name];
-            if (marker) {
-                let item: d3Selection<any> = d3select(svgLines.nodes()[i]);
-                item.attr('marker-start', marker);
-                item.attr('marker-mid', marker);
-                item.attr('marker-end', marker);
-            }
-        }
+        // const lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
+        // const svgLines = svgLinesContainerE.selectAll(Visual.SimpleLineSelector.selectorName);
+        // for (let i = 0; i < lines.length; i++) {
+        // const dataPoint: LineDataPoint = lines[i];
+        // const marker: string = lineNamesWithMarkers[dataPoint.name];
+        // if (marker) {
+        //     const item: d3Selection<any> = d3select(svgLines.nodes()[i]);
+        //     item.attr('marker-start', marker);
+        //     item.attr('marker-mid', marker);
+        //     item.attr('marker-end', marker);
+        // }
+        // }
 
-        let dots: LineDataPoint[] = [];
+        const dots: LineDataPoint[] = [];
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].points && lines[i].points.length == 1)
                 dots.push(lines[i]);
@@ -1312,58 +1312,59 @@ export class RenderVisual {
         //     .attr('fill', 'none');
     }
 
+    // eslint-disable-next-line max-lines-per-function
     private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3Line<[number, number]>, svgContainer: d3Selection<any>): void {
-        let dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g')
-            .classed("labelBackgroundGraphicsContext", true);
-        dataLabelsBackgroundContext.selectAll("*").remove();
+        const dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g')
+            .classed('labelBackgroundGraphicsContext', true);
+        dataLabelsBackgroundContext.selectAll('*').remove();
         // dataLabelsBackgroundContext.selectAll("*").remove();
 
-        let dataLabelsContext: d3Selection<any> = svgContainer.append('g')
-            .classed("labelGraphicsContext", true);
-        dataLabelsContext.selectAll("*").remove();
+        const dataLabelsContext: d3Selection<any> = svgContainer.append('g')
+            .classed('labelGraphicsContext', true);
+        dataLabelsContext.selectAll('*').remove();
 
-        let labelSettings = this.settings.dataLabels;
+        const labelSettings = this.settings.dataLabels;
         if (!labelSettings.show) return;
 
-        let dataPoints: SimplePoint[] = [];
+        const dataPoints: SimplePoint[] = [];
         for (let i = 0; i < lines.length; i++) {
-            let points: SimplePoint[] = lines[i].points;
+            const points: SimplePoint[] = lines[i].points;
             if (points)
                 for (let j = 0; j < points.length; j++)
                     dataPoints.push(points[j]);
         }
 
-        let fontSizeInPx: string = fromPoint(labelSettings.fontSize);
-        let fontFamily: string = labelSettings.fontFamily;
+        const fontSizeInPx: string = fromPoint(labelSettings.fontSize);
+        const fontFamily: string = labelSettings.fontFamily;
 
-        let coords: Coordinates[] = [];
-        let height: number = fromPointToPixel(labelSettings.fontSize);
-        let deltaY: number = 20;
-        let labelBackgroundWidthPadding: number = 16.2;
-        let labelBackgroundHeightPadding: number = 2;
-        let labelBackgroundYShift: number = -fromPointToPixel(labelSettings.fontSize) / 10;
+        const coords: Coordinates[] = [];
+        const height: number = fromPointToPixel(labelSettings.fontSize);
+        const deltaY: number = 20;
+        const labelBackgroundWidthPadding: number = 16.2;
+        const labelBackgroundHeightPadding: number = 2;
+        const labelBackgroundYShift: number = -fromPointToPixel(labelSettings.fontSize) / 10;
         for (let i = 0; i < dataPoints.length; i++) {
             //init labelCoordinates
-            let point: any = [{
+            const point: any = [{
                 x: dataPoints[i].x,
-                y: dataPoints[i].y
+                y: dataPoints[i].y,
             }];
-            let lineD: string = line(point);
-            let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
-            let value = this.dataLabelFormatter.format(dataPoints[i].y);
-            let width: number = measureTextWidth({
+            const lineD: string = line(point);
+            const data: string[] = lineD.replace('M', '').replace('Z', '').split(',');
+            const value = this.dataLabelFormatter.format(dataPoints[i].y);
+            const width: number = measureTextWidth({
                 fontFamily: fontFamily,
                 fontSize: fontSizeInPx,
-                text: value
+                text: value,
             });
-            let coord: Coordinates = {
+            const coord: Coordinates = {
                 x: +data[0],
                 y: +data[1] - deltaY,
                 value: value,
                 bgWidth: width + labelBackgroundWidthPadding,
                 bgHeight: height + labelBackgroundHeightPadding,
                 bgX: +data[0] - width / 2 - labelBackgroundWidthPadding / 2,
-                bgY: +data[1] - height - labelBackgroundYShift - deltaY
+                bgY: +data[1] - height - labelBackgroundYShift - deltaY,
             };
 
             if (coord.bgX + coord.bgWidth > maxRangeX || coord.bgX < minRangeX || coord.bgY + coord.bgHeight > yRangeMax || coord.bgY < 0) {
@@ -1372,7 +1373,7 @@ export class RenderVisual {
 
             let goToBottom: boolean = false;
             for (let j = 0; j < coords.length; j++) {
-                let isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);
+                const isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);
                 if (isDataLabelOk) {
                     goToBottom = true;
                     break;
@@ -1389,7 +1390,7 @@ export class RenderVisual {
 
             let add: boolean = true;
             for (let j = 0; j < coords.length; j++) {
-                let isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);
+                const isDataLabelOk: boolean = this.isDataLabelOk(coords[j], coord);
                 if (isDataLabelOk) {
                     add = false;
                     break;
@@ -1398,18 +1399,18 @@ export class RenderVisual {
             if (add) coords.push(coord);
         }
 
-        let coordsLen: number = coords.length;
-        let maxCount: number = (this.settings.xAxis.axisType === "categorical")
+        const coordsLen: number = coords.length;
+        const maxCount: number = (this.settings.xAxis.axisType === 'categorical')
             ? coordsLen
             : Math.round((0.1 + 0.009 * this.settings.dataLabels.labelDensity) * coordsLen);
         let newCoords: Coordinates[] = [];
         if (maxCount >= coordsLen) {
             newCoords = coords;
         } else {
-            let indexes: number[] = [];
+            const indexes: number[] = [];
             let k: number = 2;
             while (newCoords.length < maxCount) {
-                let j: number = Math.round(coordsLen / k);
+                const j: number = Math.round(coordsLen / k);
                 for (let i = 0; i < coordsLen; i = i + j) {
                     if (indexes.indexOf(i) == -1) {
                         indexes.push(i);
@@ -1425,28 +1426,28 @@ export class RenderVisual {
         dataLabelsContext
             .selectAll(Visual.Label.selectorName)
             .data(newCoords)
-            .join("svg:text")
+            .join('svg:text')
             .classed('label', true)
             .attr('transform', (c: Coordinates) => {
                 return 'translate(' + c.x + ',' + c.y + ')';
             })
             .attr('text-anchor', 'middle')
-            .style("fill", labelSettings.color)
-            .style("font-size", fontSizeInPx)
-            .style("font-family", fontFamily)
-            .style("pointer-events", "none")
-            .style("white-space", "nowrap")
+            .style('fill', labelSettings.color)
+            .style('font-size', fontSizeInPx)
+            .style('font-family', fontFamily)
+            .style('pointer-events', 'none')
+            .style('white-space', 'nowrap')
             .text((c: Coordinates) => c.value);
 
         if (!labelSettings.showBackground) return;
 
-        let backgroundColor: string = this.settings.dataLabels.backgroundColor;
-        let transparency: number = this.settings.dataLabels.transparency;
+        const backgroundColor: string = this.settings.dataLabels.backgroundColor;
+        const transparency: number = this.settings.dataLabels.transparency;
 
         dataLabelsBackgroundContext
             .selectAll(Visual.Label.selectorName)
             .data(newCoords)
-            .join("svg:rect")
+            .join('svg:rect')
             .attr('height', d => {
                 return d.bgHeight;
             })
@@ -1462,54 +1463,54 @@ export class RenderVisual {
             .attr('rx', DataLabelR)
             .attr('ry', DataLabelR)
             .attr('fill', backgroundColor)
-            .style("fill-opacity", (100 - transparency) / 100)
-            .style("pointer-events", "none");
+            .style('fill-opacity', (100 - transparency) / 100)
+            .style('pointer-events', 'none');
     }
 
     private isDataLabelOk(item: Coordinates, coord: Coordinates): boolean {
-        let result: boolean = (!((item.bgX + item.bgWidth - DataLabelEps < coord.bgX) || (coord.bgX + coord.bgWidth - DataLabelEps < item.bgX))) &&
+        const result: boolean = (!((item.bgX + item.bgWidth - DataLabelEps < coord.bgX) || (coord.bgX + coord.bgWidth - DataLabelEps < item.bgX))) &&
             (!((item.bgY + item.bgHeight - DataLabelEps < coord.bgY) || (coord.bgY + coord.bgHeight - DataLabelEps < item.bgY)));
         return result;
     }
 
-    public static retrieveLineNamesWithMarkers(container: d3Selection<any>, svgLinesContainer: d3Selection<any>, lineDD: string[], shapes: Shapes, lines: LineDataPoint[]): {} {
-        //init markers
-        let lineNamesWithMarkers = {};
-        let defsContainer = container.append('defs');
-        let shapesShowMarkers: boolean = shapes.showMarkers;
-        for (let i = 0; i < lines.length; i++) {
-            let lineDataPoint: LineDataPoint = lines[i];
-            //Marker
-            let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
-            if (!showMarkers) {
-                continue;
-            }
-
-            let markerShape: SeriesMarkerShape = (lineDataPoint.seriesMarkerShape == undefined) ? shapes.markerShape : lineDataPoint.seriesMarkerShape;
-            let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
-            let markerColor: string = (lineDataPoint.markerColor == undefined)
-                ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
-                : lineDataPoint.markerColor;
-            let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
-            if (!markerId) {
-                continue;
-            }
-
-            let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
-            if (stepped) {
-                let lineD = lineDD[i];
-                let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
-                let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-                MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
-            } else {
-                lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
-            }
-        }
-        return lineNamesWithMarkers;
-    }
+    // public static retrieveLineNamesWithMarkers(container: d3Selection<any>, svgLinesContainer: d3Selection<any>, lineDD: string[], shapes: Shapes, lines: LineDataPoint[]): {} {
+    //     //init markers
+    //     let lineNamesWithMarkers = {};
+    //     let defsContainer = container.append('defs');
+    //     let shapesShowMarkers: boolean = shapes.showMarkers;
+    //     for (let i = 0; i < lines.length; i++) {
+    //         let lineDataPoint: LineDataPoint = lines[i];
+    //         //Marker
+    //         let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
+    //         if (!showMarkers) {
+    //             continue;
+    //         }
+    //
+    //         let markerShape: SeriesMarkerShape = (lineDataPoint.seriesMarkerShape == undefined) ? shapes.markerShape : lineDataPoint.seriesMarkerShape;
+    //         let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
+    //         let markerColor: string = (lineDataPoint.markerColor == undefined)
+    //             ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
+    //             : lineDataPoint.markerColor;
+    //         let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
+    //         if (!markerId) {
+    //             continue;
+    //         }
+    //
+    //         let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
+    //         if (stepped) {
+    //             let lineD = lineDD[i];
+    //             let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
+    //             let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+    //             MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
+    //         } else {
+    //             lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
+    //         }
+    //     }
+    //     return lineNamesWithMarkers;
+    // }
 
     public renderRowTitleForMatrixView(rowContainer: d3Selection<any>, titleHeight: number, maxTextWidth: number, separatorSize: number, titleX: string, i: number, separatorIndex: number) {
-        let rowText: d3Selection<any> = rowContainer.append("g");
+        const rowText: d3Selection<any> = rowContainer.append('g');
         rowText.attr('width', titleHeight)
             .attr('height', maxTextWidth)
             .attr('transform', 'translate(0,0)');
@@ -1517,46 +1518,46 @@ export class RenderVisual {
             .classed('clearCatcher', true)
             .attr('width', titleHeight)
             .attr('height', maxTextWidth);
-        let titleFontFamily: string = this.settings.smallMultiple.fontFamily;
-        let titleFontSize: string = this.settings.smallMultiple.fontSize + "px";
-        let titleTextProp: TextProperties = {
+        const titleFontFamily: string = this.settings.smallMultiple.fontFamily;
+        const titleFontSize: string = this.settings.smallMultiple.fontSize + 'px';
+        const titleTextProp: TextProperties = {
             text: titleX,
             fontFamily: titleFontFamily,
-            fontSize: titleFontSize
+            fontSize: titleFontSize,
         };
-        let shortTitle: string = getTailoredTextOrDefault(titleTextProp, maxTextWidth - separatorSize * 3 / 2);
+        const shortTitle: string = getTailoredTextOrDefault(titleTextProp, maxTextWidth - separatorSize * 3 / 2);
         titleTextProp.text = shortTitle;
-        let titleWidth: number = measureTextWidth(titleTextProp);
-        rowText.append("text")
+        const titleWidth: number = measureTextWidth(titleTextProp);
+        rowText.append('text')
             .classed(Visual.SmallMultipleNameSelector.className, true)
-            .attr("font-family", titleFontFamily)
-            .attr("font-size", titleFontSize)
-            .attr("fill", this.settings.smallMultiple.smColor)
+            .attr('font-family', titleFontFamily)
+            .attr('font-size', titleFontSize)
+            .attr('fill', this.settings.smallMultiple.smColor)
             .attr('width', titleHeight)
-            .attr("x", -maxTextWidth / 2 + separatorSize / 2 - titleWidth / 2)
-            .attr("y", titleHeight * 2 / 3)
-            .attr("transform", "rotate(-90)")
+            .attr('x', -maxTextWidth / 2 + separatorSize / 2 - titleWidth / 2)
+            .attr('y', titleHeight * 2 / 3)
+            .attr('transform', 'rotate(-90)')
             .text(shortTitle);
-        rowText.append("title").text(titleX);
+        rowText.append('title').text(titleX);
         if (i > 0)
             RenderVisual.renderSeparatorLine(rowText, 0, -separatorSize / 2, titleHeight, -separatorSize / 2, separatorIndex);
     }
 
     public static renderSeparatorLine(separatorItem: d3Selection<any>, x1: number, y1: number, x2: number, y2: number, separatorIndex: number) {
-        let separatorLine: d3Selection<any> = separatorItem.append('line')
+        const separatorLine: d3Selection<any> = separatorItem.append('line')
             .attr('x1', x1)
             .attr('y1', y1)
             .attr('x2', x2)
             .attr('y2', y2)
             .style('stroke-width', 1);
         if (separatorIndex) {
-            separatorLine.style('stroke', "#aaa");
+            separatorLine.style('stroke', '#aaa');
         }
     }
 
     private convertCategoryItemToString(categoryItem: PrimitiveValue): string {
-        if (!categoryItem) return "";
-        let category: string = (this.categoryIsDate)
+        if (!categoryItem) return '';
+        const category: string = (this.categoryIsDate)
             ? new Date(categoryItem.toString()).toLocaleDateString()
             : ((this.categoryIsScalar)
                 ? this.xFormatter.format(categoryItem).toString()

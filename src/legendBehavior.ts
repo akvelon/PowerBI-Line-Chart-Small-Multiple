@@ -5,7 +5,7 @@ import {
     ISelectionHandler,
 } from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 
-import {d3Selection, LegendBehaviorOptions, LegendDataPointExtended} from './visualInterfaces';
+import {d3Selection, LegendBehaviorOptions} from './visualInterfaces';
 import {LegendSettings} from './settings';
 import {
     calculateItemWidth,
@@ -15,6 +15,7 @@ import {
 import {LegendDataPoint} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
 import {MarkersUtility} from './utilities/markersUtility';
 import {select as d3select, selectAll as d3selectAll} from 'd3-selection';
+import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 export class LegendBehavior implements IInteractiveBehavior {
     public static dimmedLegendColor: string = '#A6A6A6';
@@ -28,7 +29,7 @@ export class LegendBehavior implements IInteractiveBehavior {
     private legendIcons: d3Selection<any>;
 
     private legendSettings: LegendSettings;
-    private dataPoints: LegendDataPointExtended[];
+    private dataPoints: ScrollableLegendDataPoint[];
     private markerIds: string[];
     private selectedLegendNames: string[];
     private itemWidth: number;
@@ -37,7 +38,7 @@ export class LegendBehavior implements IInteractiveBehavior {
         this.selectedLegendNames = [];
     }
 
-    public addLegendData(legendSettings: LegendSettings, dataPoints: LegendDataPointExtended[]): void {
+    public addLegendData(legendSettings: LegendSettings, dataPoints: ScrollableLegendDataPoint[]): void {
         this.legendSettings = legendSettings;
         this.dataPoints = dataPoints;
         if (dataPoints.length < 2)
@@ -129,25 +130,25 @@ export class LegendBehavior implements IInteractiveBehavior {
         console.log(item.data()[0].tooltip);
 
         const itemLegendMarker: d3Selection<LegendDataPoint> = item.select('.legend-item-marker');
-        let markerId: string = itemLegendMarker && itemLegendMarker.size() > 0 && itemLegendMarker.nodes()[0] ? itemLegendMarker.style('marker-start') : null;
-        console.log(itemLegendMarker);
-        console.log(markerId);
-        if (markerId) {
-            const labelText: string = MarkersUtility.retrieveMarkerName(label + LegendBehavior.legendMarkerSuffix, '');
-            console.log(labelText);
-            for (let i = 0; i < markerIds.length; i++) {
-                const item: string = markerIds[i];
-                if (item.indexOf(labelText) != -1) {
-                    const markerNotSelected: boolean = item.indexOf(LegendBehavior.dimmedLegendMarkerSuffix) != -1;
-                    const isNotSelected = fill == LegendBehavior.dimmedLegendColor;
-                    if (markerNotSelected == isNotSelected) {
-                        markerId = item;
-                        break;
-                    }
-                }
-            }
-            itemLegendMarker.style('marker-start', 'url(#' + markerId + ')');
-        }
+        // let markerId: string = itemLegendMarker && itemLegendMarker.size() > 0 && itemLegendMarker.nodes()[0] ? itemLegendMarker.style('marker-start') : null;
+        // console.log(itemLegendMarker);
+        // console.log(markerId);
+        // if (markerId) {
+        //     const labelText: string = MarkersUtility.retrieveMarkerName(label + LegendBehavior.legendMarkerSuffix, '');
+        //     console.log(labelText);
+        //     for (let i = 0; i < markerIds.length; i++) {
+        //         const item: string = markerIds[i];
+        //         if (item.indexOf(labelText) != -1) {
+        //             const markerNotSelected: boolean = item.indexOf(LegendBehavior.dimmedLegendMarkerSuffix) != -1;
+        //             const isNotSelected = fill == LegendBehavior.dimmedLegendColor;
+        //             if (markerNotSelected == isNotSelected) {
+        //                 markerId = item;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //     itemLegendMarker.style('marker-start', 'url(#' + markerId + ')');
+        // }
     }
 
     public renderSelection(hasSelection: boolean): void {

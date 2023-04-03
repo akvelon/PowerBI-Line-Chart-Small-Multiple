@@ -1,17 +1,15 @@
-"use strict";
+'use strict';
 
-import powerbi from "powerbi-visuals-api";
+import powerbi from 'powerbi-visuals-api';
 import {
     CategoryType,
     d3Selection,
-    LegendDataExtended,
-    LegendDataPointExtended,
     LineDataPoint,
     LineKeyIndex, VerticalLineDataItemsGlobalWithKey,
     VisualDataPoint,
     VisualDomain,
-    VisualViewModel
-} from "./visualInterfaces";
+    VisualViewModel,
+} from './visualInterfaces';
 import {
     DefaultSeparator,
     LegendSettings,
@@ -22,28 +20,27 @@ import {
     MinStrokeWidth,
     NiceDateFormat,
     PrecisionMinValue,
-    VisualSettings
-} from "./settings";
-import {select as d3select} from "d3-selection";
+    VisualSettings,
+} from './settings';
+import {select as d3select} from 'd3-selection';
 import {
-    createInteractivitySelectionService
-} from "powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService";
-import {IInteractivityService} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {LegendBehavior} from "./legendBehavior";
-import {createLegend} from "powerbi-visuals-utils-chartutils/lib/legend/legend";
-import {ILegend, LegendPosition} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
-import {createTooltipServiceWrapper, ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
-import {WebBehavior, WebBehaviorOptions} from "./behavior";
-import {createClassAndSelector} from "powerbi-visuals-utils-svgutils/lib/cssConstants";
-import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {Formatter} from "./utilities/vizUtility";
-import {getLegendData, positionChartArea, renderLegend, retrieveLegendCategoryColumn} from "./utilities/legendUtility";
+    createInteractivitySelectionService,
+} from 'powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService';
+import {IInteractivityService} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
+import {LegendBehavior} from './legendBehavior';
+import {LegendPosition} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
+import {createTooltipServiceWrapper, ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
+import {WebBehavior, WebBehaviorOptions} from './behavior';
+import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
+import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {Formatter} from './utilities/vizUtility';
+import {getLegendData, positionChartArea, renderLegend, retrieveLegendCategoryColumn} from './utilities/legendUtility';
 
 import '../style/visual.less';
-import {RenderVisual} from "./renderVisual";
-import {EnumerateObject} from "./utilities/objectEnumerationUtility";
-import {SeriesMarkerShape} from "./seriesMarkerShape";
-import {IMargin} from "powerbi-visuals-utils-svgutils";
+import {RenderVisual} from './renderVisual';
+import {EnumerateObject} from './utilities/objectEnumerationUtility';
+import {SeriesMarkerShape} from './seriesMarkerShape';
+import {IMargin} from 'powerbi-visuals-utils-svgutils';
 import IVisual = powerbi.extensibility.visual.IVisual;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
@@ -61,6 +58,7 @@ import ISelectionId = powerbi.extensibility.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
+import {createLegend, IScrollableLegend, ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format: string = category.source.format;
@@ -71,18 +69,18 @@ function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, 
     } else {
         categoryValue = category.values[i];
     }
-    let formatter: IValueFormatter = Formatter.getFormatter({
+    const formatter: IValueFormatter = Formatter.getFormatter({
         format: format,
-        cultureSelector: locale
+        cultureSelector: locale,
     });
-    let value: string = formatter.format(categoryValue);
+    const value: string = formatter.format(categoryValue);
     return value;
 }
 
 function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean): CategoryType {
     if ((categoryIsBoolean && categoryIsScalar) || (categoryIsBoolean && categoryIsDate) || (categoryIsScalar && categoryIsDate))
         return CategoryType.Error;
-    let categoryType: CategoryType = (categoryIsScalar)
+    const categoryType: CategoryType = (categoryIsScalar)
         ? CategoryType.Number
         : ((categoryIsDate)
             ? CategoryType.Date
@@ -92,34 +90,34 @@ function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolea
     return categoryType;
 }
 
-function sortNumberLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
-    let result: number = sortNumber(+a.tooltip, +b.tooltip);
+function sortNumberLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
+    const result: number = sortNumber(+a.tooltip, +b.tooltip);
     return result;
 }
 
-function sortDateLegend(a: LegendDataPointExtended, b: LegendDataPointExtended) {
-    let a1: Date = new Date(a.tooltip);
-    let b1: Date = new Date(b.tooltip);
-    let result: number = a1.getTime() - b1.getTime();
+function sortDateLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
+    const a1: Date = new Date(a.tooltip);
+    const b1: Date = new Date(b.tooltip);
+    const result: number = a1.getTime() - b1.getTime();
     return result;
 }
 
 function sortNumber(a, b) {
-    let a1: number = +a;
-    let b1: number = +b;
+    const a1: number = +a;
+    const b1: number = +b;
     return a1 - b1;
 }
 
 function sortDate(a, b) {
-    let a1: Date = new Date(a.toString());
-    let b1: Date = new Date(b.toString());
+    const a1: Date = new Date(a.toString());
+    const b1: Date = new Date(b.toString());
     return a1.getTime() - b1.getTime();
 }
 
 function get_sorted(array: any[], type: ValueTypeDescriptor): PrimitiveValue[] {
     let result: PrimitiveValue[] = [];
     if (array) {
-        let data = (type && type.numeric)
+        const data = (type && type.numeric)
             ? array.sort(sortNumber)
             : ((type && type.dateTime)
                 ? array.sort(sortDate)
@@ -134,33 +132,33 @@ export class Visual implements IVisual {
     private model: VisualViewModel;
     private element: d3Selection<any>;
     private interactivityService: IInteractivityService<any>;
-    private legend: ILegend;
+    private legend: IScrollableLegend;
     private tooltipServiceWrapper: ITooltipServiceWrapper;
     private behavior: WebBehavior;
     private legendBehavior: LegendBehavior;
 
-    public static SmallMultipleSelector = createClassAndSelector("customSM");
-    public static SimpleLineSelector = createClassAndSelector("simpleLine");
-    public static InteractivityLineSelector = createClassAndSelector("interactivity-line");
-    public static DotSelector = createClassAndSelector("dot");
-    public static MarkerLineSelector = createClassAndSelector("markerLine");
-    public static CircleSelector = createClassAndSelector("circle-item");
-    public static HoverLineSelector = createClassAndSelector("hover-line");
-    public static LassoRectSelector = createClassAndSelector("lasso-rect");
-    public static LassoSvgSelector = createClassAndSelector("lasso-svg");
-    public static LineChartRectSelector = createClassAndSelector("line-chart-rect");
-    public static SmallMultipleNameSelector = createClassAndSelector("sm-name");
-    public static Label = createClassAndSelector("data-label");
-    public static NavigationArrow = createClassAndSelector("navArrow");
-    public static NavigationArrowCustomLeft = createClassAndSelector("navArrowCustomLeft");
-    public static NavigationArrowCustomRight = createClassAndSelector("navArrowCustomRight");
-    public static AxisGraphicsContextSelector = createClassAndSelector("axisGraphicsContext");
-    public static AxisLabelSelector = createClassAndSelector("axisLabel");
-    public static LassoDataSelectorId: string = "lasso-data";
+    public static SmallMultipleSelector = createClassAndSelector('customSM');
+    public static SimpleLineSelector = createClassAndSelector('simpleLine');
+    public static InteractivityLineSelector = createClassAndSelector('interactivity-line');
+    public static DotSelector = createClassAndSelector('dot');
+    public static MarkerLineSelector = createClassAndSelector('markerLine');
+    public static CircleSelector = createClassAndSelector('circle-item');
+    public static HoverLineSelector = createClassAndSelector('hover-line');
+    public static LassoRectSelector = createClassAndSelector('lasso-rect');
+    public static LassoSvgSelector = createClassAndSelector('lasso-svg');
+    public static LineChartRectSelector = createClassAndSelector('line-chart-rect');
+    public static SmallMultipleNameSelector = createClassAndSelector('sm-name');
+    public static Label = createClassAndSelector('data-label');
+    public static NavigationArrow = createClassAndSelector('navArrow');
+    public static NavigationArrowCustomLeft = createClassAndSelector('navArrowCustomLeft');
+    public static NavigationArrowCustomRight = createClassAndSelector('navArrowCustomRight');
+    public static AxisGraphicsContextSelector = createClassAndSelector('axisGraphicsContext');
+    public static AxisLabelSelector = createClassAndSelector('axisLabel');
+    public static LassoDataSelectorId: string = 'lasso-data';
 
     constructor(options: VisualConstructorOptions) {
         try {
-            console.log('=== CONSTRUCTOR ===')
+            console.log('=== CONSTRUCTOR ===');
 
             this.host = options.host;
             this.model = {
@@ -182,12 +180,12 @@ export class Visual implements IVisual {
                 legendType: CategoryType.String,
                 categoryIsScalar: false,
                 domain: {startForced: false, endForced: false},
-                settings: VisualSettings.getDefault() as VisualSettings
+                settings: VisualSettings.getDefault() as VisualSettings,
             };
             this.element = d3select(options.element);
             this.interactivityService = createInteractivitySelectionService(options.host);
             this.legendBehavior = new LegendBehavior();
-            this.legend = createLegend(options.element, false, this.interactivityService, true, LegendPosition.Top, this.legendBehavior);
+            this.legend = createLegend(options.element, this.interactivityService, true, LegendPosition.Top, this.legendBehavior);
             this.tooltipServiceWrapper = createTooltipServiceWrapper(
                 options.host.tooltipService,
                 options.element);
@@ -195,15 +193,16 @@ export class Visual implements IVisual {
 
             console.log('=== CONSTRUCTOR END ===');
         } catch (e) {
-            console.error('=== CONSTRUCTOR ERROR ===')
-            console.error(e)
+            console.error('=== CONSTRUCTOR ERROR ===');
+            console.error(e);
             throw e;
         }
     }
 
+    // eslint-disable-next-line max-lines-per-function
     public update(options: VisualUpdateOptions) {
         try {
-            console.log('=== UPDATE START ===')
+            console.log('=== UPDATE START ===');
 
             this.model = visualTransform(options, this.host);
             this.element.selectAll('div, svg:not(.legend)').remove();
@@ -216,7 +215,7 @@ export class Visual implements IVisual {
 
             let containerSize = {
                 width: options.viewport.width - margin.left - margin.right,
-                height: options.viewport.height - margin.top - margin.bottom
+                height: options.viewport.height - margin.top - margin.bottom,
             };
 
             let container: d3Selection<any> = this.element
@@ -228,53 +227,53 @@ export class Visual implements IVisual {
             positionChartArea(container, this.legend);
             this.interactivityService.applySelectionStateToData(this.model.lines);
 
-            let renderSimpleVisual = new RenderVisual(this.host, this.element, this.model, this.model.domain, this.interactivityService, this.tooltipServiceWrapper);
+            const renderSimpleVisual = new RenderVisual(this.host, this.element, this.model, this.model.domain, this.interactivityService, this.tooltipServiceWrapper);
 
-            let rowNumber: number = (this.model.rows.length == 0) ? 1 : this.model.rows.length;
-            let columnsNumber: number = (this.model.columns.length == 0) ? 1 : this.model.columns.length;
+            const rowNumber: number = (this.model.rows.length == 0) ? 1 : this.model.rows.length;
+            const columnsNumber: number = (this.model.columns.length == 0) ? 1 : this.model.columns.length;
 
             this.model.settings.smallMultiple.enable = rowNumber > 1 || columnsNumber > 1;
             if (!this.model.settings.smallMultiple.enable)
                 if (this.model.settings.xAxis.minCategoryWidth < this.model.settings.xAxis.fontSize)
                     this.model.settings.xAxis.minCategoryWidth = this.model.settings.xAxis.fontSize;
 
-            let titleHeight: number = this.model.settings.smallMultiple.fontSize * 2;
-            let separatorSize = 20;
+            const titleHeight: number = this.model.settings.smallMultiple.fontSize * 2;
+            const separatorSize = 20;
 
-            let separatorIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showSeparators) ? 1 : 0;
-            let titleIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showChartTitle) ? 1 : 0;
-            let matrixFlowIndex = (this.model.settings.smallMultiple.enable) ? 1 : 0;
+            const separatorIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showSeparators) ? 1 : 0;
+            const titleIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showChartTitle) ? 1 : 0;
+            const matrixFlowIndex = (this.model.settings.smallMultiple.enable) ? 1 : 0;
 
-            let minItemWidth: number = matrixFlowIndex
+            const minItemWidth: number = matrixFlowIndex
                 ? this.model.settings.smallMultiple.minUnitWidth
                 : containerSize.width;
-            let matrixIndex: number = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.layoutMode == "Matrix") ? 1 : 0;
+            const matrixIndex: number = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.layoutMode == 'Matrix') ? 1 : 0;
             let itemWidth: number = Math.max((containerSize.width - titleHeight * matrixIndex * titleIndex) / columnsNumber - separatorSize * matrixFlowIndex, minItemWidth);
 
             if (!matrixFlowIndex && !this.model.settings.general.responsive) {
                 container.style('overflow-x', 'auto')
                     .style('overflow-y', 'hidden');
-                let MinWidhtForNotResponsive: number = 200;
+                const MinWidhtForNotResponsive: number = 200;
                 if (itemWidth < MinWidhtForNotResponsive) {
                     containerSize.height = containerSize.height - 20;
                     itemWidth = MinWidhtForNotResponsive;
                 }
             }
 
-            let minItemHeight: number = matrixFlowIndex ? this.model.settings.smallMultiple.minUnitHeigth : containerSize.height;
-            let columnTitleIndex: number = (this.model.columns.length > 0) ? titleIndex : 0;
+            const minItemHeight: number = matrixFlowIndex ? this.model.settings.smallMultiple.minUnitHeigth : containerSize.height;
+            const columnTitleIndex: number = (this.model.columns.length > 0) ? titleIndex : 0;
             let itemHeight: number = matrixIndex
                 ? Math.max((containerSize.height - separatorSize - titleHeight * columnTitleIndex) / rowNumber - separatorSize, minItemHeight)
                 : Math.max((containerSize.height - separatorSize - 5) / rowNumber - titleHeight * titleIndex - separatorSize, minItemHeight);
 
             let selectionLines: LineDataPoint[] = [];
-            let dots: LineDataPoint[] = [];
+            const dots: LineDataPoint[] = [];
 
             if (matrixFlowIndex)
                 this.model.settings.xAxis.minCategoryWidth = null;
             if (this.model.settings.xAxis.axisType === 'categorical' && !matrixFlowIndex) {
-                let maxCountOfXAxis: number = renderSimpleVisual.retrieveMaxCountOfXAxis(this.model.lines);
-                let maxWidth: number = maxCountOfXAxis * this.model.settings.xAxis.minCategoryWidth;
+                const maxCountOfXAxis: number = renderSimpleVisual.retrieveMaxCountOfXAxis(this.model.lines);
+                const maxWidth: number = maxCountOfXAxis * this.model.settings.xAxis.minCategoryWidth;
                 itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
             }
 
@@ -283,11 +282,11 @@ export class Visual implements IVisual {
             if (this.model.settings.smallMultiple.enable) {
                 container.style('overflow', 'auto');
                 switch (this.model.settings.smallMultiple.layoutMode) {
-                    case "Matrix": {
-                        let rowHeight: number = itemHeight + separatorSize;
-                        let matrixWidth: number = itemWidth * columnsNumber + separatorSize * (columnsNumber - 1);
-                        let rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
-                        let smContainer: d3Selection<any> = container.append("svg")
+                    case 'Matrix': {
+                        const rowHeight: number = itemHeight + separatorSize;
+                        const matrixWidth: number = itemWidth * columnsNumber + separatorSize * (columnsNumber - 1);
+                        const rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
+                        const smContainer: d3Selection<any> = container.append('svg')
                             .attr('width', matrixWidth + titleHeight * titleIndex)
                             .attr('height', rowHeight * rowNumber + titleHeight * columnTitleIndex);
                         smContainer.append('rect')
@@ -295,45 +294,45 @@ export class Visual implements IVisual {
                             .attr('width', '100%')
                             .attr('height', '100%');
                         lassoContainer = smContainer;
-                        lassoContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
+                        lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
                         for (let i = 0; i < rowNumber; i++) {
-                            let translateY: number = (i == 0)
+                            const translateY: number = (i == 0)
                                 ? 0
                                 : i * rowHeight + titleHeight * columnTitleIndex;
-                            let matrixTitleIndex = (i == 0) && (columnTitleIndex == 1) ? 1 : 0
-                            let rowContainer: d3Selection<any> = smContainer
-                                .append("g")
+                            const matrixTitleIndex = (i == 0) && (columnTitleIndex == 1) ? 1 : 0;
+                            const rowContainer: d3Selection<any> = smContainer
+                                .append('g')
                                 .attr('width', matrixWidth + titleIndex * rowTitleIndex)
                                 .attr('height', rowHeight + titleHeight * matrixTitleIndex)
                                 .attr('transform', 'translate(0,' + translateY + ')');
                             if (titleIndex == 1 && this.model.rows.length > 0) {
-                                let maxTextWidth: number = rowHeight + titleHeight * matrixTitleIndex;
-                                let titleX: string = this.formatSmallMultipleTitle(this.model.rows[i], this.model.rowsFormat, this.host.locale);
+                                const maxTextWidth: number = rowHeight + titleHeight * matrixTitleIndex;
+                                const titleX: string = this.formatSmallMultipleTitle(this.model.rows[i], this.model.rowsFormat, this.host.locale);
                                 renderSimpleVisual.renderRowTitleForMatrixView(rowContainer, titleHeight, maxTextWidth, separatorSize, titleX, i, separatorIndex);
                             }
 
                             for (let j = 0; j < columnsNumber; j++) {
-                                let lineKey: string = this.retrieveLineKey(i, j);
-                                let lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                const lineKey: string = this.retrieveLineKey(i, j);
+                                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
                                 for (let k = 0; k < lines.length; k++) {
                                     selectionLines.push(lines[k]);
                                     if (lines[k].points && lines[k].points.length == 1)
                                         dots.push(lines[k]);
                                 }
 
-                                let titleY: string = (this.model.columns.length > 0)
+                                const titleY: string = (this.model.columns.length > 0)
                                     ? this.formatSmallMultipleTitle(this.model.columns[j], this.model.columnsFormat, this.host.locale)
-                                    : "";
+                                    : '';
 
-                                let translateX: number = (itemWidth + separatorSize) * j + titleHeight * rowTitleIndex;
-                                let rowItemHeight: number = (i == rowNumber - 1) ? rowHeight - separatorSize : rowHeight + titleHeight * matrixTitleIndex;
-                                let itemContainer: d3Selection<SVGElement> = rowContainer
+                                const translateX: number = (itemWidth + separatorSize) * j + titleHeight * rowTitleIndex;
+                                const rowItemHeight: number = (i == rowNumber - 1) ? rowHeight - separatorSize : rowHeight + titleHeight * matrixTitleIndex;
+                                const itemContainer: d3Selection<SVGElement> = rowContainer
                                     .append('g')
                                     .attr('width', itemWidth)
                                     .attr('height', rowItemHeight)
                                     .attr('transform', 'translate(' + translateX + ',0)');
 
-                                if (i == 0 && titleY != "") {
+                                if (i == 0 && titleY != '') {
                                     renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, titleY, lines, lineKey, translateX, translateY);
                                 } else {
                                     renderSimpleVisual.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, translateX, translateY);
@@ -341,8 +340,8 @@ export class Visual implements IVisual {
 
                                 //show row separator
                                 if (i < rowNumber - 1) {
-                                    let columnSeparatorY: number = itemHeight + titleHeight * matrixTitleIndex;
-                                    let rowSeparator: d3Selection<any> = itemContainer.append("g")
+                                    const columnSeparatorY: number = itemHeight + titleHeight * matrixTitleIndex;
+                                    const rowSeparator: d3Selection<any> = itemContainer.append('g')
                                         .attr('width', itemWidth)
                                         .attr('height', separatorSize)
                                         .attr('transform', 'translate(0,' + columnSeparatorY + ')');
@@ -351,14 +350,14 @@ export class Visual implements IVisual {
 
                                 //show column separator
                                 if (j < columnsNumber - 1) {
-                                    let columnSeparatorX: number = translateX + itemWidth;
-                                    let columnSeparator: d3Selection<any> = rowContainer.append("g")
+                                    const columnSeparatorX: number = translateX + itemWidth;
+                                    const columnSeparator: d3Selection<any> = rowContainer.append('g')
                                         .attr('width', separatorSize)
                                         .attr('height', rowHeight + titleHeight * matrixTitleIndex)
                                         .attr('transform', 'translate(' + columnSeparatorX + ',0)');
                                     RenderVisual.renderSeparatorLine(columnSeparator, separatorSize / 2, 0, separatorSize / 2, rowHeight + titleHeight * matrixTitleIndex, separatorIndex);
                                     if (i < rowNumber - 1) {
-                                        let separatorY = itemHeight + titleHeight * matrixTitleIndex + separatorSize / 2;
+                                        const separatorY = itemHeight + titleHeight * matrixTitleIndex + separatorSize / 2;
                                         RenderVisual.renderSeparatorLine(columnSeparator, 0, separatorY, separatorSize, separatorY, separatorIndex);
                                     }
                                 }
@@ -367,21 +366,21 @@ export class Visual implements IVisual {
                         break;
                     }
 
-                    case "Flow": {
-                        let containerDevideCount = Math.floor((containerSize.width + separatorSize) / (itemWidth + separatorSize));
+                    case 'Flow': {
+                        const containerDevideCount = Math.floor((containerSize.width + separatorSize) / (itemWidth + separatorSize));
                         let itemCountForRow: number = (containerDevideCount < this.model.settings.smallMultiple.minRowWidth)
                             ? this.model.settings.smallMultiple.minRowWidth
                             : containerDevideCount;
                         itemCountForRow = Math.floor(columnsNumber / itemCountForRow)
                             ? itemCountForRow
                             : columnsNumber % itemCountForRow;
-                        let rowHeight: number = (columnsNumber % itemCountForRow)
+                        const rowHeight: number = (columnsNumber % itemCountForRow)
                             ? (itemHeight + titleHeight * titleIndex + separatorSize) * (Math.floor(columnsNumber / itemCountForRow) + 1)
                             : (itemHeight + titleHeight * titleIndex + separatorSize) * Math.floor(columnsNumber / itemCountForRow);
-                        let rowHeights: number[] = [];
+                        const rowHeights: number[] = [];
                         let rowSumHeight: number = 0;
                         let rowItemHeight: number;
-                        let showEmptySmallMultiples: boolean = this.model.settings.smallMultiple.showEmptySmallMultiples;
+                        const showEmptySmallMultiples: boolean = this.model.settings.smallMultiple.showEmptySmallMultiples;
                         let maxColumnsNumber: number = showEmptySmallMultiples ? columnsNumber : 0;
                         for (let i = 0; i < rowNumber; i++) {
                             if (showEmptySmallMultiples) {
@@ -389,8 +388,8 @@ export class Visual implements IVisual {
                             } else {
                                 let columnsNumber1: number = 0;
                                 for (let j = 0; j < columnsNumber; j++) {
-                                    let lineKey: string = this.retrieveLineKey(i, j);
-                                    let lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                    const lineKey: string = this.retrieveLineKey(i, j);
+                                    const lines: LineDataPoint[] = this.retrieveLines(lineKey);
                                     if (lines.length > 0)
                                         columnsNumber1 = columnsNumber1 + 1;
                                 }
@@ -409,8 +408,8 @@ export class Visual implements IVisual {
                         }
 
                         itemWidth = Math.max(itemWidth, (containerSize.width - separatorSize) / maxColumnsNumber - separatorSize);
-                        let flowWidth: number = Math.max(containerSize.width, (itemWidth + separatorSize) * maxColumnsNumber - separatorSize);
-                        let smContainer: d3Selection<any> = container.append("svg")
+                        const flowWidth: number = Math.max(containerSize.width, (itemWidth + separatorSize) * maxColumnsNumber - separatorSize);
+                        const smContainer: d3Selection<any> = container.append('svg')
                             .attr('width', flowWidth)
                             .attr('height', rowSumHeight - separatorSize);
                         smContainer.append('rect')
@@ -418,27 +417,27 @@ export class Visual implements IVisual {
                             .attr('width', '100%')
                             .attr('height', '100%');
                         lassoContainer = smContainer;
-                        lassoContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
+                        lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
                         let oldRowItemHeight: number = 0;
                         for (let i = 0; i < rowNumber; i++) {
                             rowItemHeight = rowHeights[i];
-                            let translateY = oldRowItemHeight;
+                            const translateY = oldRowItemHeight;
                             oldRowItemHeight = translateY + rowItemHeight + separatorSize;
-                            let rowContainer: d3Selection<any> = smContainer
-                                .append("g")
+                            const rowContainer: d3Selection<any> = smContainer
+                                .append('g')
                                 .attr('width', flowWidth)
                                 .attr('height', rowItemHeight)
                                 .attr('transform', 'translate(0,' + translateY + ')');
                             let j1: number = -1;
                             for (let j = 0; j < columnsNumber; j++) {
-                                let lineKey: string = this.retrieveLineKey(i, j);
-                                let lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                const lineKey: string = this.retrieveLineKey(i, j);
+                                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
                                 if (lines.length == 0 && !showEmptySmallMultiples) {
                                     continue;
                                 }
 
                                 j1 = j1 + 1;
-                                let j2: number = showEmptySmallMultiples ? j : j1;
+                                const j2: number = showEmptySmallMultiples ? j : j1;
                                 for (let k = 0; k < lines.length; k++) {
                                     selectionLines.push(lines[k]);
                                     if (lines[k].points && lines[k].points.length == 1) {
@@ -446,11 +445,11 @@ export class Visual implements IVisual {
                                     }
                                 }
 
-                                let title: string = this.getTitle(i, j, this.model.rowsFormat, this.model.columnsFormat, this.host.locale);
+                                const title: string = this.getTitle(i, j, this.model.rowsFormat, this.model.columnsFormat, this.host.locale);
 
-                                let translateItemX: number = (j2 % itemCountForRow) * (itemWidth + separatorSize);
-                                let translateItemY: number = Math.floor(j2 / itemCountForRow) * (itemHeight + titleHeight * titleIndex + separatorSize);
-                                let itemContainer: d3Selection<SVGElement> = rowContainer
+                                const translateItemX: number = (j2 % itemCountForRow) * (itemWidth + separatorSize);
+                                const translateItemY: number = Math.floor(j2 / itemCountForRow) * (itemHeight + titleHeight * titleIndex + separatorSize);
+                                const itemContainer: d3Selection<SVGElement> = rowContainer
                                     .append('g')
                                     .attr('width', itemWidth)
                                     .attr('height', itemHeight + titleHeight * titleIndex)
@@ -459,8 +458,8 @@ export class Visual implements IVisual {
                             }
 
                             if (separatorIndex && i < rowNumber - 1) {
-                                let translateSeparatorY: number = translateY + rowItemHeight;
-                                let rowSeparator: d3Selection<any> = smContainer.append("g")
+                                const translateSeparatorY: number = translateY + rowItemHeight;
+                                const rowSeparator: d3Selection<any> = smContainer.append('g')
                                     .attr('width', flowWidth)
                                     .attr('height', separatorSize)
                                     .attr('transform', 'translate(0,' + translateSeparatorY + ')');
@@ -472,15 +471,15 @@ export class Visual implements IVisual {
                 }
             } else {
                 //simple view
-                let scrollbarMargin: number = 25;
+                const scrollbarMargin: number = 25;
                 if (itemWidth > containerSize.width)
                     itemHeight = itemHeight - scrollbarMargin;
                 let svgContainer: d3Selection<SVGElement> = container
                     .append('svg')
                     .attr('width', itemWidth)
                     .attr('height', itemHeight);
-                let lineKey: string = this.retrieveLineKey(0, 0);
-                let lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                const lineKey: string = this.retrieveLineKey(0, 0);
+                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
                 selectionLines = lines;
                 for (let k = 0; k < lines.length; k++) {
                     if (lines[k].points && lines[k].points.length == 1)
@@ -493,10 +492,10 @@ export class Visual implements IVisual {
                 let svgContainerWidth: number = itemWidth;
                 let svgContainerHeight: number = itemHeight;
                 let stepCount: number = 0;
-                let maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
-                while (stepCount < maxStepCount && legendPosition != "None") {
+                const maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
+                while (stepCount < maxStepCount && legendPosition != 'None') {
                     newLegendPosition = renderSimpleVisual.retrieveNewLegendPosition(svgContainer, lines, svgContainerWidth, svgContainerHeight, legendPosition, legendHeight);
-                    let legendSettings: LegendSettings = {
+                    const legendSettings: LegendSettings = {
                         show: this.model.settings.legend.show,
                         position: newLegendPosition,
                         showTitle: this.model.settings.legend.showTitle,
@@ -506,10 +505,10 @@ export class Visual implements IVisual {
                         fontSize: this.model.settings.legend.fontSize,
                         style: this.model.settings.legend.style,
                         matchLineColor: this.model.settings.legend.matchLineColor,
-                        circleDefaultIcon: this.model.settings.legend.circleDefaultIcon
+                        circleDefaultIcon: this.model.settings.legend.circleDefaultIcon,
                     };
-                    if (newLegendPosition == "None") {
-                        this.model.settings.legend.position = "None";
+                    if (newLegendPosition == 'None') {
+                        this.model.settings.legend.position = 'None';
                     }
 
                     margin = {top: 0, left: 0, bottom: 0, right: 0};
@@ -517,7 +516,7 @@ export class Visual implements IVisual {
                     legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
                     containerSize = {
                         width: options.viewport.width - margin.left - margin.right,
-                        height: options.viewport.height - margin.top - margin.bottom
+                        height: options.viewport.height - margin.top - margin.bottom,
                     };
                     this.element.selectAll('.chart').remove();
                     svgContainerWidth = Math.max(itemWidth, containerSize.width);
@@ -547,18 +546,18 @@ export class Visual implements IVisual {
                     stepCount = stepCount + 1;
                 }
 
-                let isLegendHidden: boolean = (legendPosition == "None");
-                svgContainer.append("svg").attr('id', Visual.LassoDataSelectorId);
+                const isLegendHidden: boolean = (legendPosition == 'None');
+                svgContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
                 renderSimpleVisual.renderSmallMultiple(svgContainer, lines, svgContainerWidth, svgContainerHeight, lineKey,
                     this.model.settings.general.responsive, legendHeight, isLegendHidden, 0, 0);
                 lassoContainer = svgContainer;
             }
 
             //selection
-            let legendContainer: d3Selection<any> = this.element.select('.legend');
-            let verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey = renderSimpleVisual.verticalLineDataItemsGlobal;
+            const legendContainer: d3Selection<any> = this.element.select('.legend');
+            const verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey = renderSimpleVisual.verticalLineDataItemsGlobal;
 
-            let behaviorOptions: WebBehaviorOptions = {
+            const behaviorOptions: WebBehaviorOptions = {
                 dataPoints: this.model.dataPoints,
                 selectionLines,
                 lineGroupSelection: container.selectAll(Visual.SimpleLineSelector.selectorName).data(selectionLines),
@@ -577,8 +576,8 @@ export class Visual implements IVisual {
 
             this.interactivityService.bind(behaviorOptions);
 
-            let clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
-            let behavior: WebBehavior = this.behavior;
+            const clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
+            const behavior: WebBehavior = this.behavior;
             clearContainer.on('click', function () {
                 behavior.clearCather();
             });
@@ -587,12 +586,12 @@ export class Visual implements IVisual {
             // implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
             //     this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
             //start legend changing by click
-            let legendBehavior = this.legendBehavior;
-            let legendPosition: string = this.model.settings.legend.position;
-            let is = this.interactivityService;
-            if (legendPosition == "Top" || legendPosition == "TopCenter" || legendPosition == "Bottom" || legendPosition == "BottomCenter") {
+            const legendBehavior = this.legendBehavior;
+            const legendPosition: string = this.model.settings.legend.position;
+            const is = this.interactivityService;
+            if (legendPosition == 'Top' || legendPosition == 'TopCenter' || legendPosition == 'Bottom' || legendPosition == 'BottomCenter') {
                 legendBehavior.leftOrRightClick(true, legendBehavior);
-                let hasSelection: boolean = is.hasSelection();
+                const hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             }
             // let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
@@ -609,32 +608,32 @@ export class Visual implements IVisual {
             // });
             //end legend changing by click
 
-            console.log('=== UPDATE END ===')
+            console.log('=== UPDATE END ===');
         } catch (e) {
-            console.error('=== UPDATE ERROR ===')
+            console.error('=== UPDATE ERROR ===');
             console.error(e);
             throw e;
         }
     }
 
     private formatSmallMultipleTitle(value: PrimitiveValue, format: string, locale: string): string {
-        let isDate: boolean = !isNaN(+Date.parse(value.toString()));
+        const isDate: boolean = !isNaN(+Date.parse(value.toString()));
         if (isDate) {
             format = format ? format : NiceDateFormat;
             value = new Date(value.toString());
         }
-        let formatter: IValueFormatter = Formatter.getFormatter({
+        const formatter: IValueFormatter = Formatter.getFormatter({
             format: format,
-            cultureSelector: locale
+            cultureSelector: locale,
         });
 
         return formatter.format(value);
     }
 
     private retrieveLegendHeight(legendHeight: number, legendPosition: string, margin: any) {
-        if (legendPosition == "Top" || legendPosition == "TopCenter")
+        if (legendPosition == 'Top' || legendPosition == 'TopCenter')
             legendHeight = margin.top;
-        if (legendPosition == "Bottom" || legendPosition == "BottomCenter")
+        if (legendPosition == 'Bottom' || legendPosition == 'BottomCenter')
             legendHeight = margin.bottom;
         return legendHeight;
     }
@@ -644,11 +643,11 @@ export class Visual implements IVisual {
     }
 
     private retrieveLines(lineKey: string): LineDataPoint[] {
-        let lines: LineDataPoint[] = [];
+        const lines: LineDataPoint[] = [];
         for (let k = 0; k < this.model.legendDataPoint.length; k++) {
-            let key: string = lineKey + this.model.legendDataPoint[k].tooltip;
-            let lineIndex: number = this.model.lineKeyIndex[key];
-            let lineDataPoint: LineDataPoint = this.model.lines[lineIndex];
+            const key: string = lineKey + this.model.legendDataPoint[k].tooltip;
+            const lineIndex: number = this.model.lineKeyIndex[key];
+            const lineDataPoint: LineDataPoint = this.model.lines[lineIndex];
             if (lineDataPoint)
                 lines.push(lineDataPoint);
         }
@@ -657,13 +656,13 @@ export class Visual implements IVisual {
     }
 
     private getTitle(i: number, j: number, rowsFormat: string, columnsFormat: string, locale: string): string {
-        let title: string = (this.model.rows.length > 0)
+        const title: string = (this.model.rows.length > 0)
             ? ((this.model.columns.length > 0)
-                ? this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale) + ", " + this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
+                ? this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale) + ', ' + this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
                 : this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale))
             : ((this.model.columns.length > 0)
                 ? this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
-                : "");
+                : '');
         return title;
     }
 
@@ -672,24 +671,25 @@ export class Visual implements IVisual {
     }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
-        let instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
+        const instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
         EnumerateObject.setInstances(this.model.settings, instanceEnumeration, this.model);
         return instanceEnumeration;
     }
 }
 
+// eslint-disable-next-line max-lines-per-function
 function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
     //Get DataViews
-    let dataViews = options.dataViews;
-    let hasDataViews = (dataViews && dataViews[0]);
-    let hasCategoricalData = (hasDataViews && dataViews[0].categorical && dataViews[0].categorical.values);
+    const dataViews = options.dataViews;
+    const hasDataViews = (dataViews && dataViews[0]);
+    const hasCategoricalData = (hasDataViews && dataViews[0].categorical && dataViews[0].categorical.values);
 
     const dataView: DataView = options && options.dataViews && options.dataViews[0];
     if (!dataView || options.type === VisualUpdateType.ResizeEnd) {
         return;
     }
 
-    let settings = Visual.parseSettings(dataView);
+    const settings = Visual.parseSettings(dataView);
 
     //Limit some properties
     if (settings.shapes.strokeWidth < MinStrokeWidth) settings.shapes.strokeWidth = MinStrokeWidth;
@@ -704,8 +704,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     if (settings.xAxis.minCategoryWidth > MinCategoryWidthEndValue) settings.xAxis.minCategoryWidth = MinCategoryWidthEndValue;
 
     //Get DataPoints
-    let domain: VisualDomain = {startForced: false, endForced: false};
-    if (settings.yAxis.chartRangeType == "custom") {
+    const domain: VisualDomain = {startForced: false, endForced: false};
+    if (settings.yAxis.chartRangeType == 'custom') {
         if (settings.yAxis.start !== null) {
             domain.start = settings.yAxis.start;
             domain.startForced = true;
@@ -721,12 +721,12 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     let rowsFormat: string = '';
     let columnsFormat: string = '';
     let categoryData: PrimitiveValue[] = [];
-    let categoryName: string = "";
-    let valuesName: string = "";
-    let dataPoints: VisualDataPoint[] = [];
-    let legendDataPoint: LegendDataPointExtended[] = [];
-    let lines: LineDataPoint[] = [];
-    let lineKeyIndex: LineKeyIndex = {};
+    let categoryName: string = '';
+    let valuesName: string = '';
+    const dataPoints: VisualDataPoint[] = [];
+    let legendDataPoint: ScrollableLegendDataPoint[] = [];
+    const lines: LineDataPoint[] = [];
+    const lineKeyIndex: LineKeyIndex = {};
     let categoryIsDate: boolean = false;
     let categoryFormat: string = null;
     let valueFormat: string = null;
@@ -735,24 +735,24 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     let categoryIsScalar: boolean = false;
 
     if (hasCategoricalData) {
-        let dataCategorical = dataViews[0].categorical;
-        let category: DataViewCategoryColumn[] = [];
+        const dataCategorical = dataViews[0].categorical;
+        const category: DataViewCategoryColumn[] = [];
         let row: DataViewCategoryColumn = null;
         let column: DataViewCategoryColumn = null;
         let categoryLength: number = 0;
         if (dataCategorical.categories) {
             for (let i = 0; i < dataCategorical.categories.length; i++) {
-                let item: DataViewCategoryColumn = dataCategorical.categories[i];
+                const item: DataViewCategoryColumn = dataCategorical.categories[i];
                 categoryLength = item.values.length;
-                if (item.source.roles["Category"]) {
-                    categoryName = categoryName + item.source.displayName + " ";
+                if (item.source.roles['Category']) {
+                    categoryName = categoryName + item.source.displayName + ' ';
                     category.push(item);
                 }
-                if (item.source.roles["Row"]) {
+                if (item.source.roles['Row']) {
                     rowsFormat = item.source.format;
                     row = item;
                 }
-                if (item.source.roles["Column"]) {
+                if (item.source.roles['Column']) {
                     columnsFormat = item.source.format;
                     column = item;
                 }
@@ -763,7 +763,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         if (category.length == 1) {
             categoryFormat = category[0].source.format;
             let categoryIsBoolean: boolean = false;
-            let type: ValueTypeDescriptor = category[0].source.type;
+            const type: ValueTypeDescriptor = category[0].source.type;
             if (type) {
                 categoryIsDate = type.dateTime;
                 categoryIsScalar = type.numeric;
@@ -774,11 +774,11 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             if (categorySourceType == CategoryType.Date && !categoryFormat)
                 categoryFormat = NiceDateFormat;
             if (categorySourceType != CategoryType.Number && categorySourceType != CategoryType.Date) {
-                settings.xAxis.axisType = "categorical";
+                settings.xAxis.axisType = 'categorical';
             }
         } else if (category.length > 1) {
             categorySourceType = CategoryType.String;
-            settings.xAxis.axisType = "categorical";
+            settings.xAxis.axisType = 'categorical';
         }
 
         let categoryDataKeys: string[] = [];
@@ -791,10 +791,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                 if (category.length == 1) {
                     item = category[0].values[i];
                 } else {
-                    item = "";
+                    item = '';
                     for (let cI = 0; cI < category.length; cI++) {
-                        let formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
-                        item = item + formattedValue + " ";
+                        const formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
+                        item = item + formattedValue + ' ';
                     }
                 }
                 key = item.toString();
@@ -829,7 +829,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         rowsData = (row != null) ? get_sorted(rowsData, row.source.type) : [];
         columnsData = (column != null) ? get_sorted(columnsData, column.source.type) : [];
 
-        let legendData: LegendDataExtended = getLegendData(dataView, host, settings.legend);
+        const legendData = getLegendData(dataView, host, settings.legend);
         if (settings.legend.legendName == null)
             settings.legend.legendName = legendData.title;
         legendDataPoint = legendData.dataPoints;
@@ -839,14 +839,14 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
             let legendValueType: ValueTypeDescriptor = null;
             for (let i = 0; i < columns.length; i++) {
-                let column: DataViewMetadataColumn = columns[i];
-                if (column.roles["Legend"]) {
+                const column: DataViewMetadataColumn = columns[i];
+                if (column.roles['Legend']) {
                     legendFormat = column.format;
                     legendValueType = column.type;
                     break;
                 }
-                if (column.roles["Values"] && !column.groupName) {
-                    valuesName = valuesName + column.displayName + " ";
+                if (column.roles['Values'] && !column.groupName) {
+                    valuesName = valuesName + column.displayName + ' ';
                 }
             }
             if (legendValueType) {
@@ -854,19 +854,19 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             } else {
                 let legendIsBoolean: boolean = false;
                 if (legendDataPoint.length == 2) {
-                    let labels: string[] = [legendDataPoint[0].tooltip.toLowerCase(), legendDataPoint[1].tooltip.toLowerCase()];
-                    if (labels.indexOf("false") != -1 && labels.indexOf("true") != -1) {
+                    const labels: string[] = [legendDataPoint[0].tooltip.toLowerCase(), legendDataPoint[1].tooltip.toLowerCase()];
+                    if (labels.indexOf('false') != -1 && labels.indexOf('true') != -1) {
                         legendIsBoolean = true;
                         legendType = CategoryType.Boolean;
                     }
                 }
                 if (!legendIsBoolean) {
-                    let item: string = legendDataPoint[0].tooltip;
-                    let legendIsNumber: boolean = !isNaN(+item);
+                    const item: string = legendDataPoint[0].tooltip;
+                    const legendIsNumber: boolean = !isNaN(+item);
                     if (legendIsNumber) {
                         legendType = CategoryType.Number;
                     } else {
-                        let legendIsDate: boolean = !isNaN(+Date.parse(item));
+                        const legendIsDate: boolean = !isNaN(+Date.parse(item));
                         if (legendIsDate)
                             legendType = CategoryType.Date;
                     }
@@ -880,7 +880,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                     value: 0,
                     precision: null,
                     displayUnitSystemType: 0,
-                    cultureSelector: host.locale
+                    cultureSelector: host.locale,
                 });
                 for (let i = 0; i < legendDataPoint.length; i++) {
                     legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
@@ -891,10 +891,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                 legendFormat = legendFormat ? legendFormat : NiceDateFormat;
                 legendFormatter = Formatter.getFormatter({
                     format: legendFormat,
-                    cultureSelector: host.locale
+                    cultureSelector: host.locale,
                 });
                 for (let i = 0; i < legendDataPoint.length; i++) {
-                    let d: Date = new Date(legendDataPoint[i].tooltip);
+                    const d: Date = new Date(legendDataPoint[i].tooltip);
                     legendDataPoint[i].label = legendFormatter.format(d);
                 }
                 break;
@@ -902,7 +902,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             case CategoryType.Boolean: {
                 legendFormatter = Formatter.getFormatter({
                     format: legendFormat,
-                    cultureSelector: host.locale
+                    cultureSelector: host.locale,
                 });
                 for (let i = 0; i < legendDataPoint.length; i++) {
                     legendDataPoint[i].label = legendFormatter.format(legendDataPoint[i].tooltip);
@@ -915,37 +915,37 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             }
         }
 
-        let legendItemIndexForNameKey: {} = {};
+        const legendItemIndexForNameKey: object = {};
         for (let i = 0; i < legendDataPoint.length; i++) {
             legendItemIndexForNameKey[legendDataPoint[i].tooltip] = i;
         }
 
-        let tooltipsDataViewValueColumns: DataViewValueColumn[] = [];
+        const tooltipsDataViewValueColumns: DataViewValueColumn[] = [];
         for (let ii = 0; ii < dataCategorical.values.length; ii++) {
-            let dataValue: DataViewValueColumn = dataCategorical.values[ii];
-            if (dataValue.source.roles["Tooltips"]) {
+            const dataValue: DataViewValueColumn = dataCategorical.values[ii];
+            if (dataValue.source.roles['Tooltips']) {
                 tooltipsDataViewValueColumns.push(dataValue);
             }
         }
-        let legendColumn: DataViewCategoryColumn = retrieveLegendCategoryColumn(dataView);
-        let newLegendDataPoint: LegendDataPointExtended[] = [];
-        let existedLegendNames: string[] = [];
+        const legendColumn: DataViewCategoryColumn = retrieveLegendCategoryColumn(dataView);
+        const newLegendDataPoint: ScrollableLegendDataPoint[] = [];
+        const existedLegendNames: string[] = [];
         for (let ii = 0; ii < dataCategorical.values.length; ii++) {
-            let dataValue: DataViewValueColumn = dataCategorical.values[ii];
-            if (dataValue.source.roles["Values"]) {
+            const dataValue: DataViewValueColumn = dataCategorical.values[ii];
+            if (dataValue.source.roles['Values']) {
                 if (ii == 0) {
                     valueFormat = dataValue.source.format;
                 }
                 for (let i = 0; i < dataValue.values.length; i++) {
                     let value: PrimitiveValue = dataValue.values[i];
-                    let highlights: boolean = value == null
+                    const highlights: boolean = value == null
                         ? false
                         : ((dataValue.highlights != null)
                             ? dataValue.highlights[i] != null
                             : true);
                     if (highlights) {
                         value = +value;
-                        let displayName: string = dataValue.source.groupName != null
+                        const displayName: string = dataValue.source.groupName != null
                             ? dataValue.source.groupName.toString()
                             : (legendColumn && legendColumn.values
                                 ? legendColumn.values[i].toString()
@@ -953,15 +953,15 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         //generate key
                         let rowIndex = 0;
                         if (row != null) {
-                            let rowValue: PrimitiveValue = row.values[i];
+                            const rowValue: PrimitiveValue = row.values[i];
                             rowIndex = rowsData.indexOf(rowValue);
                         }
                         let columnIndex = 0;
                         if (column != null) {
-                            let columnValue: PrimitiveValue = column.values[i];
+                            const columnValue: PrimitiveValue = column.values[i];
                             columnIndex = columnsData.indexOf(columnValue);
                         }
-                        let lineKey: string = rowIndex + DefaultSeparator + columnIndex + DefaultSeparator;
+                        const lineKey: string = rowIndex + DefaultSeparator + columnIndex + DefaultSeparator;
                         //domain
                         if (!domain.startForced)
                             domain.start = (domain.start !== undefined ? Math.min(domain.start, value) : value);
@@ -974,9 +974,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                             : null;
 
                         //generate tooltips
-                        let legendDataPointIndex: number = legendItemIndexForNameKey[displayName];
-                        let legendDataPointItem: LegendDataPointExtended = legendDataPoint[legendDataPointIndex];
-                        let color: string = legendDataPointItem.color;
+                        const legendDataPointIndex: number = legendItemIndexForNameKey[displayName];
+                        const legendDataPointItem: ScrollableLegendDataPoint = legendDataPoint[legendDataPointIndex];
+                        const color: string = legendDataPointItem.color;
                         let tooltipName: string = legendDataPointItem.tooltip;
                         if (existedLegendNames.indexOf(tooltipName) == -1) {
                             existedLegendNames.push(tooltipName);
@@ -988,7 +988,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 break;
                             }
                             case CategoryType.Date: {
-                                let item: Date = new Date(tooltipName);
+                                const item: Date = new Date(tooltipName);
                                 tooltipName = legendFormatter.format(item);
                                 break;
                             }
@@ -996,7 +996,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         let xValue: PrimitiveValue;
                         switch (category.length) {
                             case 0: {
-                                xValue = "";
+                                xValue = '';
                                 break;
                             }
                             case 1: {
@@ -1004,49 +1004,49 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 break;
                             }
                             default: {
-                                xValue = "";
+                                xValue = '';
                                 for (let cI = 0; cI < category.length; cI++) {
-                                    let formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
-                                    xValue = xValue + formattedValue + " ";
+                                    const formattedValue: string = formatDrillDownXAxisValue(category[cI], i, host.locale);
+                                    xValue = xValue + formattedValue + ' ';
                                 }
                                 break;
                             }
                         }
-                        let tooltipFormatter = Formatter.getFormatter({
+                        const tooltipFormatter = Formatter.getFormatter({
                             format: dataValue.source.format,
                             value: 0,
                             precision: null,
                             displayUnitSystemType: 0,
-                            cultureSelector: host.locale
+                            cultureSelector: host.locale,
                         });
-                        let tooltip: VisualTooltipDataItem = {
+                        const tooltip: VisualTooltipDataItem = {
                             displayName: tooltipName,
                             value: tooltipFormatter.format(value),
-                            color: color
+                            color: color,
                         };
-                        let tooltips: VisualTooltipDataItem[] = [tooltip];
+                        const tooltips: VisualTooltipDataItem[] = [tooltip];
                         for (let k = 0; k < tooltipsDataViewValueColumns.length; k++) {
-                            let tooltipDataValueColumn: DataViewValueColumn = tooltipsDataViewValueColumns[k];
-                            let tooltipName: string = tooltipDataValueColumn.source.groupName != null
+                            const tooltipDataValueColumn: DataViewValueColumn = tooltipsDataViewValueColumns[k];
+                            const tooltipName: string = tooltipDataValueColumn.source.groupName != null
                                 ? tooltipDataValueColumn.source.groupName.toString()
                                 : displayName;
                             if (tooltipName == displayName) {
                                 let tooltipValue: PrimitiveValue = tooltipDataValueColumn.values[i];
-                                let tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue.toString()));
+                                const tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue.toString()));
                                 let format: string = tooltipDataValueColumn.source.format;
                                 if (tooltipValueIsDate) {
                                     tooltipValue = new Date(tooltipValue.toString());
                                     format = format ? format : NiceDateFormat;
                                 }
-                                let formatter = Formatter.getFormatter({
+                                const formatter = Formatter.getFormatter({
                                     format: format,
                                     precision: null,
                                     displayUnitSystemType: 0,
-                                    cultureSelector: host.locale
+                                    cultureSelector: host.locale,
                                 });
-                                let tooltip: VisualTooltipDataItem = {
+                                const tooltip: VisualTooltipDataItem = {
                                     displayName: tooltipDataValueColumn.source.displayName,
-                                    value: formatter.format(tooltipValue)
+                                    value: formatter.format(tooltipValue),
                                 };
                                 tooltips.push(tooltip);
                             }
@@ -1056,7 +1056,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         for (let cI = 0; cI < category.length; cI++) {
                             selectionIdBuilder = selectionIdBuilder.withCategory(category[cI], i);
                         }
-                        let dataPointIdentity: ISelectionId = legendDataPoint.length > 2
+                        const dataPointIdentity: ISelectionId = legendDataPoint.length > 2
                             ? selectionIdBuilder
                                 .withSeries(dataCategorical.values, dataValue)
                                 .withMeasure(dataValue.source.queryName)
@@ -1064,7 +1064,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                             : selectionIdBuilder
                                 .withMeasure(dataValue.source.queryName)
                                 .createSelectionId();
-                        let dataPoint: VisualDataPoint = {
+                        const dataPoint: VisualDataPoint = {
                             x: xValue,
                             y: value,
                             tooltips: tooltips,
@@ -1076,8 +1076,8 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         if (lineDataPoint) {
                             lineDataPoint.points.push(dataPoint);
                         } else {
-                            let object: DataViewObjects = legendDataPointItem.object;
-                            let identity: ISelectionId = legendDataPointItem.identity;
+                            const object: DataViewObjects = legendDataPointItem.object;
+                            const identity: ISelectionId = legendDataPointItem.identity;
 
                             lineDataPoint = {
                                 lineKey: lineKey + displayName,
@@ -1085,10 +1085,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 points: [dataPoint],
                                 color: color,
                                 identity: identity,
-                                selected: false
+                                selected: false,
                             };
 
-                            let objectShapesDefined: boolean = (object != undefined) && (object.shapes != undefined);
+                            const objectShapesDefined: boolean = (object != undefined) && (object.shapes != undefined);
                             if (objectShapesDefined && settings.shapes.customizeSeries) {
                                 if (object.shapes.seriesStrokeWidth != undefined)
                                     lineDataPoint.strokeWidth = +object.shapes.seriesStrokeWidth;
@@ -1105,16 +1105,16 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 if (object.shapes.seriesMarkerSize != undefined)
                                     lineDataPoint.markerSize = +object.shapes.seriesMarkerSize;
                                 if (object.shapes.seriesMarkerColor != undefined) {
-                                    let colorMarkerShapes: string = object.shapes.seriesMarkerColor["solid"].color;
+                                    const colorMarkerShapes: string = object.shapes.seriesMarkerColor['solid'].color;
                                     lineDataPoint.markerColor = colorMarkerShapes;
-                                    if (lineDataPoint.markerColor == "")
+                                    if (lineDataPoint.markerColor == '')
                                         lineDataPoint.markerColor = color;
                                 }
                             }
 
-                            let letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
-                            let markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
-                            legendDataPointItem.markerColor = markerColor ? markerColor : color;
+                            const letShowMarkers: boolean = (lineDataPoint.showMarkers == true || (lineDataPoint.showMarkers == null && settings.shapes.showMarkers));
+                            const markerColor: string = lineDataPoint.markerColor ? lineDataPoint.markerColor : settings.shapes.markerColor;
+                            legendDataPointItem.color = markerColor ? markerColor : color;
                             legendDataPointItem.showMarkers = letShowMarkers;
                             legendDataPointItem.seriesMarkerShape = lineDataPoint.seriesMarkerShape ? lineDataPoint.seriesMarkerShape : settings.shapes.markerShape;
                             legendDataPoint[legendDataPointIndex] = legendDataPointItem;
@@ -1129,13 +1129,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         legendDataPoint = newLegendDataPoint;
 
         if (lines.length > 0 && categoryData.length == 0) {
-            settings.xAxis.axisType = "categorical";
+            settings.xAxis.axisType = 'categorical';
             categoryIsScalar = false;
             categoryIsDate = false;
             categorySourceType = CategoryType.String;
-            categoryData = [""];
+            categoryData = [''];
         }
-        if (settings.xAxis.axisType == "continuous") {
+        if (settings.xAxis.axisType == 'continuous') {
             switch (categorySourceType) {
                 case CategoryType.Number: {
                     categoryData = categoryData.sort(sortNumber);
@@ -1160,13 +1160,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         domain.end = domain.start;
     //sort data points
     for (let i = 0; i < lines.length; i++) {
-        let points: any[] = lines[i].points;
-        let newPoints: any[] = [];
+        const points: any[] = lines[i].points;
+        const newPoints: any[] = [];
         for (let j = 0; j < categoryData.length; j++) {
-            let categoryString: string = categoryData[j].toString();
+            const categoryString: string = categoryData[j].toString();
             let k: number = 0;
             while (k < points.length) {
-                let pointCategoryString: string = points[k].x.toString();
+                const pointCategoryString: string = points[k].x.toString();
                 if (categoryString == pointCategoryString) {
                     newPoints.push(points[k]);
                     break;
@@ -1179,12 +1179,12 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         lines[i].points = newPoints;
     }
 
-    if (settings.xAxis.axisType !== "categorical") {
+    if (settings.xAxis.axisType !== 'categorical') {
         settings.shapes.showMarkers = false;
     }
 
     if (settings.shapes.customizeSeries) {
-        if (settings.shapes.series == "") {
+        if (settings.shapes.series == '') {
             settings.shapes.series = legendDataPoint[0].label;
         }
     }

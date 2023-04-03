@@ -1,20 +1,21 @@
-"use strict";
+'use strict';
 
-import powerbi from "powerbi-visuals-api";
+import powerbi from 'powerbi-visuals-api';
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {LegendDataPoint, MarkerShape} from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
+import {LegendDataPoint, MarkerShape} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
 import DataViewObjects = powerbi.DataViewObjects;
-import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {Selection} from "d3-selection";
-import {VisualSettings} from "./settings";
-import {BoundingRect} from "powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces";
+import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {Selection} from 'd3-selection';
+import {VisualSettings} from './settings';
+import {BoundingRect} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
-import {SelectableDataPoint} from "powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService";
-import {BaseDataPoint, IBehaviorOptions} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {SeriesMarkerShape} from "./seriesMarkerShape";
-import {LegendIconType} from "./legendIconType";
-import {ScaleOrdinal} from "d3-scale";
-import {AxisDomain, AxisScale} from "d3-axis";
+import {SelectableDataPoint} from 'powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService';
+import {BaseDataPoint, IBehaviorOptions} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
+import {SeriesMarkerShape} from './seriesMarkerShape';
+import {LegendIconType} from './legendIconType';
+import {ScaleOrdinal} from 'd3-scale';
+import {AxisDomain, AxisScale} from 'd3-axis';
+import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 export type d3Selection<T> = Selection<any, T, any, any>;
 
@@ -24,7 +25,7 @@ export interface VisualViewModel {
     rowsFormat: string;
     columnsFormat: string;
     categories: PrimitiveValue[];
-    legendDataPoint: LegendDataPointExtended[];
+    legendDataPoint: ScrollableLegendDataPoint[];
     dataPoints: VisualDataPoint[];
     lines: LineDataPoint[];
     lineKeyIndex: LineKeyIndex;
@@ -40,34 +41,12 @@ export interface VisualViewModel {
     settings: VisualSettings;
 }
 
-export interface LegendDataExtended {
-    title: string;
-    dataPoints: LegendDataPointExtended[];
-}
-
 export enum CategoryType {
     Error = 0,
     String = 1,
     Number = 2,
     Boolean = 3,
     Date = 4
-}
-
-export interface LegendDataPointExtended extends LegendDataPoint {
-    markerColor: string;
-    showMarkers?: boolean;
-    object: DataViewObjects;
-
-    /**
-     * Shape of a marker displayed in the legend.
-     * Used instead of markerShape. Supports a bigger list of values that regular MarkerShape.
-     */
-    seriesMarkerShape: SeriesMarkerShape;
-
-    /**
-     * Style of markers displayed in the legend: line, marker or both.
-     */
-    style: LegendIconType;
 }
 
 export interface LineKeyIndex {
