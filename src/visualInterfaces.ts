@@ -53,11 +53,11 @@ export interface LineKeyIndex {
     [lineKey: string]: number;
 }
 
-export interface LegendBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
-    legendItems: d3Selection<any>;
-    legendIcons: d3Selection<any>;
-    clearCatcher: d3Selection<any>;
-}
+// export interface LegendBehaviorOptions extends IBehaviorOptions<ScrollableLegendDataPoint> {
+//     legendItems: d3Selection<any>;
+//     legendIcons: d3Selection<any>;
+//     clearCatcher: d3Selection<any>;
+// }
 
 export interface LassoData {
     lassoData: BoundingRect;

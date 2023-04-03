@@ -512,7 +512,7 @@ export class Visual implements IVisual {
                     }
 
                     margin = {top: 0, left: 0, bottom: 0, right: 0};
-                    renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
+                    // renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
                     legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
                     containerSize = {
                         width: options.viewport.width - margin.left - margin.right,
@@ -590,7 +590,7 @@ export class Visual implements IVisual {
             const legendPosition: string = this.model.settings.legend.position;
             const is = this.interactivityService;
             if (legendPosition == 'Top' || legendPosition == 'TopCenter' || legendPosition == 'Bottom' || legendPosition == 'BottomCenter') {
-                legendBehavior.leftOrRightClick(true, legendBehavior);
+                // legendBehavior.leftOrRightClick(true, legendBehavior);
                 const hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             }

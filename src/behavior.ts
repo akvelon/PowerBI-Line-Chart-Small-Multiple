@@ -70,24 +70,24 @@ export class WebBehavior implements IInteractiveBehavior {
         const retrieveTooltipFromArgument = this.retrieveTooltipFromArgument;
         const formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
 
-        const indicesLineGroupSelection = d3local<number>();
-        this.interactiveLineGroupSelection
-            .each(function (d, i) {
-                indicesLineGroupSelection.set(this, i)
-            })
-            .on("click", function (_, lineDataPoint) {
-                const index = indicesLineGroupSelection.get(this);
-                options.selectionLines[index].selected = !options.selectionLines[index].selected;
-                if (options.selectionLines[index].selected) {
-                    const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
-                    options.legendBehavior.renderLassoSelection([legendName], true, false);
-                    selectionHandler.handleSelection(lineDataPoint, false);
-                    options.legendBehavior.renderLassoSelection([legendName], true, false);
-                } else {
-                    selectionHandler.handleClearSelection();
-                    options.legendBehavior.renderLassoSelection([], false, false);
-                }
-            });
+        // const indicesLineGroupSelection = d3local<number>();
+        // this.interactiveLineGroupSelection
+        //     .each(function (d, i) {
+        //         indicesLineGroupSelection.set(this, i)
+        //     })
+        //     .on("click", function (_, lineDataPoint) {
+        //         const index = indicesLineGroupSelection.get(this);
+        //         options.selectionLines[index].selected = !options.selectionLines[index].selected;
+        //         if (options.selectionLines[index].selected) {
+        //             const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+        //             options.legendBehavior.renderLassoSelection([legendName], true, false);
+        //             selectionHandler.handleSelection(lineDataPoint, false);
+        //             options.legendBehavior.renderLassoSelection([legendName], true, false);
+        //         } else {
+        //             selectionHandler.handleClearSelection();
+        //             options.legendBehavior.renderLassoSelection([], false, false);
+        //         }
+        //     });
         options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
             (lineDataPoint: LineDataPoint) => {
                 const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
@@ -96,24 +96,24 @@ export class WebBehavior implements IInteractiveBehavior {
             null,
             true);
 
-        const indicesDotsSelection = d3local<number>();
-        this.dotsSelection
-            .each(function (d, i) {
-                indicesDotsSelection.set(this, i);
-            })
-            .on("click", function (_, lineDataPoint: LineDataPoint) {
-                const index = indicesDotsSelection.get(this);
-                options.selectionLines[index].selected = !options.selectionLines[index].selected;
-                if (options.selectionLines[index].selected) {
-                    const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
-                    options.legendBehavior.renderLassoSelection([legendName], true, false);
-                    selectionHandler.handleSelection(lineDataPoint, false);
-                    options.legendBehavior.renderLassoSelection([legendName], true, false);
-                } else {
-                    selectionHandler.handleClearSelection();
-                    options.legendBehavior.renderLassoSelection([], false, false);
-                }
-            });
+        // const indicesDotsSelection = d3local<number>();
+        // this.dotsSelection
+        //     .each(function (d, i) {
+        //         indicesDotsSelection.set(this, i);
+        //     })
+        //     .on("click", function (_, lineDataPoint: LineDataPoint) {
+        //         const index = indicesDotsSelection.get(this);
+        //         options.selectionLines[index].selected = !options.selectionLines[index].selected;
+        //         if (options.selectionLines[index].selected) {
+        //             const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, options.legendType, options.legendFormatter);
+        //             options.legendBehavior.renderLassoSelection([legendName], true, false);
+        //             selectionHandler.handleSelection(lineDataPoint, false);
+        //             options.legendBehavior.renderLassoSelection([legendName], true, false);
+        //         } else {
+        //             selectionHandler.handleClearSelection();
+        //             options.legendBehavior.renderLassoSelection([], false, false);
+        //         }
+        //     });
         options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
             (lineDataPoint: LineDataPoint) => {
                 const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
