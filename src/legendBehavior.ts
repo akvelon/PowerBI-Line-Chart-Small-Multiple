@@ -7,11 +7,7 @@ import {
 
 import {d3Selection} from './visualInterfaces';
 import {LegendSettings} from './settings';
-import {
-    calculateItemWidth,
-    drawCustomLegendIcons,
-    generateLegendItemsForLeftOrRightClick,
-} from './utilities/legendUtility';
+import {calculateItemWidth} from './utilities/legendUtility';
 import {LegendDataPoint} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
 import {MarkersUtility} from './utilities/markersUtility';
 import {BaseType, select as d3select, selectAll as d3selectAll, Selection} from 'd3-selection';
@@ -20,18 +16,15 @@ import {
     ScrollableLegendBehaviorOptions,
     ScrollableLegendDataPoint,
 } from './utilities/scrollableLegend';
-import powerbi from 'powerbi-visuals-api';
-import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import {SeriesMarkerShape} from './seriesMarkerShape';
 import {manipulation as svgManipulation} from 'powerbi-visuals-utils-svgutils';
 import {LegendIconType} from './legendIconType';
+import {pixelConverter as PixelConverter} from 'powerbi-visuals-utils-typeutils';
 
 export class LegendBehavior implements IInteractiveBehavior {
     public static readonly dimmedLegendColor: string = '#A6A6A6';
     public static readonly dimmedLegendMarkerSuffix: string = 'grey';
     public static readonly legendMarkerSuffix: string = 'legend';
-
-    private static readonly MarkerLineLength = 30;
 
     private clearCatcher: d3Selection<any>;
     private selectionHandler: ISelectionHandler;
@@ -39,6 +32,8 @@ export class LegendBehavior implements IInteractiveBehavior {
     private legendItems: Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
     private legendIcons: Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
     private legendItemLines: Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    private legendText: Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    private refreshLegend: () => void;
 
     private legendSettings: LegendSettings;
     private dataPoints: ScrollableLegendDataPoint[];
@@ -79,9 +74,11 @@ export class LegendBehavior implements IInteractiveBehavior {
         console.log('bindEvents');
         console.log(options);
         this.legendItems = options.legendItems;
-        this.legendIcons = options.legendIcons;
-        this.legendItemLines = options.legendItemLines;
+        // this.legendIcons = options.legendIcons;
+        // this.legendItemLines = options.legendItemLines;
+        // this.legendText = options.legendText;
         this.clearCatcher = options.clearCatcher;
+        this.refreshLegend = options.refreshLegend;
         this.selectionHandler = selectionHandler;
 
         // this.appendLegendFontFamily();
@@ -180,9 +177,9 @@ export class LegendBehavior implements IInteractiveBehavior {
     // d3select('svg.legend .legendTitle').style('font-family', fontFamily);
     // }
 
-    public getSelected(): string[] {
-        return this.selectedLegendNames;
-    }
+    // public getSelected(): string[] {
+    //     return this.selectedLegendNames;
+    // }
 
     public renderLassoSelection(selectedLegendNames: string[], hasSelection: boolean, multiSelect: boolean) {
         if (!selectedLegendNames)
@@ -193,51 +190,22 @@ export class LegendBehavior implements IInteractiveBehavior {
 
         this.selectedLegendNames = selectedLegendNames;
 
-        this.legendIcons
-            .attr('transform', (dataPoint) => {
-                return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, ScrollableLegend.getIconScale(dataPoint.seriesMarkerShape));
-            })
-            .attr('d', (dataPoint) => {
-                return MarkersUtility.getPath(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
-            })
-            .attr('stroke-width', (dataPoint) => {
-                // if (dataPoint.lineStyle) {
-                //     return 2;
-                // }
-                return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
-            })
-            .style('fill', (d) => {
-                if (d.lineStyle) {
-                    return null;
-                }
+        // this.refreshLegend();
 
-                return !hasSelection || d.selected ? d.color : LegendBehavior.dimmedLegendColor;
-            })
-            .style('stroke', (dataPoint) => dataPoint.color)
-            .style('stroke-dasharray', (dataPoint) => {
-                if (dataPoint.lineStyle) {
-                    return ScrollableLegend.getStrokeDashArrayForLegend(dataPoint.lineStyle);
-                }
-                return null;
-            });
+        // this.renderLegendIcons(selectedLegendNames, hasSelection, multiSelect);
+        // this.renderLegendItemLines();
 
-        this.legendItemLines
-            .attr('transform', (dataPoint) => {
-                return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, ScrollableLegend.getIconScale(dataPoint.seriesMarkerShape));
-            })
-            .attr('d', (d) => {
-                const padding: number = this.legendSettings.fontSize / 4;
-                // const lineStart: number = -ScrollableLegend.MarkerLineLength - padding;
-                // const lineEnd: number = -padding;
-                const lineStart = -padding;
-                const lineEnd = -padding + LegendBehavior.MarkerLineLength;
-                return 'M' + lineStart + ',0L' + lineEnd + ',0';
-            })
-            .attr('stroke-width', '2')
-            .style('fill', (d) => d.color)
-            .style('stroke', (d) => d.color)
-            .style('opacity', (d) => d.legendIconType == LegendIconType.lineMarkers || d.legendIconType == LegendIconType.line ? 1.0 : 0.0);
+        // this.legendText
+        //     .attr('x', (d) => {
+        //         return d.textPosition.x + (dataPointHasLine(d) ? LegendBehavior.MarkerLineLength : 0);
+        //     })
+        //     .attr('y', (d) => d.textPosition.y)
+        //     .text((d) => d.label)
+        //     .style('fill', this.legendSettings.legendNameColor)
+        //     .style('font-size', PixelConverter.fromPoint(this.legendSettings.fontSize))
+        //     .style('font-family', this.legendSettings.fontFamily);
 
+        // OLD
         // TODO Fix render selection dim not selected elements
 
         // const legendItems: d3Selection<LegendDataPoint> = this.legendItems;
@@ -263,4 +231,61 @@ export class LegendBehavior implements IInteractiveBehavior {
         //     return fill;
         // });
     }
+
+    // private renderLegendIcons(selectedLegendNames: string[], hasSelection: boolean, multiSelect: boolean) {
+    //     this.legendIcons
+    //         .attr('transform', (d) => {
+    //             const x = d.glyphPosition.x + (dataPointHasLine(d) ? LegendBehavior.MarkerLineLength / 2 : 0);
+    //             const y = d.glyphPosition.y;
+    //             return svgManipulation.translateAndScale(x, y, 1);
+    //         })
+    //         .attr('d', (d) => {
+    //             return MarkersUtility.getPath(d.seriesMarkerShape || SeriesMarkerShape.circle);
+    //         })
+    //         .attr('stroke-width', (d) => {
+    //             // if (dataPoint.lineStyle) {
+    //             //     return 2;
+    //             // }
+    //             return MarkersUtility.getStrokeWidth(d.seriesMarkerShape || SeriesMarkerShape.circle);
+    //         })
+    //         .style('fill', (d) => {
+    //             if (d.lineStyle) {
+    //                 return null;
+    //             }
+    //
+    //             const isSelectedPreviously: boolean = selectedLegendNames.indexOf(d.label) != -1;
+    //             const selected = multiSelect
+    //                 ? (isSelectedPreviously ? true : d.selected)
+    //                 : isSelectedPreviously;
+    //
+    //             return !hasSelection || selected ? d.color : LegendBehavior.dimmedLegendColor;
+    //         })
+    //         .style('stroke', (d) => d.color)
+    //         .style('stroke-dasharray', (d) => {
+    //             if (d.lineStyle) {
+    //                 return ScrollableLegend.getStrokeDashArrayForLegend(d.lineStyle);
+    //             }
+    //             return null;
+    //         });
+    // }
+
+    // private renderLegendItemLines() {
+    //     this.legendItemLines
+    //         .attr('transform', (dataPoint) => {
+    //             return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, 1.0);
+    //         })
+    //         .attr('d', (d) => {
+    //             const padding: number = this.legendSettings.fontSize / 4;
+    //             // const lineStart: number = -ScrollableLegend.MarkerLineLength - padding;
+    //             // const lineEnd: number = -padding;
+    //             const lineStart = -padding;
+    //             const lineEnd = -padding + LegendBehavior.MarkerLineLength;
+    //             return 'M' + lineStart + ',0L' + lineEnd + ',0';
+    //         })
+    //         .attr('stroke-width', '2')
+    //         .style('fill', (d) => d.color)
+    //         .style('stroke', (d) => d.color)
+    //         .style('opacity', (d) => dataPointHasLine(d) ? 1.0 : 0.0);
+    //
+    // }
 }

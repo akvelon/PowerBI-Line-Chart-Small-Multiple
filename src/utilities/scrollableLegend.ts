@@ -45,7 +45,7 @@ import {BaseType, select as d3select, Selection as d3Selection} from 'd3-selecti
 import {LegendBehavior} from 'powerbi-visuals-utils-chartutils/lib/legend/behavior/legendBehavior';
 import {SelectableDataPoint} from 'powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
-import {LegendIconType} from '../legendIconType';
+import {isLongLegendIconType, LegendIconType} from '../legendIconType';
 import {pixelConverter as PixelConverter, prototype as Prototype} from 'powerbi-visuals-utils-typeutils';
 import {
     LegendLayout,
@@ -59,7 +59,6 @@ import {textMeasurementService} from 'powerbi-visuals-utils-formattingutils';
 import {defaultSize, LegendIconLineTotalWidth} from 'powerbi-visuals-utils-chartutils/lib/legend/markers';
 import {TextProperties} from './textUtility';
 import {MarkersUtility} from './markersUtility';
-import IViewport = powerbi.IViewport;
 import DataViewObjects = powerbi.DataViewObjects;
 import ISelectionId = powerbi.visuals.ISelectionId;
 
@@ -109,9 +108,11 @@ export interface ScrollableLegendItem {
 
 export interface ScrollableLegendBehaviorOptions extends IBehaviorOptions<ScrollableLegendDataPoint> {
     legendItems: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
-    legendItemLines: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
-    legendIcons: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    // legendItemLines: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    // legendIcons: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    // legendText: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
     clearCatcher: d3Selection<any, any, any, any>;
+    refreshLegend: () => void;
 }
 
 
@@ -130,8 +131,6 @@ export const createLegend = (
         interactiveBehavior);
 
 export class ScrollableLegend implements IScrollableLegend {
-
-
     private static readonly TopLegendHeight = 24;
     private static readonly LegendMaxWidthFactor = 0.3;
     private static readonly TitlePadding = 15;
@@ -143,6 +142,7 @@ export class ScrollableLegend implements IScrollableLegend {
     private static readonly MaxTextLength = 60;
     private static readonly LegendEdgeMariginWidth = 10;
     private static readonly LegendIconYRatio = 0.52;
+    private static readonly MarkerLineLength = 30;
     private static readonly LegendTitle = createClassAndSelector('legendTitle');
     private static readonly LegendItem = createClassAndSelector('legendItem');
     private static readonly LegendIcon = createClassAndSelector('legendIcon');
@@ -159,8 +159,8 @@ export class ScrollableLegend implements IScrollableLegend {
     private readonly interactivityService: IInteractivityService<ScrollableLegendDataPoint>;
     private readonly isScrollable: boolean;
 
-    private viewport: IViewport;
-    private parentViewport: IViewport;
+    private viewport: powerbi.IViewport;
+    private parentViewport: powerbi.IViewport;
     private orientation: LegendPosition;
     private data: ScrollableLegendData;
     private lastCalculatedWidth = 0;
@@ -217,18 +217,6 @@ export class ScrollableLegend implements IScrollableLegend {
             }
             case LineStyle.solid: {
                 return null;
-            }
-        }
-    }
-
-    public static getIconScale(markerShape: SeriesMarkerShape): number {
-        switch (markerShape) {
-            case SeriesMarkerShape.circle:
-            case SeriesMarkerShape.square: {
-                return ScrollableLegend.LegendIconRadius / defaultSize;
-            }
-            default: {
-                return 1;
             }
         }
     }
@@ -333,6 +321,10 @@ export class ScrollableLegend implements IScrollableLegend {
         clonedData.dataPoints = newDataPoints;
         this.setTooltipToLegendItems(clonedData);
         this.drawLegendInternal(clonedData, viewport, true /* perform auto width */);
+    }
+
+    public refreshLegend() {
+        this.drawLegend(this.data, this.parentViewport);
     }
 
     changeOrientation(orientation: LegendPosition): void {
@@ -480,28 +472,6 @@ export class ScrollableLegend implements IScrollableLegend {
         itemsEnter
             .append('path')
             .classed(ScrollableLegend.LegendItemLine.className, true);
-
-        // .attr('transform', (dataPoint) => {
-        //     return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, this.getIconScale(dataPoint.seriesMarkerShape));
-        // })
-        // .attr('d', (d) => {
-        //     const padding: number = data.fontSize / 4;
-        //     // const lineStart: number = -ScrollableLegend.MarkerLineLength - padding;
-        //     // const lineEnd: number = -padding;
-        //     const lineStart = -padding;
-        //     const lineEnd = -padding + ScrollableLegend.MarkerLineLength;
-        //     return 'M' + lineStart + ',0L' + lineEnd + ',0';
-        // })
-        // .attr('stroke-width', '2')
-        // .style('fill', (d) => d.color)
-        // .style('stroke', (d) => d.color)
-        // .style('opacity', (d) => d.legendIconType == LegendIconType.lineMarkers || d.legendIconType == LegendIconType.line ? 1.0 : 0.0);
-
-        // const padding: number = legendSettings.fontSize / 4;
-        // const lineStart: number = -lineLen - padding;
-        // const lineEnd: number = -padding;
-        //     .attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0')
-
         itemsEnter
             .append('path')
             .classed(ScrollableLegend.LegendIcon.className, true);
@@ -515,18 +485,64 @@ export class ScrollableLegend implements IScrollableLegend {
         const mergedLegendIcons = legendItems
             .merge(itemsEnter)
             .select(ScrollableLegend.LegendIcon.selectorName)
+            .attr('transform', (dataPoint) => {
+                return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, 1);
+            })
+            .attr('d', (dataPoint) => {
+                return MarkersUtility.getPath(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
+            })
+            .attr('stroke-width', (dataPoint) => {
+                if (dataPoint.lineStyle) {
+                    return 2;
+                }
+                return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
+            })
+            .style('fill', (dataPoint) => {
+                if (dataPoint.lineStyle) {
+                    return null;
+                }
+                return dataPoint.color;
+            })
+            .style('stroke', (dataPoint) => dataPoint.color)
+            .style('stroke-dasharray', (dataPoint) => {
+                if (dataPoint.lineStyle) {
+                    return ScrollableLegend.getStrokeDashArrayForLegend(dataPoint.lineStyle);
+                }
+                return null;
+            })
             .style('stroke-linejoin', 'round');
 
         const mergedLegendItemLines = legendItems
             .merge(itemsEnter)
-            .select(ScrollableLegend.LegendItemLine.selectorName);
+            .select(ScrollableLegend.LegendItemLine.selectorName)
+            .attr('transform', (dataPoint) => {
+                return svgManipulation.translateAndScale(dataPoint.glyphPosition.x, dataPoint.glyphPosition.y, 1);
+            })
+            .attr('d', (d) => {
+                const padding: number = data.fontSize / 4;
+                // const lineStart: number = -ScrollableLegend.MarkerLineLength - padding;
+                // const lineEnd: number = -padding;
+                const lineStart = -ScrollableLegend.MarkerLineLength / 2;
+                const lineEnd = ScrollableLegend.MarkerLineLength / 2;
+                return 'M' + lineStart + ',0L' + lineEnd + ',0';
+            })
+            .attr('stroke-width', '2')
+            .style('fill', (d) => d.color)
+            .style('stroke', (d) => d.color)
+            .style('opacity', (d) => d.legendIconType == LegendIconType.lineMarkers || d.legendIconType == LegendIconType.line ? 1.0 : 0.0);
+
+        //     const padding: number = legendSettings.fontSize / 4;
+        //     const lineStart: number = -lineLen - padding;
+        //     const lineEnd: number = -padding;
+        // .
+        //     attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0');
 
         legendItems
             .merge(itemsEnter)
             .select('title')
             .text((dataPoint) => dataPoint.tooltip);
         const mergedLegendItems = legendItems.merge(itemsEnter);
-        mergedLegendItems
+        const mergedLegendText = mergedLegendItems
             .select(ScrollableLegend.LegendText.selectorName)
             .attr('x', (dataPoint) => dataPoint.textPosition.x)
             .attr('y', (dataPoint) => dataPoint.textPosition.y)
@@ -538,14 +554,16 @@ export class ScrollableLegend implements IScrollableLegend {
         if (this.interactivityService) {
             const behaviorOptions: ScrollableLegendBehaviorOptions = {
                 legendItems: mergedLegendItems,
-                legendIcons: mergedLegendIcons,
-                legendItemLines: mergedLegendItemLines,
+                // legendIcons: mergedLegendIcons,
+                // legendItemLines: mergedLegendItemLines,
+                // legendText: mergedLegendText,
                 clearCatcher: this.clearCatcher,
                 dataPoints: data.dataPoints,
                 behavior: this.interactiveBehavior,
                 interactivityServiceOptions: {
                     isLegend: true,
                 },
+                refreshLegend: this.refreshLegend.bind(this),
             };
             this.interactivityService.bind(behaviorOptions);
             this.interactiveBehavior.renderSelection(hasSelection);
@@ -679,8 +697,14 @@ export class ScrollableLegend implements IScrollableLegend {
             ? ScrollableLegend.TextAndIconPadding + this.legendFontSizeMarginDifference
             : ScrollableLegend.TextAndIconPadding;
         let occupiedWidth = 0;
-        const firstDataPointMarkerShape = dataPoints && dataPoints[0] && dataPoints[0].seriesMarkerShape;
-        const iconTotalItemPadding = this.getMarkerShapeWidth(firstDataPointMarkerShape) + fontSizeMargin * 1.5;
+
+        const firstDataPoint = dataPoints && dataPoints[0];
+        const firstDataPointMarkerShape = firstDataPoint && firstDataPoint.seriesMarkerShape;
+        const firstDataPointIsLongIcon = firstDataPoint && isLongLegendIconType(firstDataPoint.legendIconType);
+        const iconTotalItemPadding = firstDataPointIsLongIcon
+            ? ScrollableLegend.MarkerLineLength + fontSizeMargin * 1.5
+            : this.getMarkerShapeWidth(firstDataPointMarkerShape) + fontSizeMargin * 1.5;
+
         let numberOfItems = dataPoints.length;
         // get the Y coordinate which is the middle of the container + the middle of the text height - the delta of the text
         const defaultTextProperties = ScrollableLegend.getTextProperties('', this.data.fontSize, this.data.fontFamily);
@@ -711,7 +735,9 @@ export class ScrollableLegend implements IScrollableLegend {
         }
         for (const legendItem of legendItems) {
             const {dataPoint} = legendItem;
-            const markerShapeWidth = this.getMarkerShapeWidth(dataPoint.seriesMarkerShape);
+            const markerShapeWidth = isLongLegendIconType(dataPoint.legendIconType)
+                ? ScrollableLegend.MarkerLineLength
+                : this.getMarkerShapeWidth(dataPoint.seriesMarkerShape);
             dataPoint.glyphPosition = {
                 // the space taken so far + the radius + the margin / radiusFactor to prevent huge spaces
                 x: occupiedWidth + markerShapeWidth / 2 + (this.legendFontSizeMarginDifference / this.getLegendIconFactor(dataPoint.seriesMarkerShape)),
@@ -737,9 +763,6 @@ export class ScrollableLegend implements IScrollableLegend {
 
     getMarkerShapeWidth(markerShape: SeriesMarkerShape): number {
         switch (markerShape) {
-            case SeriesMarkerShape.longDash: {
-                return LegendIconLineTotalWidth;
-            }
             default: {
                 return ScrollableLegend.LegendIconRadius * 2;
             }

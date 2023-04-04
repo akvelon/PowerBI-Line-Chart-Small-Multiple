@@ -70,6 +70,7 @@ export function renderLegend(
         dataPoints: dataPoints,
         labelColor: legendSettings.legendNameColor,
         fontSize: legendSettings.fontSize,
+        fontFamily: legendSettings.fontFamily,
     };
     legend.drawLegend(legendData, options.viewport);
 
