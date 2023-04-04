@@ -37,7 +37,8 @@ import {
 import powerbi from 'powerbi-visuals-api';
 import {
     appendClearCatcher,
-    dataHasSelection, IBehaviorOptions,
+    dataHasSelection,
+    IBehaviorOptions,
     IInteractiveBehavior,
     IInteractivityService,
 } from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
@@ -56,7 +57,6 @@ import {
 import {manipulation as svgManipulation} from 'powerbi-visuals-utils-svgutils';
 import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
 import {textMeasurementService} from 'powerbi-visuals-utils-formattingutils';
-import {defaultSize, LegendIconLineTotalWidth} from 'powerbi-visuals-utils-chartutils/lib/legend/markers';
 import {TextProperties} from './textUtility';
 import {MarkersUtility} from './markersUtility';
 import DataViewObjects = powerbi.DataViewObjects;
@@ -497,6 +497,10 @@ export class ScrollableLegend implements IScrollableLegend {
                 }
                 return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
             })
+            .attr('opacity', (d) =>
+                d.legendIconType == LegendIconType.markers || d.legendIconType == LegendIconType.lineMarkers
+                    ? 1
+                    : 0)
             .style('fill', (dataPoint) => {
                 if (dataPoint.lineStyle) {
                     return null;
@@ -833,7 +837,7 @@ export class ScrollableLegend implements IScrollableLegend {
             .attr('transform', (d) => d.rotateTransform);
     }
 
-    calculateVerticalLayout(dataPoints, title, navigationArrows, autoWidth) {
+    calculateVerticalLayout(dataPoints: ScrollableLegendDataPoint[], title: TitleLayout, navigationArrows: NavigationArrow[], autoWidth: boolean): number {
         // check if we need more space for the margin, or use the default text padding
         const fontSizeBiggerThenDefault = this.legendFontSizeMarginDifference > 0;
         const fontFactor = fontSizeBiggerThenDefault ? this.legendFontSizeMarginDifference : 0;
@@ -842,10 +846,16 @@ export class ScrollableLegend implements IScrollableLegend {
         const spaceNeededByTitle = 15 + fontFactor;
         const extraShiftForTextAlignmentToIcon = 4 + fontFactor;
         let totalSpaceOccupiedThusFar = verticalLegendHeight;
+
         // the default space for text and icon radius + the margin after the font size change
-        const firstDataPointMarkerShape = dataPoints && dataPoints[0] && dataPoints[0].markerShape;
+        const firstDataPoint = dataPoints && dataPoints[0];
+        const firstDataPointMarkerShape = firstDataPoint && firstDataPoint.seriesMarkerShape;
+        const isFirstDataPointLongIcon = firstDataPoint && isLongLegendIconType(firstDataPoint.legendIconType);
+        const firstDataPointIconHalfWidth = isFirstDataPointLongIcon
+            ? ScrollableLegend.MarkerLineLength
+            : this.getMarkerShapeWidth(firstDataPointMarkerShape);
         const fixedHorizontalIconShift = ScrollableLegend.TextAndIconPadding
-            + this.getMarkerShapeWidth(firstDataPointMarkerShape) / 2
+            + firstDataPointIconHalfWidth / 2
             + this.legendFontSizeMarginDifference;
         const fixedHorizontalTextShift = fixedHorizontalIconShift * 2;
         // check how much space is needed
@@ -908,7 +918,6 @@ export class ScrollableLegend implements IScrollableLegend {
         this.updateNavigationArrowLayout(navigationArrows, dataPointsLength, numberOfItems);
         return numberOfItems;
     }
-
 
     getLegendIconFactor(markerShape: SeriesMarkerShape): number {
         switch (markerShape) {
