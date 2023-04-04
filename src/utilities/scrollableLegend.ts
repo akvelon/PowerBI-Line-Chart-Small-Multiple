@@ -391,8 +391,6 @@ export class ScrollableLegend implements IScrollableLegend {
 
     /* eslint-disable-next-line max-lines-per-function */
     private drawLegendInternal(data: ScrollableLegendData, viewport: powerbi.IViewport, autoWidth: boolean): void {
-        console.log('drawLegendInternal');
-
         this.parentViewport = viewport;
         this.data = data;
         if (this.interactivityService)

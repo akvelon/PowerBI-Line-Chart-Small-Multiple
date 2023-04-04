@@ -1,28 +1,28 @@
-"use strict";
+'use strict';
 
 import {
     CategoryType,
     d3Selection,
     LineDataPoint, VerticalLineDataItem, VerticalLineDataItemsGlobal,
     VerticalLineDataItemsGlobalWithKey,
-    VisualDataPoint
-} from "./visualInterfaces";
+    VisualDataPoint,
+} from './visualInterfaces';
 import {
     BaseDataPoint,
     IBehaviorOptions,
     IInteractiveBehavior,
-    ISelectionHandler
-} from "powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService";
-import {ITooltipServiceWrapper} from "powerbi-visuals-utils-tooltiputils";
-import {LegendBehavior} from "./legendBehavior";
-import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {DefaultOpacity, DimmedOpacity, Shapes} from "./settings";
-import {Visual} from "./visual";
-import {local as d3local} from "d3-selection";
-import powerbi from "powerbi-visuals-api";
+    ISelectionHandler,
+} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
+import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
+import {LegendBehavior} from './legendBehavior';
+import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {DefaultOpacity, DimmedOpacity, Shapes} from './settings';
+import {Visual} from './visual';
+import {local as d3local} from 'd3-selection';
+import powerbi from 'powerbi-visuals-api';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {MarkersUtility} from "./utilities/markersUtility";
+import {MarkersUtility} from './utilities/markersUtility';
 import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
@@ -145,41 +145,39 @@ export class WebBehavior implements IInteractiveBehavior {
     }
 
     public renderSelection(hasSelection: boolean): void {
-        // let selectedLegendNames: string[] = [];
-        // let legendType: CategoryType = this.legendType;
-        // let legendFormatter: IValueFormatter = this.legendFormatter;
-        // let formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
-        // let selectedList: string[] = this.legendBehavior.getSelected();
-        //
-        // this.lineGroupSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
-        //     let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
-        //     let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
-        //     if (selected && selectedLegendNames.indexOf(legendName) == -1)
-        //         selectedLegendNames.push(legendName);
-        //     let opacity: number = getOpacity(selected, hasSelection);
-        //     let showMarkers: boolean = lineDataPoint.showMarkers != null
-        //         ? lineDataPoint.showMarkers
-        //         : this.shapes.showMarkers;
-        //     let stepped: boolean = lineDataPoint.stepped != null
-        //         ? lineDataPoint.stepped
-        //         : this.shapes.stepped;
-        //     if (showMarkers && stepped) {
-        //         let markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-        //         let markers = this.container.select("#" + markerPathId);
-        //         markers.style("opacity", opacity);
-        //     }
-        //     return opacity;
-        // });
-        // this.dotsSelection.style("opacity", (lineDataPoint: LineDataPoint) => {
-        //     let legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
-        //     let selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
-        //     if (selected && selectedLegendNames.indexOf(legendName) == -1)
-        //         selectedLegendNames.push(legendName);
-        //     let opacity: number = getOpacity(selected, hasSelection);
-        //     return opacity;
-        // });
-        // if (hasSelection)
-        //     this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
+        console.log('web behavior render selection');
+        const selectedLegendNames: string[] = [];
+        const legendType: CategoryType = this.legendType;
+        const legendFormatter: IValueFormatter = this.legendFormatter;
+        const formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
+        const selectedList: string[] = this.legendBehavior.getSelected();
+
+        const getSelectionOpacity = (lineDataPoint: LineDataPoint) => {
+            const legendName: string = formatItemWithLegendFormatter(lineDataPoint.name, legendType, legendFormatter);
+            const selected: boolean = this.hasLasso ? false : selectedList.indexOf(legendName) != -1;
+            if (selected && selectedLegendNames.indexOf(legendName) == -1)
+                selectedLegendNames.push(legendName);
+            return getOpacity(selected, hasSelection);
+        };
+
+        this.lineGroupSelection.style('opacity', (lineDataPoint: LineDataPoint) => {
+            const opacity: number = getSelectionOpacity(lineDataPoint);
+            const showMarkers: boolean = lineDataPoint.showMarkers != null
+                ? lineDataPoint.showMarkers
+                : this.shapes.showMarkers;
+            const stepped: boolean = lineDataPoint.stepped != null
+                ? lineDataPoint.stepped
+                : this.shapes.stepped;
+            // if (showMarkers && stepped) {
+            //     const markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
+            //     const markers = this.container.select("#" + markerPathId);
+            //     markers.style("opacity", opacity);
+            // }
+            return opacity;
+        });
+        this.dotsSelection.style('opacity', getSelectionOpacity);
+        if (hasSelection)
+            this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
     }
 
     public renderLassoSelection(hasSelection: boolean): void {

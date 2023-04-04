@@ -212,7 +212,6 @@ export class Visual implements IVisual {
 
             //Legend
             renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
-
             let containerSize = {
                 width: options.viewport.width - margin.left - margin.right,
                 height: options.viewport.height - margin.top - margin.bottom,
@@ -512,7 +511,7 @@ export class Visual implements IVisual {
                     }
 
                     margin = {top: 0, left: 0, bottom: 0, right: 0};
-                    // renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
+                    renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
                     legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
                     containerSize = {
                         width: options.viewport.width - margin.left - margin.right,

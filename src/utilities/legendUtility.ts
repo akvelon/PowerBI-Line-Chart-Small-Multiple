@@ -213,156 +213,156 @@ export function drawCustomLegendIcons(legendItems: d3Selection<any>, legendSetti
     // currentItemWidth = currentItemWidth < 0 ? 0 : currentItemWidth;
 
     // for (let i = 0; i < legendItemsLen; i++) {
-        // const parent: d3Selection<any> = d3select(legendItems.nodes()[i]);
-        // const legendIconElement = parent.select('.legendIcon');
-        // const legendIconElementTransform = legendIconElement.attr('transform');
-        // const translate = parseTranslateTransform(legendIconElementTransform);
-        // let cx: number = isTopOrBottomLegend
-        //     ? ((isLastData)
-        //         ? cx1
-        //         : cx0 + i * currentItemWidth)
-        //     : minCx;
-        // const cy = +translate.y;
-        // legendIconElement.attr('transform', svgTranslate(cx, cy));
+    // const parent: d3Selection<any> = d3select(legendItems.nodes()[i]);
+    // const legendIconElement = parent.select('.legendIcon');
+    // const legendIconElementTransform = legendIconElement.attr('transform');
+    // const translate = parseTranslateTransform(legendIconElementTransform);
+    // let cx: number = isTopOrBottomLegend
+    //     ? ((isLastData)
+    //         ? cx1
+    //         : cx0 + i * currentItemWidth)
+    //     : minCx;
+    // const cy = +translate.y;
+    // legendIconElement.attr('transform', svgTranslate(cx, cy));
 
-        // const text: d3Selection<any> = parent.select('text');
-        // const name: string = parent.select('title').text();
-        // console.log(name);
+    // const text: d3Selection<any> = parent.select('text');
+    // const name: string = parent.select('title').text();
+    // console.log(name);
 
-        // let dataPointIndex: number;
-        // for (let j = 0; j < dataPoints.length; j++) {
-        //     if (dataPoints[j].label == name) {
-        //         dataPointIndex = j;
-        //         break;
-        //     }
-        // }
+    // let dataPointIndex: number;
+    // for (let j = 0; j < dataPoints.length; j++) {
+    //     if (dataPoints[j].label == name) {
+    //         dataPointIndex = j;
+    //         break;
+    //     }
+    // }
 
-        // const dataPoint: ScrollableLegendDataPoint = dataPoints[dataPointIndex];
-        // console.log(dataPoint);
+    // const dataPoint: ScrollableLegendDataPoint = dataPoints[dataPointIndex];
+    // console.log(dataPoint);
 
-        //start set short name for legend label
-        // const textProp: TextProperties = {
-        //     text: name,
-        //     fontFamily: legendSettings.fontFamily,
-        //     fontSize: legendSettings.fontSize + 'px',
-        // };
-        // let shortText: string;
-        // if (isTopOrBottomLegend) {
-        //     cx = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
-        //     legendIconElement.attr('transform', svgTranslate(cx, cy));
-        //     let deltaX: number = isLongMarker ? -padding - lineLen : -padding - circleD;
-        //     deltaX = (i < legendItemsLen - 1) ? deltaX + currentItemWidth : deltaX + svgLegendWidth - arrowWidth - cx;
-        //     const maxTextLen: number = fromPixelToPoint(deltaX);
-        //     shortText = getTailoredTextOrDefault(textProp, maxTextLen);
-        //     textProp.text = shortText;
-        //     const textLen: number = fromPointToPixel(measureTextWidth(textProp));
-        //     cx1 = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
-        //     cx1 = cx1 + padding + textLen + padding;
-        // } else {
-        //     const textX: number = +text.attr('x');
-        //     const textLen: number = isLongMarker
-        //         ? svgLegendWidth - textX + (circleD - lineLen)
-        //         : svgLegendWidth - textX;
-        //     const maxTextLen: number = fromPixelToPoint(textLen) - padding;
-        //     shortText = getTailoredTextOrDefault(textProp, maxTextLen);
-        // }
+    //start set short name for legend label
+    // const textProp: TextProperties = {
+    //     text: name,
+    //     fontFamily: legendSettings.fontFamily,
+    //     fontSize: legendSettings.fontSize + 'px',
+    // };
+    // let shortText: string;
+    // if (isTopOrBottomLegend) {
+    //     cx = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
+    //     legendIconElement.attr('transform', svgTranslate(cx, cy));
+    //     let deltaX: number = isLongMarker ? -padding - lineLen : -padding - circleD;
+    //     deltaX = (i < legendItemsLen - 1) ? deltaX + currentItemWidth : deltaX + svgLegendWidth - arrowWidth - cx;
+    //     const maxTextLen: number = fromPixelToPoint(deltaX);
+    //     shortText = getTailoredTextOrDefault(textProp, maxTextLen);
+    //     textProp.text = shortText;
+    //     const textLen: number = fromPointToPixel(measureTextWidth(textProp));
+    //     cx1 = isLongMarker ? cx + lineLen / 2 : cx + circleD / 2;
+    //     cx1 = cx1 + padding + textLen + padding;
+    // } else {
+    //     const textX: number = +text.attr('x');
+    //     const textLen: number = isLongMarker
+    //         ? svgLegendWidth - textX + (circleD - lineLen)
+    //         : svgLegendWidth - textX;
+    //     const maxTextLen: number = fromPixelToPoint(textLen) - padding;
+    //     shortText = getTailoredTextOrDefault(textProp, maxTextLen);
+    // }
 
-        // text.text(shortText);
+    // text.text(shortText);
 
-        //end set short name for legend label
-        // parent.selectAll('.legend-item-line').remove();
-        // parent.selectAll('.legend-item-marker').remove();
+    //end set short name for legend label
+    // parent.selectAll('.legend-item-line').remove();
+    // parent.selectAll('.legend-item-marker').remove();
 
-        // legendIconElement.attr('opacity', 1);
+    // legendIconElement.attr('opacity', 1);
 
-        // const customLegendLine: d3Selection<any> = parent.insert('path', ':first-child').classed('legend-item-line', true);
-        // const customLegendMarker: d3Selection<any> = parent.insert('path', 'circle').classed('legend-item-marker', true);
+    // const customLegendLine: d3Selection<any> = parent.insert('path', ':first-child').classed('legend-item-line', true);
+    // const customLegendMarker: d3Selection<any> = parent.insert('path', 'circle').classed('legend-item-marker', true);
 
-        // console.log(legendStyle);
-        // switch (legendStyle) {
-        //     case LegendIconType.markers: {
-        //         // text.attr('x', cx + circleD / 2 + padding);
-        //         const showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-        //         if (showMarkers) {
-        //             // // draw marker
-        //             // MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
-        //             // const color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.color;
-        //             // const markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, color);
-        //             // if (markerId) {
-        //             //     customLegendMarker.attr('d', 'M' + cx + ',' + cy + 'Z')
-        //             //         .attr('stroke-width', '2')
-        //             //         .attr('fill', 'none')
-        //             //         .attr('marker-start', 'url(#' + markerId + ')')
-        //             //         .append('title')
-        //             //         .text(dataPoint.label);
-        //             //     legendIconElement.attr('opacity', 0);
-        //             // }
-        //         } else {
-        //             if (legendSettings.circleDefaultIcon != true) {
-        //                 //draw short line
-        //                 // customLegendLine.attr('transform', 'translate(' + cx + ',' + cy + ')')
-        //                 //     .attr('d', 'M0 0 m -5 0 l 10 0')
-        //                 //     .attr('stroke-width', '2')
-        //                 //     .style('fill', dataPoint.color)
-        //                 //     .style('stroke', dataPoint.color)
-        //                 //     .style('stroke-linejoin', 'round')
-        //                 //     .append('title')
-        //                 //     .text(dataPoint.label);
-        //                 // legendIconElement.attr('opacity', 0);
-        //             }
-        //         }
-        //         break;
-        //     }
-        //     case LegendIconType.lineMarkers: {
-        //         //draw line and marker
-        //         // const textX: number = cx + lineLen / 2 + padding;
-        //         // text.attr('x', textX);
-        //         // const lineStart: number = -lineLen - padding;
-        //         // const lineEnd: number = -padding;
-        //         // customLegendLine.attr('transform', 'translate(' + textX + ',' + cy + ')')
-        //         //     .attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0')
-        //         //     .attr('stroke-width', '2')
-        //         //     .attr('fill', 'none')
-        //         //     .style('stroke', dataPoint.color)
-        //         //     .append('title')
-        //         //     .text(dataPoint.label);
-        //
-        //         // legendIconElement.attr('opacity', 0);
-        //         // legendIconElement.attr('r', lineLen / 2);
-        //         // const showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
-        //         // if (showMarkers) {
-        //         //     MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
-        //         //     const markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, dataPoint.color);
-        //         //     if (markerId) {
-        //         //         customLegendMarker.attr('d', 'M' + cx + ',' + cy + 'Z')
-        //         //             .attr('stroke-width', '2')
-        //         //             .attr('fill', 'none')
-        //         //             .attr('marker-start', 'url(#' + markerId + ')')
-        //         //             .append('title')
-        //         //             .text(dataPoint.label);
-        //         //     }
-        //         // }
-        //         break;
-        //     }
-        //     case LegendIconType.line: {
-        //         // customLegendMarker.remove();
-        //         //draw line
-        //         // const textX: number = cx + lineLen / 2 + padding;
-        //         // text.attr('x', textX);
-        //         // const lineStart: number = -lineLen - padding;
-        //         // const lineEnd: number = -padding;
-        //         // customLegendLine.attr('transform', 'translate(' + textX + ',' + cy + ')')
-        //         //     .attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0')
-        //         //     .attr('stroke-width', '2')
-        //         //     .attr('fill', 'none')
-        //         //     .style('stroke', dataPoint.color)
-        //         //     .append('title')
-        //         //     .text(dataPoint.label);
-        //         // legendIconElement.attr('opacity', 0);
-        //         // legendIconElement.attr('r', lineLen / 2);
-        //         break;
-        //     }
-        // }
+    // console.log(legendStyle);
+    // switch (legendStyle) {
+    //     case LegendIconType.markers: {
+    //         // text.attr('x', cx + circleD / 2 + padding);
+    //         const showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
+    //         if (showMarkers) {
+    //             // // draw marker
+    //             // MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
+    //             // const color: string = legendSettings.matchLineColor ? dataPoint.color : dataPoint.color;
+    //             // const markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, color);
+    //             // if (markerId) {
+    //             //     customLegendMarker.attr('d', 'M' + cx + ',' + cy + 'Z')
+    //             //         .attr('stroke-width', '2')
+    //             //         .attr('fill', 'none')
+    //             //         .attr('marker-start', 'url(#' + markerId + ')')
+    //             //         .append('title')
+    //             //         .text(dataPoint.label);
+    //             //     legendIconElement.attr('opacity', 0);
+    //             // }
+    //         } else {
+    //             if (legendSettings.circleDefaultIcon != true) {
+    //                 //draw short line
+    //                 // customLegendLine.attr('transform', 'translate(' + cx + ',' + cy + ')')
+    //                 //     .attr('d', 'M0 0 m -5 0 l 10 0')
+    //                 //     .attr('stroke-width', '2')
+    //                 //     .style('fill', dataPoint.color)
+    //                 //     .style('stroke', dataPoint.color)
+    //                 //     .style('stroke-linejoin', 'round')
+    //                 //     .append('title')
+    //                 //     .text(dataPoint.label);
+    //                 // legendIconElement.attr('opacity', 0);
+    //             }
+    //         }
+    //         break;
+    //     }
+    //     case LegendIconType.lineMarkers: {
+    //         //draw line and marker
+    //         // const textX: number = cx + lineLen / 2 + padding;
+    //         // text.attr('x', textX);
+    //         // const lineStart: number = -lineLen - padding;
+    //         // const lineEnd: number = -padding;
+    //         // customLegendLine.attr('transform', 'translate(' + textX + ',' + cy + ')')
+    //         //     .attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0')
+    //         //     .attr('stroke-width', '2')
+    //         //     .attr('fill', 'none')
+    //         //     .style('stroke', dataPoint.color)
+    //         //     .append('title')
+    //         //     .text(dataPoint.label);
+    //
+    //         // legendIconElement.attr('opacity', 0);
+    //         // legendIconElement.attr('r', lineLen / 2);
+    //         // const showMarkers: boolean = (dataPoint.showMarkers == true || (dataPoint.showMarkers == null && this.shapes.showMarkers));
+    //         // if (showMarkers) {
+    //         //     MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix + LegendBehavior.dimmedLegendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, LegendBehavior.dimmedLegendColor);
+    //         //     const markerId: string = MarkersUtility.initMarker(defs, dataPoint.label + LegendBehavior.legendMarkerSuffix, dataPoint.seriesMarkerShape, markerSize, dataPoint.color);
+    //         //     if (markerId) {
+    //         //         customLegendMarker.attr('d', 'M' + cx + ',' + cy + 'Z')
+    //         //             .attr('stroke-width', '2')
+    //         //             .attr('fill', 'none')
+    //         //             .attr('marker-start', 'url(#' + markerId + ')')
+    //         //             .append('title')
+    //         //             .text(dataPoint.label);
+    //         //     }
+    //         // }
+    //         break;
+    //     }
+    //     case LegendIconType.line: {
+    //         // customLegendMarker.remove();
+    //         //draw line
+    //         // const textX: number = cx + lineLen / 2 + padding;
+    //         // text.attr('x', textX);
+    //         // const lineStart: number = -lineLen - padding;
+    //         // const lineEnd: number = -padding;
+    //         // customLegendLine.attr('transform', 'translate(' + textX + ',' + cy + ')')
+    //         //     .attr('d', 'M' + lineStart + ',0L' + lineEnd + ',0')
+    //         //     .attr('stroke-width', '2')
+    //         //     .attr('fill', 'none')
+    //         //     .style('stroke', dataPoint.color)
+    //         //     .append('title')
+    //         //     .text(dataPoint.label);
+    //         // legendIconElement.attr('opacity', 0);
+    //         // legendIconElement.attr('r', lineLen / 2);
+    //         break;
+    //     }
+    // }
     // }
 
     // if (legendSettings.position == 'TopCenter' || legendSettings.position == 'BottomCenter') {
@@ -726,8 +726,7 @@ function buildLegendDataForMultipleValues(
     };
 }
 
-function appendLegendMargins(legend: IScrollableLegend, margins: IMargin) {
-
+function appendLegendMargins(legend: IScrollableLegend, margins: IMargin): void {
     if (legend) {
         const legendViewPort: IViewport = legend.getMargins();
         const legendOrientation: LegendPosition = legend.getOrientation();
@@ -746,7 +745,6 @@ function appendLegendMargins(legend: IScrollableLegend, margins: IMargin) {
             }
         }
     }
-    return margins;
 }
 
 export function positionChartArea(container: d3Selection<any>, legend: IScrollableLegend) {

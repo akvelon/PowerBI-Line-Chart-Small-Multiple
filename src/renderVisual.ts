@@ -46,6 +46,7 @@ import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -341,6 +342,7 @@ export class RenderVisual {
         return xRange;
     }
 
+    // eslint-disable-next-line max-lines-per-function
     private retrieveXData(
         xIsCategorical: boolean,
         lines: LineDataPoint[],
@@ -505,11 +507,21 @@ export class RenderVisual {
         return xAxisData.xAxisDataPoints.length;
     }
 
-    public renderSmallMultiple(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, lineKey: string,
-                               isResponsive: boolean, legendHeight: number, isLegendHidden: boolean, rectGlobalX: number, rectGlobalY: number) {
+    // eslint-disable-next-line max-lines-per-function
+    public renderSmallMultiple(
+        svgContainer: d3Selection<SVGElement>,
+        lines: LineDataPoint[],
+        width: number,
+        height: number,
+        lineKey: string,
+        isResponsive: boolean,
+        legendHeight: number,
+        isLegendHidden: boolean,
+        rectGlobalX: number,
+        rectGlobalY: number) {
         svgContainer.classed(Visual.SmallMultipleSelector.className, true);
         svgContainer = svgContainer.append('svg');
-        const plotSize = {width: width, height: height};
+        const plotSize: ISize = {width: width, height: height};
 
         let axisPadding: number = this.retrieveAxisPadding();
         let yAxisWidth = this.retrieveYAxisWidth(lines, svgContainer);
@@ -698,6 +710,7 @@ export class RenderVisual {
             true);
     }
 
+    // eslint-disable-next-line max-lines-per-function
     private renderXAxis(
         svgContainer: d3Selection<SVGElement>,
         plotSize: any,
@@ -952,6 +965,7 @@ export class RenderVisual {
         return xAxisHeight;
     }
 
+    // eslint-disable-next-line max-lines-per-function
     private renderYAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, y: AxisScale<AxisDomain>, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
         if (!this.settings.yAxis.show) return;
         let yAxis: d3Axis<AxisDomain>;
@@ -1175,6 +1189,7 @@ export class RenderVisual {
         return domainY;
     }
 
+    // eslint-disable-next-line max-lines-per-function
     private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<[number, number]>) {
         //Trend lines
         const svgLinesContainerE: d3Selection<SVGElement> = svgContainer
@@ -1197,14 +1212,14 @@ export class RenderVisual {
             .data(lines)
             .join('path')
             .classed(Visual.SimpleLineSelector.className, true)
-            // .attr('d', (dataPoint: LineDataPoint, index: number) => {
-            //     const lineD = lineDD[index];
-            //     const stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                // const dataLine: string = (stepped)
-                //     ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-                //     : lineD;
-                // return dataLine;
-            // })
+            .attr('d', (dataPoint: LineDataPoint, index: number) => {
+                const lineD = lineDD[index];
+                const stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                const dataLine: string = (stepped)
+                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                    : lineD;
+                return dataLine;
+            })
             .attr('stroke', (dataPoint: LineDataPoint) => {
                 return dataPoint.color;
             })

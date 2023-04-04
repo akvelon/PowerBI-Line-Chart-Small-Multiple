@@ -97,9 +97,9 @@ export class LegendBehavior implements IInteractiveBehavior {
         this.renderLassoSelection(this.selectedLegendNames, hasSelection, false);
     }
 
-    // public getSelected(): string[] {
-    //     return this.selectedLegendNames;
-    // }
+    public getSelected(): string[] {
+        return this.selectedLegendNames;
+    }
 
     public renderLassoSelection(selectedLegendNames: string[], hasSelection: boolean, multiSelect: boolean) {
         if (!selectedLegendNames)

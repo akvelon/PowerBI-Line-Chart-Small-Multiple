@@ -93,54 +93,55 @@ export class MarkersUtility {
     //     return markerId;
     // }
     //
-    // public static getDataLineForForSteppedLineChart(dataLine: string): string {
-    //     let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
-    //     const markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
-    //
-    //     newDataLine = 'M' + markedPoints[0];
-    //     const firstItem: string[] = markedPoints[0].split(',');
-    //     let currentX: number = +firstItem[0];
-    //     let currentY: number = +firstItem[1];
-    //
-    //     let j: number = 1;
-    //     while (j < markedPoints.length) {
-    //         const action: string = markedPoints[j][0];
-    //         switch (action) {
-    //             case 'H': {
-    //                 const newX: number = +markedPoints[j].replace(/\H/, '');
-    //                 const newDelta: number = newX - currentX;
-    //                 currentX = newX;
-    //                 newDataLine = newDataLine + markedPoints[j];
-    //                 break;
-    //             }
-    //             case 'V': {
-    //                 const newY: number = +markedPoints[j].replace(/\V/, '');
-    //                 currentY = newY;
-    //                 newDataLine = newDataLine + markedPoints[j];
-    //                 break;
-    //             }
-    //             case 'M': {
-    //                 const data: string[] = markedPoints[j].replace(/\M/, '').split(',');
-    //                 currentX = +data[0];
-    //                 currentY = +data[1];
-    //                 newDataLine = newDataLine + markedPoints[j];
-    //                 break;
-    //             }
-    //             case 'L': {
-    //                 const data: string[] = markedPoints[j].replace(/\L/, '').split(',');
-    //                 const newX: number = +data[0];
-    //                 const newY: number = +data[1];
-    //                 const newX1: number = (newX + currentX) / 2;
-    //                 newDataLine = newDataLine + 'H' + newX1 + 'V' + newY + 'H' + newX;
-    //                 currentX = newX;
-    //                 currentY = newY;
-    //                 break;
-    //             }
-    //         }
-    //         j = j + 1;
-    //     }
-    //     return newDataLine;
-    // }
+    public static getDataLineForForSteppedLineChart(dataLine: string): string {
+        let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
+        const markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
+
+        newDataLine = 'M' + markedPoints[0];
+        const firstItem: string[] = markedPoints[0].split(',');
+        let currentX: number = +firstItem[0];
+        let currentY: number = +firstItem[1];
+
+        let j: number = 1;
+        while (j < markedPoints.length) {
+            const action: string = markedPoints[j][0];
+            switch (action) {
+                case 'H': {
+                    const newX: number = +markedPoints[j].replace(/\H/, '');
+                    const newDelta: number = newX - currentX;
+                    currentX = newX;
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'V': {
+                    const newY: number = +markedPoints[j].replace(/\V/, '');
+                    currentY = newY;
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'M': {
+                    const data: string[] = markedPoints[j].replace(/\M/, '').split(',');
+                    currentX = +data[0];
+                    currentY = +data[1];
+                    newDataLine = newDataLine + markedPoints[j];
+                    break;
+                }
+                case 'L': {
+                    const data: string[] = markedPoints[j].replace(/\L/, '').split(',');
+                    const newX: number = +data[0];
+                    const newY: number = +data[1];
+                    const newX1: number = (newX + currentX) / 2;
+                    newDataLine = newDataLine + 'H' + newX1 + 'V' + newY + 'H' + newX;
+                    currentX = newX;
+                    currentY = newY;
+                    break;
+                }
+            }
+            j = j + 1;
+        }
+        return newDataLine;
+    }
+
     //
     // public static drawMarkersForSteppedLineChart(container: d3Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
     //     const markerAttr = 'url(#' + markerId + ')';
