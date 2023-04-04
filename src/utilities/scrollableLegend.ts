@@ -108,11 +108,9 @@ export interface ScrollableLegendItem {
 
 export interface ScrollableLegendBehaviorOptions extends IBehaviorOptions<ScrollableLegendDataPoint> {
     legendItems: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
-    // legendItemLines: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
-    // legendIcons: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
-    // legendText: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    legendItemLines: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
+    legendIcons: d3Selection<BaseType, ScrollableLegendDataPoint, SVGGElement, unknown>;
     clearCatcher: d3Selection<any, any, any, any>;
-    refreshLegend: () => void;
 }
 
 
@@ -321,10 +319,6 @@ export class ScrollableLegend implements IScrollableLegend {
         clonedData.dataPoints = newDataPoints;
         this.setTooltipToLegendItems(clonedData);
         this.drawLegendInternal(clonedData, viewport, true /* perform auto width */);
-    }
-
-    public refreshLegend() {
-        this.drawLegend(this.data, this.parentViewport);
     }
 
     changeOrientation(orientation: LegendPosition): void {
@@ -558,16 +552,14 @@ export class ScrollableLegend implements IScrollableLegend {
         if (this.interactivityService) {
             const behaviorOptions: ScrollableLegendBehaviorOptions = {
                 legendItems: mergedLegendItems,
-                // legendIcons: mergedLegendIcons,
-                // legendItemLines: mergedLegendItemLines,
-                // legendText: mergedLegendText,
+                legendIcons: mergedLegendIcons,
+                legendItemLines: mergedLegendItemLines,
                 clearCatcher: this.clearCatcher,
                 dataPoints: data.dataPoints,
                 behavior: this.interactiveBehavior,
                 interactivityServiceOptions: {
                     isLegend: true,
                 },
-                refreshLegend: this.refreshLegend.bind(this),
             };
             this.interactivityService.bind(behaviorOptions);
             this.interactiveBehavior.renderSelection(hasSelection);
