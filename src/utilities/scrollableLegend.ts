@@ -489,7 +489,7 @@ export class ScrollableLegend implements IScrollableLegend {
                 return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
             })
             .attr('opacity', (d) => {
-                if (!d.showMarkers) {
+                if (d.legendIconType == LegendIconType.lineMarkers && !d.showMarkers) {
                     return 0;
                 }
 
