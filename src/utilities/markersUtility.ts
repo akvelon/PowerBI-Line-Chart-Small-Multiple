@@ -1,8 +1,10 @@
 'use strict';
 
-import {d3Selection} from '../visualInterfaces';
+import {d3Selection, LineDataPoint} from '../visualInterfaces';
 import {Visual} from '../visual';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
+import {Shapes} from '../settings';
+import {LegendIconType} from '../legendIconType';
 
 export class MarkersUtility {
     // public static initMarker(
@@ -86,13 +88,13 @@ export class MarkersUtility {
         }
     }
 
-    // public static retrieveMarkerName(uniqueName: string, markerShape: string): string {
-    //     let markerId: string = markerShape + uniqueName;
-    //     markerId = markerId.replace(/\+/g, 'plus');
-    //     markerId = markerId.replace(/[^0-9a-zA-Z]/g, '');
-    //     return markerId;
-    // }
-    //
+    public static retrieveMarkerName(uniqueName: string, markerShape: string): string {
+        let markerId: string = markerShape + uniqueName;
+        markerId = markerId.replace(/\+/g, 'plus');
+        markerId = markerId.replace(/[^0-9a-zA-Z]/g, '');
+        return markerId;
+    }
+
     public static getDataLineForForSteppedLineChart(dataLine: string): string {
         let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
         const markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
@@ -140,6 +142,56 @@ export class MarkersUtility {
             j = j + 1;
         }
         return newDataLine;
+    }
+
+    public static appendMarkerDefsForLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], shapes: Shapes) {
+        const markerDefs = svgContainer
+            .append('defs')
+            .selectAll('path')
+            .data(lines);
+
+        const markerNames = lines.reduce<{
+            [key: string]: string
+        }>((previousValue, currentValue) => {
+            const markerShape = currentValue.seriesMarkerShape || shapes.markerShape;
+            previousValue[currentValue.name] = MarkersUtility.retrieveMarkerName(currentValue.name, markerShape);
+            return previousValue;
+        }, {});
+
+        markerDefs.exit()
+            .remove();
+
+        markerDefs.enter()
+            .append('marker')
+            .attr('id', (d) => markerNames[d.name])
+            .attr('refX', 0)
+            .attr('refY', 0)
+            .attr('viewBox', '-6 -6 12 12')
+            .attr('markerWidth', (d) => d.markerSize ?? shapes.markerSize)
+            .attr('markerHeight', (d) => d.markerSize ?? shapes.markerSize)
+            .append('path')
+            .attr('d', (dataPoint) => {
+                return MarkersUtility.getPath(dataPoint.seriesMarkerShape ?? shapes.markerShape ?? SeriesMarkerShape.circle);
+            })
+            .attr('stroke-width', (dataPoint) => {
+                if (dataPoint.lineStyle) {
+                    return 2;
+                }
+                return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape ?? shapes.markerShape ?? SeriesMarkerShape.circle);
+            })
+            .attr('opacity', () => {
+                return 1;
+            })
+            .style('fill', (dataPoint) => {
+                return dataPoint.color;
+            })
+            .style('stroke', (dataPoint) => dataPoint.color)
+            .style('stroke-dasharray', () => {
+                return null;
+            })
+            .style('stroke-linejoin', 'round');
+
+        return markerNames;
     }
 
     //

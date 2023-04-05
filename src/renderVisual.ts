@@ -1225,6 +1225,10 @@ export class RenderVisual {
             lineDD.push(lineD);
         }
 
+        // Append marker defs used to show markers on the lines.
+        const markerNames = MarkersUtility.appendMarkerDefsForLines(svgContainer, lines, shapes);
+
+        // Render lines
         svgLinesContainerE
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(lines)
@@ -1233,61 +1237,47 @@ export class RenderVisual {
             .attr('d', (dataPoint: LineDataPoint, index: number) => {
                 const lineD = lineDD[index];
                 const stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-                const dataLine: string = (stepped)
+                return (stepped)
                     ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
                     : lineD;
-                return dataLine;
             })
-            .attr('stroke', (dataPoint: LineDataPoint) => {
-                return dataPoint.color;
-            })
-            .attr('stroke-width', (dataPoint: LineDataPoint) => {
-                const strokeWidth: number = (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth;
-                return strokeWidth;
-            })
-            .attr('stroke-linejoin', (dataPoint: LineDataPoint) => {
-                const strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
-                return strokeLineJoin;
-            })
-            .attr('stroke-dasharray', (dataPoint: LineDataPoint): string | null => {
-                return !dataPoint.lineStyle
+            .attr('stroke', (dataPoint: LineDataPoint) => dataPoint.color)
+            .attr('stroke-width', (dataPoint: LineDataPoint) =>
+                (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth)
+            .attr('stroke-linejoin', (dataPoint: LineDataPoint) =>
+                (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin)
+            .attr('stroke-dasharray', (dataPoint: LineDataPoint): string | null =>
+                !dataPoint.lineStyle
                     ? getLineStyleParam(this.settings.shapes.lineStyle)
-                    : getLineStyleParam(dataPoint.lineStyle);
-            })
+                    : getLineStyleParam(dataPoint.lineStyle))
             .attr('fill', 'none')
-            .style('opacity', (dataPoint: LineDataPoint) => {
-                const opacity: number = getOpacity(dataPoint.selected, hasSelection);
-                const showMarkers: boolean = dataPoint.showMarkers != null
-                    ? dataPoint.showMarkers
-                    : shapes.showMarkers;
-                const stepped: boolean = dataPoint.stepped != null
-                    ? dataPoint.stepped
-                    : shapes.stepped;
-                // if (showMarkers && stepped) {
-                //     const markerPathId: string = MarkersUtility.retrieveMarkerName(dataPoint.lineKey, Visual.MarkerLineSelector.className);
-                //     svgLinesContainerE.selectAll('#' + markerPathId).style('opacity', opacity);
-                // }
-                return opacity;
-            });
+            .style('opacity', (dataPoint: LineDataPoint) =>
+                getOpacity(dataPoint.selected, hasSelection));
 
-        // const lineNamesWithMarkers = RenderVisual.retrieveLineNamesWithMarkers(svgContainer, svgLinesContainerE, lineDD, this.settings.shapes, lines);
-        // const svgLines = svgLinesContainerE.selectAll(Visual.SimpleLineSelector.selectorName);
+        // Render markers above the lines.
+        const getMarker = (d: LineDataPoint) => d.showMarkers ?? shapes.showMarkers
+            ? `url(#${markerNames[d.name]})`
+            : null;
+        svgLinesContainerE
+            .selectAll(Visual.MarkerLineSelector.selectorName)
+            .data(lines)
+            .join('path')
+            .classed(Visual.MarkerLineSelector.className, true)
+            .attr('d', (dataPoint: LineDataPoint, index: number) => lineDD[index])
+            .attr('stroke-width', (dataPoint: LineDataPoint) =>
+                (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth)
+            .attr('fill', 'none')
+            .attr('marker-start', getMarker)
+            .attr('marker-mid', getMarker)
+            .attr('marker-end', getMarker)
+            .style('opacity', (dataPoint: LineDataPoint) =>
+                getOpacity(dataPoint.selected, hasSelection));
+
+        // const dots: LineDataPoint[] = [];
         // for (let i = 0; i < lines.length; i++) {
-        // const dataPoint: LineDataPoint = lines[i];
-        // const marker: string = lineNamesWithMarkers[dataPoint.name];
-        // if (marker) {
-        //     const item: d3Selection<any> = d3select(svgLines.nodes()[i]);
-        //     item.attr('marker-start', marker);
-        //     item.attr('marker-mid', marker);
-        //     item.attr('marker-end', marker);
+        //     if (lines[i].points && lines[i].points.length == 1)
+        //         dots.push(lines[i]);
         // }
-        // }
-
-        const dots: LineDataPoint[] = [];
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].points && lines[i].points.length == 1)
-                dots.push(lines[i]);
-        }
 
         // svgLinesContainerE.append("g")
         //     .selectAll(Visual.SimpleLineSelector.selectorName)
