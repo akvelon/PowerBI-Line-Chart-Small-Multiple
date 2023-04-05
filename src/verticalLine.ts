@@ -119,7 +119,10 @@ function convertCategoryItemToString(categoryItem: PrimitiveValue, categoryIsDat
 
 export function drawPointsForVerticalLine(verticalLineContainer: d3Selection<any>, x: number, points: LinePoint[]) {
     verticalLineContainer.selectAll('circle').remove();
-    if (!points) return;
+    if (!points) {
+        return;
+    }
+
     for (let j = 0; j < points.length; j++) {
         const point: LinePoint = points[j];
         if (!point.showMarkers) {
