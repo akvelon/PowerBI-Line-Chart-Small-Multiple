@@ -8,7 +8,7 @@ import {d3Selection} from './visualInterfaces';
 import {LegendSettings} from './settings';
 import {calculateItemWidth} from './utilities/legendUtility';
 import {LegendDataPoint} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
-import {BaseType, Selection} from 'd3-selection';
+import {BaseType, Selection, ValueFn} from 'd3-selection';
 import {
     ScrollableLegendBehaviorOptions,
     ScrollableLegendDataPoint,
@@ -65,7 +65,7 @@ export class LegendBehavior implements IInteractiveBehavior {
         this.clearCatcher = options.clearCatcher;
         this.selectionHandler = selectionHandler;
 
-        options.legendItems.on('click', (e: MouseEvent, d: LegendDataPoint) => {
+        options.legendItems.on('click', (e: MouseEvent, d: ScrollableLegendDataPoint) => {
             const multiSelect: boolean = e.ctrlKey /* Ctrl on Windows */ || e.metaKey /* Cmd on Mac*/;
             const label = d.tooltip ?? d.label;
             const index: number = this.selectedLegendNames.indexOf(label);
@@ -117,8 +117,8 @@ export class LegendBehavior implements IInteractiveBehavior {
                 : isSelectedPreviously;
         };
 
-        const getLegendSelectionColor = (d: ScrollableLegendDataPoint) =>
-            selectedLegendNames.length == 0 || isSelected(d) ? d.color : LegendBehavior.dimmedLegendColor;
+        const getLegendSelectionColor = (d: ScrollableLegendDataPoint): string | null =>
+            selectedLegendNames.length == 0 || isSelected(d) ? d.color ?? null : LegendBehavior.dimmedLegendColor;
 
         this.legendIcons
             .style('fill', getLegendSelectionColor);

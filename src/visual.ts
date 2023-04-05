@@ -5,7 +5,8 @@ import {
     CategoryType,
     d3Selection,
     LineDataPoint,
-    LineKeyIndex, VerticalLineDataItemsGlobalWithKey,
+    LineKeyIndex,
+    VerticalLineDataItemsGlobalWithKey,
     VisualDataPoint,
     VisualDomain,
     VisualViewModel,
@@ -41,6 +42,7 @@ import {RenderVisual} from './renderVisual';
 import {EnumerateObject} from './utilities/objectEnumerationUtility';
 import {SeriesMarkerShape} from './seriesMarkerShape';
 import {IMargin} from 'powerbi-visuals-utils-svgutils';
+import {createLegend, IScrollableLegend, ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 import IVisual = powerbi.extensibility.visual.IVisual;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
@@ -58,10 +60,9 @@ import ISelectionId = powerbi.extensibility.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
-import {createLegend, IScrollableLegend, ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
-    let format: string = category.source.format;
+    let format = category.source.format;
     let categoryValue: PrimitiveValue;
     if (category.source.type && category.source.type.dateTime) {
         format = format ? format : NiceDateFormat;
@@ -73,33 +74,32 @@ function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, 
         format: format,
         cultureSelector: locale,
     });
-    const value: string = formatter.format(categoryValue);
-    return value;
+
+    return formatter.format(categoryValue);
 }
 
 function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean): CategoryType {
-    if ((categoryIsBoolean && categoryIsScalar) || (categoryIsBoolean && categoryIsDate) || (categoryIsScalar && categoryIsDate))
+    if ((categoryIsBoolean && categoryIsScalar) || (categoryIsBoolean && categoryIsDate) || (categoryIsScalar && categoryIsDate)) {
         return CategoryType.Error;
-    const categoryType: CategoryType = (categoryIsScalar)
+    }
+
+    return (categoryIsScalar)
         ? CategoryType.Number
         : ((categoryIsDate)
             ? CategoryType.Date
             : ((categoryIsBoolean)
                 ? CategoryType.Boolean
                 : CategoryType.String));
-    return categoryType;
 }
 
 function sortNumberLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
-    const result: number = sortNumber(+a.tooltip, +b.tooltip);
-    return result;
+    return sortNumber(+(a.tooltip ?? 0), +(b.tooltip ?? 0));
 }
 
 function sortDateLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
-    const a1: Date = new Date(a.tooltip);
-    const b1: Date = new Date(b.tooltip);
-    const result: number = a1.getTime() - b1.getTime();
-    return result;
+    const a1: Date = new Date(a.tooltip ?? '');
+    const b1: Date = new Date(b.tooltip ?? '');
+    return a1.getTime() - b1.getTime();
 }
 
 function sortNumber(a, b) {
@@ -114,15 +114,14 @@ function sortDate(a, b) {
     return a1.getTime() - b1.getTime();
 }
 
-function get_sorted(array: any[], type: ValueTypeDescriptor): PrimitiveValue[] {
+function get_sorted(array: any[], type: ValueTypeDescriptor | undefined): PrimitiveValue[] {
     let result: PrimitiveValue[] = [];
     if (array) {
-        const data = (type && type.numeric)
+        result = (type && type.numeric)
             ? array.sort(sortNumber)
             : ((type && type.dateTime)
                 ? array.sort(sortDate)
                 : array.sort());
-        result = data;
     }
     return result;
 }
@@ -233,7 +232,7 @@ export class Visual implements IVisual {
 
             this.model.settings.smallMultiple.enable = rowNumber > 1 || columnsNumber > 1;
             if (!this.model.settings.smallMultiple.enable)
-                if (this.model.settings.xAxis.minCategoryWidth < this.model.settings.xAxis.fontSize)
+                if ((this.model.settings.xAxis.minCategoryWidth ?? 0) < this.model.settings.xAxis.fontSize)
                     this.model.settings.xAxis.minCategoryWidth = this.model.settings.xAxis.fontSize;
 
             const titleHeight: number = this.model.settings.smallMultiple.fontSize * 2;
@@ -272,7 +271,7 @@ export class Visual implements IVisual {
                 this.model.settings.xAxis.minCategoryWidth = null;
             if (this.model.settings.xAxis.axisType === 'categorical' && !matrixFlowIndex) {
                 const maxCountOfXAxis: number = renderSimpleVisual.retrieveMaxCountOfXAxis(this.model.lines);
-                const maxWidth: number = maxCountOfXAxis * this.model.settings.xAxis.minCategoryWidth;
+                const maxWidth: number = maxCountOfXAxis * (this.model.settings.xAxis.minCategoryWidth ?? 0);
                 itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
             }
 
@@ -487,7 +486,7 @@ export class Visual implements IVisual {
 
                 let legendPosition: string = this.model.settings.legend.position;
                 let legendHeight: number = margin.top;
-                let newLegendPosition: string = null;
+                let newLegendPosition: string | null = null;
                 let svgContainerWidth: number = itemWidth;
                 let svgContainerHeight: number = itemHeight;
                 let stepCount: number = 0;
@@ -677,7 +676,7 @@ export class Visual implements IVisual {
 }
 
 // eslint-disable-next-line max-lines-per-function
-function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
+function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel | null {
     //Get DataViews
     const dataViews = options.dataViews;
     const hasDataViews = (dataViews && dataViews[0]);
@@ -685,7 +684,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
 
     const dataView: DataView = options && options.dataViews && options.dataViews[0];
     if (!dataView || options.type === VisualUpdateType.ResizeEnd) {
-        return;
+        return null;
     }
 
     const settings = Visual.parseSettings(dataView);
@@ -703,7 +702,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     if (settings.xAxis.minCategoryWidth > MinCategoryWidthEndValue) settings.xAxis.minCategoryWidth = MinCategoryWidthEndValue;
 
     //Get DataPoints
-    const domain: VisualDomain = {startForced: false, endForced: false};
+    const domain: VisualDomain = {startForced: false, endForced: false, start: 0, end: 0};
     if (settings.yAxis.chartRangeType == 'custom') {
         if (settings.yAxis.start !== null) {
             domain.start = settings.yAxis.start;
@@ -727,32 +726,32 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     const lines: LineDataPoint[] = [];
     const lineKeyIndex: LineKeyIndex = {};
     let categoryIsDate: boolean = false;
-    let categoryFormat: string = null;
-    let valueFormat: string = null;
-    let legendFormatter: IValueFormatter = null;
+    let categoryFormat: string | undefined = undefined;
+    let valueFormat: string | null = null;
+    let legendFormatter: IValueFormatter | null = null;
     let legendType: CategoryType = CategoryType.String;
     let categoryIsScalar: boolean = false;
 
     if (hasCategoricalData) {
         const dataCategorical = dataViews[0].categorical;
         const category: DataViewCategoryColumn[] = [];
-        let row: DataViewCategoryColumn = null;
-        let column: DataViewCategoryColumn = null;
+        let row: DataViewCategoryColumn | null = null;
+        let column: DataViewCategoryColumn | null = null;
         let categoryLength: number = 0;
-        if (dataCategorical.categories) {
+        if (dataCategorical?.categories) {
             for (let i = 0; i < dataCategorical.categories.length; i++) {
                 const item: DataViewCategoryColumn = dataCategorical.categories[i];
                 categoryLength = item.values.length;
-                if (item.source.roles['Category']) {
+                if (item.source.roles?.['Category']) {
                     categoryName = categoryName + item.source.displayName + ' ';
                     category.push(item);
                 }
-                if (item.source.roles['Row']) {
-                    rowsFormat = item.source.format;
+                if (item.source.roles?.['Row']) {
+                    rowsFormat = item.source.format ?? rowsFormat;
                     row = item;
                 }
-                if (item.source.roles['Column']) {
-                    columnsFormat = item.source.format;
+                if (item.source.roles?.['Column']) {
+                    columnsFormat = item.source.format ?? columnsFormat;
                     column = item;
                 }
             }
@@ -762,11 +761,11 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         if (category.length == 1) {
             categoryFormat = category[0].source.format;
             let categoryIsBoolean: boolean = false;
-            const type: ValueTypeDescriptor = category[0].source.type;
+            const type = category[0].source.type;
             if (type) {
-                categoryIsDate = type.dateTime;
-                categoryIsScalar = type.numeric;
-                categoryIsBoolean = type.bool;
+                categoryIsDate = type.dateTime ?? false;
+                categoryIsScalar = type.numeric ?? false;
+                categoryIsBoolean = type.bool ?? false;
             }
 
             categorySourceType = retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean);

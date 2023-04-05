@@ -13,7 +13,7 @@ import {SelectableDataPoint} from 'powerbi-visuals-utils-interactivityutils/lib/
 import {BaseDataPoint, IBehaviorOptions} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 import {SeriesMarkerShape} from './seriesMarkerShape';
 import {LegendIconType} from './legendIconType';
-import {ScaleOrdinal} from 'd3-scale';
+import {NumberValue, ScaleOrdinal} from 'd3-scale';
 import {AxisDomain, AxisScale} from 'd3-axis';
 import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
@@ -36,7 +36,7 @@ export interface VisualViewModel {
     categoryIsScalar: boolean;
     categoryName: string;
     valuesName: string;
-    legendFormatter: IValueFormatter;
+    legendFormatter: IValueFormatter | null;
     legendType: CategoryType;
     settings: VisualSettings;
 }
@@ -77,7 +77,7 @@ export interface LinePoint {
 
 export class XAxisData {
     x: AxisScale<AxisDomain>;
-    xAxisDataPoints: any[];
+    xAxisDataPoints: PrimitiveValue[];
     lines: LineDataPoint[];
     start: number;
     end: number;

@@ -8,22 +8,18 @@ import {ColorHelper} from 'powerbi-visuals-utils-colorutils';
 import {fromPixelToPoint, fromPointToPixel, measureTextWidth, TextProperties} from './textUtility';
 import {getTailoredTextOrDefault} from 'powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService';
 import {select as d3select, selectAll as d3selectAll} from 'd3-selection';
-import {Visual} from '../visual';
-import {parseTranslateTransform, translate as svgTranslate} from 'powerbi-visuals-utils-svgutils/lib/manipulation';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
 import {LegendIconType} from '../legendIconType';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
 import DataView = powerbi.DataView;
 import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
-import DataViewValueColumns = powerbi.DataViewValueColumns;
+
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import ISelectionId = powerbi.visuals.ISelectionId;
-import DataViewObjects = powerbi.DataViewObjects;
+
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IViewport = powerbi.IViewport;
-import {MarkersUtility} from './markersUtility';
-import {LegendBehavior} from '../legendBehavior';
 import {IMargin} from 'powerbi-visuals-utils-svgutils';
 import {IScrollableLegend, ScrollableLegendData, ScrollableLegendDataPoint} from './scrollableLegend';
 
@@ -48,7 +44,7 @@ export function renderLegend(
 
     legend.changeOrientation(<any>LegendPosition[legendSettings.position]);
 
-    let legendName: string = (legendSettings.showTitle) ? legendSettings.legendName : '';
+    let legendName: string = (legendSettings.showTitle && legendSettings.legendName) || '';
     if (legendSettings.position == 'Top'
         || legendSettings.position == 'TopCenter'
         || legendSettings.position == 'Bottom'
@@ -396,8 +392,8 @@ export function calculateItemWidth(legendSettings: LegendSettings, dataPoints: S
     return itemWidth;
 }
 
-export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<any>, dataPoints: ScrollableLegendDataPoint[], itemWidth: number, isLeft: boolean): d3Selection<any> {
-    if (!legendItems || !dataPoints || itemWidth == 0) return;
+export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<any>, dataPoints: ScrollableLegendDataPoint[], itemWidth: number, isLeft: boolean): d3Selection<any> | null {
+    if (!legendItems || !dataPoints || itemWidth == 0) return null;
 
     // let legendItemsLen: number = legendItems && !legendItems.empty() ? legendItems.size() : 0;
     // if (legendItemsLen < 1) return;
@@ -465,6 +461,9 @@ export function generateLegendItemsForLeftOrRightClick(legendItems: d3Selection<
     // if (newDataPoints.length > 0)
     //     legendItems = generateLegendItems(legendItems, newDataPoints);
     // return legendItems;
+
+    // TODO Remove
+    return null;
 }
 
 function generateLegendItems(legendItems: d3Selection<any>, newDataPoints: ScrollableLegendDataPoint[]): d3Selection<any> {
@@ -532,14 +531,16 @@ function IsLegendFilled(dataView: DataView): boolean {
     const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
     for (let i = 0; i < columns.length; i++) {
         const column: DataViewMetadataColumn = columns[i];
-        if (column.roles['Legend']) {
+        if (column.roles?.['Legend']) {
             return true;
         }
     }
-    if (dataView.categorical.categories == null) {
+
+    if (dataView.categorical && !dataView.categorical.categories && dataView.categorical.values) {
         const grouped: DataViewValueColumnGroup[] = dataView.categorical.values.grouped();
         return grouped.length > 1;
     }
+
     return false;
 }
 
@@ -554,65 +555,67 @@ function buildLegendData(
 
     const legendItems: ScrollableLegendDataPoint[] = [];
 
-    const dataValues: DataViewValueColumns = dataView.categorical.values;
-    const grouped: DataViewValueColumnGroup[] = dataValues.grouped();
+    const dataValues = dataView.categorical?.values;
+    const grouped = dataValues?.grouped();
 
-    const legendColumn = retrieveLegendCategoryColumn(dataView);
-    if (grouped.length > 1) {
+    if (dataValues && grouped && grouped.length > 1) {
         for (let i: number = 0, len: number = grouped.length; i < len; i++) {
-            const grouping: DataViewValueColumnGroup = grouped[i];
+            const grouping = grouped[i];
 
-            const color: string = colorHelper.getColorForSeriesValue(
+            const color = (grouping.objects && grouping.name && colorHelper.getColorForSeriesValue(
                 grouping.objects,
-                grouping.name);
+                grouping.name)) || undefined;
 
             const selectionId: ISelectionId = host.createSelectionIdBuilder()
                 .withSeries(dataValues, grouping)
                 .createSelectionId();
-            const label: string = grouping.name.toString();
+            const label = grouping.name?.toString() ?? '';
             legendItems.push({
                 color: color,
                 seriesMarkerShape: SeriesMarkerShape.circle,
                 legendIconType: legendIcon,
                 label: label,
                 tooltip: label,
-                object: grouping.objects,
+                object: grouping.objects ?? {},
                 identity: selectionId,
                 selected: false,
             });
         }
     } else {
-        const legendLength: number = legendColumn && legendColumn.values ? legendColumn.values.length : 0;
-        const legendKeys: string[] = [];
-        for (let i: number = 0; i < legendLength; i++) {
-            const name: string = legendColumn.values[i].toString();
-            if (legendKeys.indexOf(name) == -1) {
-                legendKeys.push(name);
-                const object: DataViewObjects = legendColumn.objects && legendColumn.objects.length > i
-                    ? legendColumn.objects[i]
-                    : null;
-                const color: string = colorHelper.getColorForSeriesValue(
-                    object,
-                    name);
+        const legendColumn = retrieveLegendCategoryColumn(dataView);
+        const legendColumnValues = legendColumn?.values;
+        if (legendColumnValues) {
+            const legendKeys: string[] = [];
+            for (let i: number = 0; i < legendColumnValues.length; i++) {
+                const name: string = legendColumn.values[i].toString();
+                if (legendKeys.indexOf(name) == -1) {
+                    legendKeys.push(name);
+                    const object = legendColumn.objects && legendColumn.objects.length > i
+                        ? legendColumn.objects[i]
+                        : null;
+                    const color = (object && colorHelper.getColorForSeriesValue(
+                        object,
+                        name)) || undefined;
 
-                const selectionId: ISelectionId = host.createSelectionIdBuilder()
-                    .withCategory(legendColumn, i)
-                    .createSelectionId();
-                legendItems.push({
-                    color: color,
-                    seriesMarkerShape: SeriesMarkerShape.circle,
-                    legendIconType: legendIcon,
-                    label: name,
-                    tooltip: name,
-                    object: object,
-                    identity: selectionId,
-                    selected: false,
-                });
+                    const selectionId: ISelectionId = host.createSelectionIdBuilder()
+                        .withCategory(legendColumn, i)
+                        .createSelectionId();
+                    legendItems.push({
+                        color: color,
+                        seriesMarkerShape: SeriesMarkerShape.circle,
+                        legendIconType: legendIcon,
+                        label: name,
+                        tooltip: name,
+                        object: object ?? {},
+                        identity: selectionId,
+                        selected: false,
+                    });
+                }
             }
         }
     }
 
-    const column: DataViewMetadataColumn = retrieveLegendMetadataColumn(dataView);
+    const column = retrieveLegendMetadataColumn(dataView);
     const legendTitle = column
         ? column.displayName
         : legendObjectProperties.legendName;
@@ -627,32 +630,30 @@ function buildLegendData(
     };
 }
 
-function retrieveLegendMetadataColumn(dataView: DataView): DataViewMetadataColumn {
-    let column: DataViewMetadataColumn = null;
+function retrieveLegendMetadataColumn(dataView: DataView): DataViewMetadataColumn | null {
     const columns: DataViewMetadataColumn[] = dataView.metadata.columns;
     const columnsLen: number = columns ? columns.length : 0;
     for (let i = 0; i < columnsLen; i++) {
         const item: DataViewMetadataColumn = columns[i];
-        if (item.roles['Legend']) {
-            column = item;
-            break;
+        if (item.roles?.['Legend']) {
+            return item;
         }
     }
-    return column;
+
+    return null;
 }
 
-export function retrieveLegendCategoryColumn(dataView: DataView): DataViewCategoryColumn {
-    let legendColumn: DataViewCategoryColumn = null;
-    const categories: DataViewCategoryColumn[] = dataView.categorical.categories;
+export function retrieveLegendCategoryColumn(dataView: DataView): DataViewCategoryColumn | null {
+    const categories: DataViewCategoryColumn[] = dataView.categorical?.categories ?? [];
     const categoriesLen: number = categories ? categories.length : 0;
     for (let i = 0; i < categoriesLen; i++) {
         const category: DataViewCategoryColumn = categories[i];
-        if (category.source.roles['Legend']) {
-            legendColumn = category;
-            break;
+        if (category.source.roles?.['Legend']) {
+            return category;
         }
     }
-    return legendColumn;
+
+    return null;
 }
 
 function getNumberOfValues(dataView: DataView): number {
@@ -675,50 +676,52 @@ function buildLegendDataForMultipleValues(
     dataView: DataView,
     legendIcon: LegendIconType,
     title: string): ScrollableLegendData {
-    let colorHelper: ColorHelper = new ColorHelper(
+    const colorHelper = new ColorHelper(
         host.colorPalette,
         {objectName: 'dataPoint', propertyName: 'fill'});
 
     const legendItems: ScrollableLegendDataPoint[] = [];
 
-    const values = dataView.categorical.values;
+    const values = dataView.categorical?.values;
 
     const numberOfValueFields = getNumberOfValues(dataView);
     const lastColors: string[] = [];
-    for (let i = 0; i < numberOfValueFields; i++) {
-        const selectionId: ISelectionId = host.createSelectionIdBuilder()
-            .withMeasure(values[i].source.queryName)
-            .createSelectionId();
+    if (values) {
+        for (let i = 0; i < numberOfValueFields; i++) {
 
-        const objects: DataViewObjects = values[i].source.objects;
-        const colorFromObject: string = colorHelper.getColorForMeasure(
-            objects,
-            values[i].source.queryName);
-        let currentColor = i == 0 ? colorFromObject : lastColors[i - 1];
-        let j: number = 0;
-        while (lastColors.indexOf(currentColor) != -1) {
-            currentColor = host.colorPalette.getColor('value' + j.toString()).value;
-            j = j + 1;
+            const queryName = values[i].source.queryName ?? '';
+            const selectionId: ISelectionId = host.createSelectionIdBuilder()
+                .withMeasure(queryName)
+                .createSelectionId();
+
+            const objects = values[i].source.objects ?? {};
+            const colorFromObject: string = colorHelper.getColorForMeasure(
+                objects,
+                queryName);
+            let currentColor = i == 0 ? colorFromObject : lastColors[i - 1];
+            let j: number = 0;
+            while (lastColors.indexOf(currentColor) != -1) {
+                currentColor = host.colorPalette.getColor('value' + j.toString()).value;
+                j = j + 1;
+            }
+            lastColors.push(currentColor);
+
+            const color: string = objects && objects.dataPoint ? colorFromObject : currentColor;
+
+            const label: string = values[i].source.displayName;
+
+            legendItems.push({
+                color: color,
+                seriesMarkerShape: SeriesMarkerShape.circle,
+                legendIconType: legendIcon,
+                label: label,
+                tooltip: label,
+                object: objects,
+                identity: selectionId,
+                selected: false,
+            });
         }
-        lastColors.push(currentColor);
-
-        const color: string = objects && objects.dataPoint ? colorFromObject : currentColor;
-
-        const label: string = values[i].source.displayName;
-
-        legendItems.push({
-            color: color,
-            seriesMarkerShape: SeriesMarkerShape.circle,
-            legendIconType: legendIcon,
-            label: label,
-            tooltip: label,
-            object: values[i].source.objects,
-            identity: selectionId,
-            selected: false,
-        });
     }
-
-    colorHelper = null;
 
     return {
         title: title,

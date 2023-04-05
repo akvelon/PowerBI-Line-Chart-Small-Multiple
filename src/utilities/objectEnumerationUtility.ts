@@ -170,7 +170,7 @@ export class EnumerateObject {
                 if (model.legendDataPoint.length > 1) {
                     if (settings.shapes.customizeSeries) {
                         const series: string = settings.shapes.series;
-                        let lineDataPoint: LineDataPoint = null;
+                        let lineDataPoint: LineDataPoint | null = null;
                         for (let i = 0; i < model.lines.length; i++) {
                             const item: LineDataPoint = model.lines[i];
                             const itemName: PrimitiveValue = model.legendType == CategoryType.Date ? new Date(item.name) : item.name;

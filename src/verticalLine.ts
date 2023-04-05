@@ -1,36 +1,44 @@
-"use strict";
-import {IValueFormatter} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {d3Selection, LineDataPoint, LinePoint, SimplePoint, VerticalLineDataItem} from "./visualInterfaces";
-import {Line} from "d3-shape";
-import powerbi from "powerbi-visuals-api";
+'use strict';
+import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {d3Selection, LineDataPoint, LinePoint, SimplePoint, VerticalLineDataItem} from './visualInterfaces';
+import {Line} from 'd3-shape';
+import powerbi from 'powerbi-visuals-api';
 import PrimitiveValue = powerbi.PrimitiveValue;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
-import {Visual} from "./visual";
-import {DefaultTooltipCircleRadius} from "./settings";
+import {Visual} from './visual';
+import {DefaultTooltipCircleRadius} from './settings';
 
-export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IValueFormatter, tooltipFormatter: IValueFormatter, lines: LineDataPoint[],
-                                         xAxisDataPoints: any[], line: Line<[number, number]>, shapesShowMarkers: boolean, rectGlobalX: number, rectGlobalY: number): VerticalLineDataItem[] {
-    let verticalLineDataItems: VerticalLineDataItem[] = [];
+export function generateVerticalLineData(
+    categoryIsDate: boolean,
+    xFormatter: IValueFormatter,
+    tooltipFormatter: IValueFormatter,
+    lines: LineDataPoint[],
+    xAxisDataPoints: any[],
+    line: Line<SimplePoint>,
+    shapesShowMarkers: boolean,
+    rectGlobalX: number,
+    rectGlobalY: number): VerticalLineDataItem[] {
+    const verticalLineDataItems: VerticalLineDataItem[] = [];
     for (let i = 0; i < xAxisDataPoints.length; i++) {
-        let category: string = convertCategoryItemToString(xAxisDataPoints[i], categoryIsDate);
-        let xValue: number;
-        let points: LinePoint[] = [];
-        let tooltips: VisualTooltipDataItem[] = [];
+        const category: string = convertCategoryItemToString(xAxisDataPoints[i], categoryIsDate);
+        let xValue: number = 0;
+        const points: LinePoint[] = [];
+        const tooltips: VisualTooltipDataItem[] = [];
         for (let j = 0; j < lines.length; j++) {
-            let linesJ: LineDataPoint = lines[j];
-            let linePoints: SimplePoint[] = linesJ.points;
+            const linesJ: LineDataPoint = lines[j];
+            const linePoints: SimplePoint[] = linesJ.points;
             if (linePoints) {
                 for (let k = 0; k < linePoints.length; k++) {
-                    let simplePoint: any = linePoints[k];
-                    let xCategory: string = convertCategoryItemToString(simplePoint.x, categoryIsDate);
+                    const simplePoint = linePoints[k];
+                    const xCategory: string = convertCategoryItemToString(simplePoint.x, categoryIsDate);
                     if (xCategory == category) {
-                        let data: string = line([simplePoint]);
-                        let values: string[] = data.replace('M', '').replace('Z', '').split(',');
-                        xValue = +values[0];
-                        let yValue: number = +values[1];
-                        let value: string = tooltipFormatter.format(+simplePoint.y);
-                        let showMarkers: boolean = (linesJ.showMarkers == undefined) ? shapesShowMarkers : linesJ.showMarkers;
-                        let linePoint: LinePoint = {
+                        const data = line([simplePoint]);
+                        const values = data?.replace('M', '').replace('Z', '').split(',');
+                        xValue = +(values?.[0] ?? 0);
+                        const yValue: number = +(values?.[1] ?? 0);
+                        const value: string = tooltipFormatter.format(+simplePoint.y);
+                        const showMarkers: boolean = (linesJ.showMarkers == undefined) ? shapesShowMarkers : linesJ.showMarkers;
+                        const linePoint: LinePoint = {
                             y: yValue,
                             value: value,
                             name: linesJ.name,
@@ -41,10 +49,10 @@ export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IV
                         points.push(linePoint);
                         if (simplePoint.tooltips) {
                             for (let k1 = 0; k1 < simplePoint.tooltips.length; k1++) {
-                                let simplePointTooltip: VisualTooltipDataItem = simplePoint.tooltips[k1];
-                                let tooltip: VisualTooltipDataItem = {
+                                const simplePointTooltip: VisualTooltipDataItem = simplePoint.tooltips[k1];
+                                const tooltip: VisualTooltipDataItem = {
                                     displayName: simplePointTooltip.displayName,
-                                    value: simplePointTooltip.value
+                                    value: simplePointTooltip.value,
                                 };
                                 if (k1 == 0) {
                                     let header: PrimitiveValue = xAxisDataPoints[i];
@@ -56,8 +64,8 @@ export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IV
                                 if (simplePointTooltip.color) {
                                     tooltip.color = simplePointTooltip.color;
                                 } else {
-                                    tooltip.color = "black";
-                                    tooltip.opacity = "0";
+                                    tooltip.color = 'black';
+                                    tooltip.opacity = '0';
                                 }
                                 tooltips.push(tooltip);
                             }
@@ -67,12 +75,12 @@ export function generateVerticalLineData(categoryIsDate: boolean, xFormatter: IV
             }
         }
         if (points.length > 0) {
-            let verticalLineDataItem: VerticalLineDataItem = {
+            const verticalLineDataItem: VerticalLineDataItem = {
                 x: xValue,
                 tooltips: tooltips,
                 linePoints: points,
                 rectGlobalX: rectGlobalX,
-                rectGlobalY: rectGlobalY
+                rectGlobalY: rectGlobalY,
             };
             verticalLineDataItems.push(verticalLineDataItem);
         }
@@ -84,14 +92,14 @@ export function findNearestVerticalLineIndex(
     mouseX: number,
     verticalLineDataItems: VerticalLineDataItem[]): number {
     let index: number = 0;
-    let count: number = verticalLineDataItems.length;
+    const count: number = verticalLineDataItems.length;
     let xValue: number = count > 0
         ? verticalLineDataItems[0].x
         : 0;
     let minDelta: number = Math.abs(xValue - mouseX);
     for (let j = 1; j < count; j++) {
         xValue = verticalLineDataItems[j].x;
-        let delta = Math.abs(xValue - mouseX);
+        const delta = Math.abs(xValue - mouseX);
         if (minDelta > delta) {
             minDelta = delta;
             index = j;
@@ -102,25 +110,25 @@ export function findNearestVerticalLineIndex(
 }
 
 function convertCategoryItemToString(categoryItem: PrimitiveValue, categoryIsDate: boolean): string {
-    if (!categoryItem) return "";
-    let category: string = (categoryIsDate)
+    if (!categoryItem) return '';
+    const category: string = (categoryIsDate)
         ? new Date(categoryItem.toString()).toLocaleDateString()
         : categoryItem.toString();
     return category;
 }
 
 export function drawPointsForVerticalLine(verticalLineContainer: d3Selection<any>, x: number, points: LinePoint[]) {
-    verticalLineContainer.selectAll("circle").remove();
+    verticalLineContainer.selectAll('circle').remove();
     if (!points) return;
     for (let j = 0; j < points.length; j++) {
-        let point: LinePoint = points[j];
+        const point: LinePoint = points[j];
         if (!point.showMarkers) {
-            verticalLineContainer.append("circle")
+            verticalLineContainer.append('circle')
                 .classed(Visual.CircleSelector.className, true)
-                .attr("cx", x)
-                .attr("cy", point.y)
-                .attr("r", DefaultTooltipCircleRadius)
-                .attr("fill", point.color);
+                .attr('cx', x)
+                .attr('cy', point.y)
+                .attr('r', DefaultTooltipCircleRadius)
+                .attr('fill', point.color);
         }
     }
 }

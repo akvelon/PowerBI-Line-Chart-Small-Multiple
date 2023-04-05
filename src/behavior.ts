@@ -3,7 +3,9 @@
 import {
     CategoryType,
     d3Selection,
-    LineDataPoint, VerticalLineDataItem, VerticalLineDataItemsGlobal,
+    LineDataPoint,
+    VerticalLineDataItem,
+    VerticalLineDataItemsGlobal,
     VerticalLineDataItemsGlobalWithKey,
     VisualDataPoint,
 } from './visualInterfaces';
@@ -17,13 +19,10 @@ import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
 import {LegendBehavior} from './legendBehavior';
 import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
 import {DefaultOpacity, DimmedOpacity, Shapes} from './settings';
-import {Visual} from './visual';
-import {local as d3local} from 'd3-selection';
 import powerbi from 'powerbi-visuals-api';
+import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {MarkersUtility} from './utilities/markersUtility';
-import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     selectionLines: LineDataPoint[];
@@ -35,7 +34,7 @@ export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey;
     legendBehavior: LegendBehavior;
     legendDataPoints: ScrollableLegendDataPoint[];
-    legendFormatter: IValueFormatter;
+    legendFormatter: IValueFormatter | null;
     legendType: CategoryType;
     shapes: Shapes;
 }
@@ -50,7 +49,7 @@ export class WebBehavior implements IInteractiveBehavior {
     private hasLasso: boolean;
     private selectionHandler: ISelectionHandler;
     private legendBehavior: LegendBehavior;
-    private legendFormatter: IValueFormatter;
+    private legendFormatter: IValueFormatter | null;
     private legendType: CategoryType;
 
     public bindEvents(
@@ -90,10 +89,9 @@ export class WebBehavior implements IInteractiveBehavior {
         //     });
         options.tooltipServiceWrapper.addTooltip(options.interactiveLineGroupSelection,
             (lineDataPoint: LineDataPoint) => {
-                const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
-                return tooltips;
+                return retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
             },
-            null,
+            undefined,
             true);
 
         // const indicesDotsSelection = d3local<number>();
@@ -116,10 +114,9 @@ export class WebBehavior implements IInteractiveBehavior {
         //     });
         options.tooltipServiceWrapper.addTooltip(options.dotsSelection,
             (lineDataPoint: LineDataPoint) => {
-                const tooltips: VisualTooltipDataItem[] = retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
-                return tooltips;
+                return retrieveTooltipFromArgument(lineDataPoint, options.verticalLineDataItemsGlobal);
             },
-            null,
+            undefined,
             true);
         this.selectionHandler = selectionHandler;
         this.hasLasso = false;
@@ -128,27 +125,26 @@ export class WebBehavior implements IInteractiveBehavior {
     private retrieveTooltipFromArgument(lineDataPoint: LineDataPoint, verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey): VisualTooltipDataItem[] {
         const lineKey: string = lineDataPoint.lineKey.split(lineDataPoint.name)[0];
         const data: VerticalLineDataItemsGlobal = verticalLineDataItemsGlobal[lineKey];
-        let tooltips: VisualTooltipDataItem[] = null;
+        let tooltips: VisualTooltipDataItem[] = [];
         if (data) {
             const hoverLineData: d3Selection<number> = data.hoverLineData;
             const verticalLineDataItems: VerticalLineDataItem[] = data.verticalLineDataItems;
             const index: number = hoverLineData.data()[0];
             tooltips = verticalLineDataItems[index].tooltips;
         }
+
         return tooltips;
     }
 
-    private formatItemWithLegendFormatter(lineDataPointName: string, legendType: CategoryType, legendFormatter: IValueFormatter) {
+    private formatItemWithLegendFormatter(lineDataPointName: string, legendType: CategoryType, legendFormatter: IValueFormatter | null) {
         const item: PrimitiveValue = (legendType == CategoryType.Date) ? new Date(lineDataPointName) : lineDataPointName;
-        const legendName: string = (legendFormatter) ? legendFormatter.format(item) : item.toString();
-        return legendName;
+        return (legendFormatter) ? legendFormatter.format(item) : item.toString();
     }
 
     public renderSelection(hasSelection: boolean): void {
-        console.log('web behavior render selection');
         const selectedLegendNames: string[] = [];
-        const legendType: CategoryType = this.legendType;
-        const legendFormatter: IValueFormatter = this.legendFormatter;
+        const legendType = this.legendType;
+        const legendFormatter = this.legendFormatter;
         const formatItemWithLegendFormatter = this.formatItemWithLegendFormatter;
         const selectedList: string[] = this.legendBehavior.getSelected();
 

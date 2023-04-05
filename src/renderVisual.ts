@@ -6,7 +6,8 @@ import {
     d3Selection,
     LabelsAction,
     LineDataPoint,
-    SimplePoint, VerticalLineDataItem,
+    SimplePoint,
+    VerticalLineDataItem,
     VerticalLineDataItemsGlobalWithKey,
     VisualDomain,
     VisualViewModel,
@@ -14,7 +15,7 @@ import {
 } from './visualInterfaces';
 import {IInteractivityService} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
-import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from './settings';
+import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, VisualSettings} from './settings';
 import {IValueFormatter, ValueFormatterOptions} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
 import {Formatter, getLineStyleParam} from './utilities/vizUtility';
 import {
@@ -22,6 +23,7 @@ import {
 } from 'powerbi-visuals-utils-formattingutils/lib/src/displayUnitSystem/displayUnitSystemType';
 import {Visual} from './visual';
 import {
+    NumberValue,
     scaleLinear as d3scaleLinear,
     scaleLog as d3scaleLog,
     scalePoint as d3scalePoint,
@@ -41,12 +43,11 @@ import {Axis as d3Axis, axisBottom as d3axisBottom, AxisDomain, axisLeft as d3ax
 import {MarkersUtility} from './utilities/markersUtility';
 import {getOpacity} from './behavior';
 import {select as d3select} from 'd3-selection';
-import {SeriesMarkerShape} from './seriesMarkerShape';
+import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
+import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
-import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -120,7 +121,7 @@ export class RenderVisual {
         this.dataLabelFormatter = Formatter.getFormatter(properties);
         this.tooltipFormatter = Formatter.getFormatter({
             value: 0,
-            precision: null,
+            precision: undefined,
             displayUnitSystemType: 0,
             cultureSelector: host.locale,
         });
@@ -246,7 +247,7 @@ export class RenderVisual {
     }
 
     private retrieveAxisMargin(): number {
-        let longestXAxis: string = null;
+        let longestXAxis: string | undefined;
 
         for (let i = 1; i < this.categories.length; i++) {
             const value: PrimitiveValue = this.categoryIsDate ? new Date(this.categories[i].toString()) : this.categories[i];
@@ -352,28 +353,32 @@ export class RenderVisual {
         //set x
         let chartRangeType: string = this.settings.xAxis.chartRangeType;
 
-        let start: number;
-        let end: number;
+        let start: number = 0;
+        let end: number = 0;
 
         if (this.categoryIsDate) {
             const lastIndex: number = this.categories.length - 1;
             let minDate: Date = new Date(this.categories[0].toString());
             let maxDate: Date = new Date(this.categories[lastIndex].toString());
             if (chartRangeType == 'separate') {
-                minDate = null;
-                maxDate = null;
+                let minDateTemp: Date | null = null;
+                let maxDateTemp: Date | null = null;
                 for (let i = 0; i < lines.length; i++) {
                     const lineDataPoint: LineDataPoint = lines[i];
                     if (lineDataPoint.points) {
                         for (let j = 0; j < lineDataPoint.points.length; j++) {
                             const item: Date = lineDataPoint.points[j].x as Date;
-                            if (minDate == null || item < minDate)
-                                minDate = item;
-                            if (maxDate == null || item > maxDate)
-                                maxDate = item;
+                            if (minDateTemp == null || item < minDateTemp)
+                                minDateTemp = item;
+                            if (maxDateTemp == null || item > maxDateTemp)
+                                maxDateTemp = item;
                         }
                     }
                 }
+
+                minDate = minDateTemp ?? minDate;
+                maxDate = maxDateTemp ?? maxDate;
+
                 const newxAxisDataPoints: Date[] = [];
                 const keys: string[] = [];
                 for (let i = 0; i < xAxisDataPoints.length; i++) {
@@ -383,13 +388,16 @@ export class RenderVisual {
                         keys.push(itemKey);
                         newxAxisDataPoints.push(item);
                     }
+
                     if (item > maxDate)
                         break;
                 }
                 xAxisDataPoints = newxAxisDataPoints;
             }
+
             if (xIsCategorical) {
-                x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
+                const domain = xAxisDataPoints.map(primitiveValueToAxisDomain);
+                x = d3scalePoint(domain, xRange);
             } else {
                 x = d3scaleTime([minDate, maxDate], xRange);
             }
@@ -416,19 +424,23 @@ export class RenderVisual {
                         break;
                     }
                     case 'separate': {
-                        start = null;
-                        end = null;
+                        let startTemp: number | null = null;
+                        let endTemp: number | null = null;
                         for (let i = 0; i < lines.length; i++) {
                             const lineItem: LineDataPoint = lines[i];
                             if (lineItem.points)
                                 for (let j = 0; j < lineItem.points.length; j++) {
                                     const pointX: number = +lineItem.points[j].x;
-                                    if (start == null || pointX <= start)
-                                        start = pointX;
-                                    if (end == null || pointX >= end)
-                                        end = pointX;
+                                    if (startTemp == null || pointX <= startTemp)
+                                        startTemp = pointX;
+                                    if (endTemp == null || pointX >= endTemp)
+                                        endTemp = pointX;
                                 }
                         }
+
+                        start = startTemp ?? 0;
+                        end = endTemp ?? 0;
+
                         break;
                     }
                     case 'common': {
@@ -454,7 +466,7 @@ export class RenderVisual {
                                     break;
                                 }
                             }
-                        if (isExisted == true)
+                        if (isExisted)
                             break;
                     }
                     if (isExisted)
@@ -479,7 +491,8 @@ export class RenderVisual {
         }
 
         if (xAxisDataPoints.length == 1) {
-            x = d3scalePoint(xAxisDataPoints as AxisDomain[], xRange);
+            const domain = xAxisDataPoints.map(primitiveValueToAxisDomain);
+            x = d3scalePoint(domain, xRange);
         }
 
         return {
@@ -553,10 +566,10 @@ export class RenderVisual {
         totalXWidth = width - yAxisWidth - axisPadding - 2 * axisMargin;
 
         //X
-        let xAxisDataPoints: any[] = this.categories;
-        let xRange: number[] = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
-        const xIsCategorical: boolean = (this.settings.xAxis.axisType === 'categorical');
-        let xAxisData: XAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
+        let xAxisDataPoints = this.categories;
+        let xRange = this.retrieveXRange(yAxisWidth, axisPadding, axisMargin, width);
+        const xIsCategorical = (this.settings.xAxis.axisType === 'categorical');
+        let xAxisData = this.retrieveXData(xIsCategorical, lines, xAxisDataPoints, xRange);
         let x = xAxisData.x;
         xAxisDataPoints = xAxisData.xAxisDataPoints;
         lines = xAxisData.lines;
@@ -591,13 +604,10 @@ export class RenderVisual {
         const domainY: VisualDomain = this.retrieveDomainY(lines);
         let y: AxisScale<AxisDomain>;
         if (this.settings.yAxis.axisScale == 'linear') {
-            y = d3scaleLinear()
-                .domain([domainY.end, domainY.start])
-                .range(yRange).nice().nice();
+            y = d3scaleLinear([domainY.end, domainY.start], yRange)
+                .nice().nice();
         } else {
-            y = d3scaleLog()
-                .domain([domainY.end, domainY.start])
-                .range(yRange);
+            y = d3scaleLog([domainY.end, domainY.start], yRange);
         }
 
         if (showYAxis)
@@ -613,20 +623,16 @@ export class RenderVisual {
         //Draw line
         if (lines.length == 0)
             return;
-        const line: d3Line<[number, number]> = d3line()
-            .x(function (d: any) {
-                return x(d.x);
-            })
-            .y(function (d: any) {
-                return y(d.y);
-            })
+        const line = d3line<SimplePoint>()
+            .x((d) => x(primitiveValueToAxisDomain(d.x)) ?? 0)
+            .y((d) => y(d.y) ?? 0)
             .curve(d3curveLinear);
 
         //prepare vertical line
         const showVerticalLine: boolean = (tickMaxWidth > 1);
-        let xMouseMin: number;
-        let xMouseMax: number;
-        let hoverContainer: d3Selection<SVGElement>;
+        let xMouseMin: number = 0;
+        let xMouseMax: number = 0;
+        let hoverContainer: d3Selection<SVGElement> | undefined = undefined;
         let tooltipRect: d3Selection<SVGElement>;
 
         if (showVerticalLine) {
@@ -649,8 +655,9 @@ export class RenderVisual {
 
         this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
         //Render vertical line
-        if (!showVerticalLine) return;
-        //
+        if (!showVerticalLine || !hoverContainer) return;
+
+
         const hoverLine: d3Selection<SVGElement> = hoverContainer.append('path') // this is the vertical line to follow mouse
             .classed(Visual.HoverLineSelector.className, true)
             .style('opacity', 0);
@@ -706,7 +713,7 @@ export class RenderVisual {
                     tooltips = verticalLineDataItems[index].tooltips;
                 return tooltips;
             },
-            null,
+            undefined,
             true);
     }
 
@@ -736,8 +743,7 @@ export class RenderVisual {
         let numTicks: number;
         let actionWithLabels: LabelsAction = LabelsAction.Simple;
 
-        let longestXAxis: string = null;
-
+        let longestXAxis = '';
         for (let i = 1; i < xAxisDataPoints.length; i++) {
             const value: PrimitiveValue = this.categoryIsDate ? new Date(xAxisDataPoints[i].toString()) : xAxisDataPoints[i];
             const item: string = this.xFormatter.format(value);
@@ -879,7 +885,7 @@ export class RenderVisual {
                         fontFamily: this.settings.xAxis.fontFamily,
                         fontSize: xAxisFontSize,
                     });
-                let labelStartX: number = null;
+                let labelStartX: number | null = null;
                 const removedIndexes: number[] = [];
                 labels.each((number: any, index: number) => {
                     const item: d3Selection<any> = d3select(labels.nodes()[index]);
@@ -959,16 +965,24 @@ export class RenderVisual {
                 .attr('y2', -plotSize.height + xAxisHeight + axisPadding)
                 .style('stroke', this.settings.xAxis.gridlinesColor)
                 .style('stroke-width', this.settings.xAxis.strokeWidth)
-                .style('stroke-dasharray', strokeDasharray);
+                .style('stroke-dasharray', () => strokeDasharray);
         }
 
         return xAxisHeight;
     }
 
     // eslint-disable-next-line max-lines-per-function
-    private renderYAxis(svgContainer: d3Selection<SVGElement>, plotSize: any, y: AxisScale<AxisDomain>, domainY: VisualDomain, axisPadding: number, yAxisWidth: number, yAxisFontSize: string) {
+    private renderYAxis(
+        svgContainer: d3Selection<SVGElement>,
+        plotSize: ISize,
+        y: AxisScale<AxisDomain>,
+        domainY: VisualDomain,
+        axisPadding: number,
+        yAxisWidth: number,
+        yAxisFontSize: string) {
+
         if (!this.settings.yAxis.show) return;
-        let yAxis: d3Axis<AxisDomain>;
+        let yAxis: d3Axis<PrimitiveValue | NumberValue>;
         //format axis for its' position
         if (this.settings.yAxis.position == AxisPosition.Left) {
             yAxis = d3axisLeft(y)
@@ -1037,7 +1051,7 @@ export class RenderVisual {
         yAxisSvg.selectAll('line')
             .style('stroke', this.settings.yAxis.gridlinesColor)
             .style('stroke-width', yAxisGridlinesStrokeWidth)
-            .style('stroke-dasharray', strokeDasharray);
+            .style('stroke-dasharray', () => strokeDasharray);
 
         //format axis for its' position
         const titleHeight: number = (this.settings.yAxis.showTitle) ? this.retrieveYAxisTitleHeight(svgContainer) : 0;
@@ -1112,11 +1126,11 @@ export class RenderVisual {
         let precision: number = 1;
         if (this.categoryIsScalar) {
             const customFormatter: IValueFormatter = Formatter.getFormatter({
-                format: this.xFormatter.options.format,
+                format: this.xFormatter.options?.format,
                 value: 0,
-                precision: null,
+                precision: undefined,
                 displayUnitSystemType: 0,
-                cultureSelector: this.xFormatter.options.cultureSelector,
+                cultureSelector: this.xFormatter.options?.cultureSelector,
             });
             const simpleFormatX: string = customFormatter.format(1);
             const x: number = +simpleFormatX.replace(/[^.0-9]/g, '');
@@ -1145,8 +1159,8 @@ export class RenderVisual {
     }
 
     public retrieveDomainY(lines: LineDataPoint[]): VisualDomain {
-        let start: number = null;
-        let end: number = null;
+        let start: number | null = null;
+        let end: number | null = null;
         let startForced: boolean = false;
         let endForced: boolean = false;
         if (this.isSeparateDomainY) {
@@ -1154,9 +1168,9 @@ export class RenderVisual {
                 const points: any[] = lines[i].points;
                 for (let j = 0; j < points.length; j++) {
                     const yValue = points[j].y;
-                    if (yValue < start || start == null)
+                    if (start == null || yValue < start)
                         start = yValue;
-                    if (end < yValue || end == null)
+                    if (end == null || end < yValue)
                         end = yValue;
                 }
             }
@@ -1166,6 +1180,10 @@ export class RenderVisual {
             startForced = this.domainY.startForced;
             endForced = this.domainY.endForced;
         }
+
+        start ??= 0;
+        end ??= 0;
+
         if (start <= 0)
             this.settings.yAxis.axisScale = 'linear';
         if (this.settings.yAxis.axisScale == 'linear') {
@@ -1180,17 +1198,17 @@ export class RenderVisual {
             if (this.settings.yAxis.chartRangeType != 'custom' && end / this.MaxYLogScaleShowDivider <= start)
                 start = start / this.MaxLogScaleDivider;
         }
-        const domainY: VisualDomain = {
+
+        return {
             start: start,
             end: end,
             startForced: startForced,
             endForced: endForced,
         };
-        return domainY;
     }
 
     // eslint-disable-next-line max-lines-per-function
-    private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<[number, number]>) {
+    private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<SimplePoint>) {
         //Trend lines
         const svgLinesContainerE: d3Selection<SVGElement> = svgContainer
             .append('svg')
@@ -1202,8 +1220,8 @@ export class RenderVisual {
         const lineDD: string[] = [];
         for (let i = 0; i < lines.length; i++) {
             const dataPoint: LineDataPoint = lines[i];
-            const points: any = dataPoint.points;
-            const lineD: string = line(points);
+            const points = dataPoint.points;
+            const lineD = <string>line(points);
             lineDD.push(lineD);
         }
 
@@ -1231,11 +1249,10 @@ export class RenderVisual {
                 const strokeLineJoin: string = (dataPoint.strokeLineJoin == undefined) ? this.settings.shapes.strokeLineJoin : dataPoint.strokeLineJoin;
                 return strokeLineJoin;
             })
-            .attr('stroke-dasharray', (dataPoint: LineDataPoint) => {
-                const strokeDasharray: string = (dataPoint.lineStyle == undefined) ?
-                    getLineStyleParam(this.settings.shapes.lineStyle) :
-                    getLineStyleParam(dataPoint.lineStyle);
-                return strokeDasharray;
+            .attr('stroke-dasharray', (dataPoint: LineDataPoint): string | null => {
+                return !dataPoint.lineStyle
+                    ? getLineStyleParam(this.settings.shapes.lineStyle)
+                    : getLineStyleParam(dataPoint.lineStyle);
             })
             .attr('fill', 'none')
             .style('opacity', (dataPoint: LineDataPoint) => {
@@ -1328,13 +1345,19 @@ export class RenderVisual {
     }
 
     // eslint-disable-next-line max-lines-per-function
-    private renderDataLabels(lines: LineDataPoint[], minRangeX: number, maxRangeX: number, yRangeMax: number, line: d3Line<[number, number]>, svgContainer: d3Selection<any>): void {
-        const dataLabelsBackgroundContext: d3Selection<any> = svgContainer.append('g')
+    private renderDataLabels(
+        lines: LineDataPoint[],
+        minRangeX: number,
+        maxRangeX: number,
+        yRangeMax: number,
+        line: d3Line<SimplePoint>,
+        svgContainer: d3Selection<any>): void {
+
+        const dataLabelsBackgroundContext = svgContainer.append('g')
             .classed('labelBackgroundGraphicsContext', true);
         dataLabelsBackgroundContext.selectAll('*').remove();
-        // dataLabelsBackgroundContext.selectAll("*").remove();
 
-        const dataLabelsContext: d3Selection<any> = svgContainer.append('g')
+        const dataLabelsContext = svgContainer.append('g')
             .classed('labelGraphicsContext', true);
         dataLabelsContext.selectAll('*').remove();
 
@@ -1364,8 +1387,8 @@ export class RenderVisual {
                 x: dataPoints[i].x,
                 y: dataPoints[i].y,
             }];
-            const lineD: string = line(point);
-            const data: string[] = lineD.replace('M', '').replace('Z', '').split(',');
+            const lineD = line(point);
+            const data: string[] = lineD?.replace('M', '').replace('Z', '').split(',') ?? ['0', '0'];
             const value = this.dataLabelFormatter.format(dataPoints[i].y);
             const width: number = measureTextWidth({
                 fontFamily: fontFamily,
@@ -1572,11 +1595,18 @@ export class RenderVisual {
 
     private convertCategoryItemToString(categoryItem: PrimitiveValue): string {
         if (!categoryItem) return '';
-        const category: string = (this.categoryIsDate)
+        return (this.categoryIsDate)
             ? new Date(categoryItem.toString()).toLocaleDateString()
             : ((this.categoryIsScalar)
                 ? this.xFormatter.format(categoryItem).toString()
                 : categoryItem.toString());
-        return category;
     }
 }
+
+const primitiveValueToAxisDomain = (pv: PrimitiveValue): AxisDomain => {
+    if (typeof pv === 'boolean') {
+        return pv ? 1 : 0;
+    }
+
+    return pv;
+};

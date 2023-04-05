@@ -76,7 +76,7 @@ export interface IScrollableLegend {
 
 export interface ScrollableLegendDataPoint extends SelectableDataPoint, LegendPosition2D {
     label: string;
-    color: string;
+    color?: string;
     category?: string;
     measure?: any;
     iconOnlyOnLabel?: boolean;
@@ -489,10 +489,15 @@ export class ScrollableLegend implements IScrollableLegend {
                 }
                 return MarkersUtility.getStrokeWidth(dataPoint.seriesMarkerShape || SeriesMarkerShape.circle);
             })
-            .attr('opacity', (d) =>
-                d.legendIconType == LegendIconType.markers || d.legendIconType == LegendIconType.lineMarkers
+            .attr('opacity', (d) => {
+                if (!d.showMarkers) {
+                    return 0;
+                }
+
+                return d.legendIconType == LegendIconType.markers || d.legendIconType == LegendIconType.lineMarkers
                     ? 1
-                    : 0)
+                    : 0;
+            })
             .style('fill', (dataPoint) => {
                 if (dataPoint.lineStyle) {
                     return null;

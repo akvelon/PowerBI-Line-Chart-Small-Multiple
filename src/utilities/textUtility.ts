@@ -1,4 +1,4 @@
-import {select as d3select} from "d3-selection";
+import {select as d3select} from 'd3-selection';
 
 export interface TextProperties {
     text?: string;
@@ -10,14 +10,14 @@ export interface TextProperties {
     whiteSpace?: string;
 }
 
-let canvasCtx: CanvasRenderingContext2D;
-let ellipsis = '...';
+let canvasCtx: CanvasRenderingContext2D | null;
+const ellipsis = '...';
 
 function ensureCanvas() {
     if (canvasCtx)
         return;
-    let canvas: HTMLCanvasElement = document.createElement('canvas');
-    canvasCtx = canvas.getContext("2d");
+    const canvas: HTMLCanvasElement = document.createElement('canvas');
+    canvasCtx = canvas.getContext('2d');
 }
 
 /**
@@ -26,11 +26,15 @@ function ensureCanvas() {
  */
 export function measureTextWidth(textProperties: TextProperties): number {
     ensureCanvas();
+    if (!canvasCtx || !textProperties.text) {
+        return 0;
+    }
+
     canvasCtx.font =
-        (textProperties.fontStyle || "") + " " +
-        (textProperties.fontVariant || "") + " " +
-        (textProperties.fontWeight || "") + " " +
-        textProperties.fontSize + " " +
+        (textProperties.fontStyle || '') + ' ' +
+        (textProperties.fontVariant || '') + ' ' +
+        (textProperties.fontWeight || '') + ' ' +
+        textProperties.fontSize + ' ' +
         (textProperties.fontFamily);
     return canvasCtx.measureText(textProperties.text).width;
 }
@@ -42,18 +46,22 @@ export function measureTextWidth(textProperties: TextProperties): number {
  */
 export function getTailoredTextOrDefault(textProperties: TextProperties, maxWidth: number): string {
     ensureCanvas();
-    let strLength = textProperties.text.length;
+    if (!textProperties.text) {
+        return '';
+    }
+
+    const strLength = textProperties.text.length;
     if (strLength === 0)
         return textProperties.text;
     let width = measureTextWidth(textProperties);
     if (width < maxWidth)
         return textProperties.text;
     // Create a copy of the textProperties so we don't modify the one that's passed in.
-    let copiedTextProperties: TextProperties = Object.create(textProperties);
+    const copiedTextProperties: TextProperties = Object.create(textProperties);
     // Take the properties and apply them to svgTextElement
     // Then, do the binary search to figure out the substring we want
     // Set the substring on textElement argument
-    let text = copiedTextProperties.text = ellipsis + copiedTextProperties.text;
+    const text = copiedTextProperties.text = ellipsis + copiedTextProperties.text;
     let min = 1;
     let max = text.length;
     let i = ellipsis.length;
@@ -82,32 +90,31 @@ export function getTailoredTextOrDefault(textProperties: TextProperties, maxWidt
 
 export function truncateAxis(text, width, textProperties?: TextProperties) {
     text.each(function () {
-        var text = d3select(this);
-        var title = text.text();
-        var truncatedText = getTailoredTextOrDefault({
+        const text = d3select(this);
+        const title = text.text();
+        const truncatedText = getTailoredTextOrDefault({
             text: title,
             fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'),
-            fontSize: (textProperties ? textProperties.fontSize : '11px')
+            fontSize: (textProperties ? textProperties.fontSize : '11px'),
         }, width);
         text.text(truncatedText);
-        text.append("title").text(title);
+        text.append('title').text(title);
     });
 }
 
 export function wrapAxis(text, width, textProperties?: TextProperties, notEnclose?: boolean) {
     text.each(function () {
-        var text = d3select(this),
-            title = text.text(),
-            newText;
-        newText = notEnclose
-            ? text
+        const text = d3select(this);
+        const title = text.text();
+        const newText = notEnclose
+            ? title
             : getTailoredTextOrDefault({
                 text: title,
                 fontFamily: (textProperties ? textProperties.fontFamily : 'sans-serif'),
-                fontSize: (textProperties ? textProperties.fontSize : '11px')
+                fontSize: (textProperties ? textProperties.fontSize : '11px'),
             }, width);
         text.text(newText);
-        text.append("title").text(title);
+        text.append('title').text(title);
     });
 }
 

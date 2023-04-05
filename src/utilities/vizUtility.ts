@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-import {IValueFormatter, ValueFormatterOptions} from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
-import {valueFormatter} from "powerbi-visuals-utils-formattingutils";
+import {IValueFormatter, ValueFormatterOptions} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
+import {valueFormatter} from 'powerbi-visuals-utils-formattingutils';
 
 export class Formatter {
     private static _instance: Formatter = new Formatter();
@@ -9,7 +9,7 @@ export class Formatter {
 
     constructor() {
         if (Formatter._instance) {
-            console.log("Error: use Formatter.getInstance() instead of new.");
+            console.log('Error: use Formatter.getInstance() instead of new.');
             return;
         }
 
@@ -17,9 +17,9 @@ export class Formatter {
     }
 
     public static getFormatter(properties: ValueFormatterOptions) {
-        let singleton = Formatter._instance;
+        const singleton = Formatter._instance;
 
-        let key = JSON.stringify(properties); //.replace(/\W/g,'_');
+        const key = JSON.stringify(properties); //.replace(/\W/g,'_');
         let pbiFormatter: IValueFormatter;
         if (key in singleton._cachedFormatters) {
             pbiFormatter = singleton._cachedFormatters[key];
@@ -32,22 +32,17 @@ export class Formatter {
     }
 }
 
-export function getLineStyleParam(lineStyle: string): string {
-    let strokeDasharray: string;
-
+export function getLineStyleParam(lineStyle: string): string | null {
     switch (lineStyle) {
-        case "solid":
-            strokeDasharray = "none";
-            break;
-        case "dashed":
-            strokeDasharray = "5, 5";
-            break;
-        case "dotted":
-            strokeDasharray = "1, 5";
-            break;
+        case 'solid':
+            return 'none';
+        case 'dashed':
+            return '5, 5';
+        case 'dotted':
+            return '1, 5';
     }
 
-    return strokeDasharray;
+    return null;
 }
 
 //         export function isValidURL(URL: string) {
