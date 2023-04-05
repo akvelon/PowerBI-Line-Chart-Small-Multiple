@@ -7,8 +7,7 @@ import {
 import {d3Selection} from './visualInterfaces';
 import {LegendSettings} from './settings';
 import {calculateItemWidth} from './utilities/legendUtility';
-import {LegendDataPoint} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
-import {BaseType, Selection, ValueFn} from 'd3-selection';
+import {BaseType, Selection} from 'd3-selection';
 import {
     ScrollableLegendBehaviorOptions,
     ScrollableLegendDataPoint,
@@ -40,23 +39,6 @@ export class LegendBehavior implements IInteractiveBehavior {
             return;
         this.itemWidth = calculateItemWidth(this.legendSettings, this.dataPoints);
     }
-
-    // public leftOrRightClick(isLeft: boolean, legendBehavior: LegendBehavior) {
-    //     const legendItems: d3Selection<any> = generateLegendItemsForLeftOrRightClick(this.legendItems, this.dataPoints, this.itemWidth, isLeft);
-    //     if (legendItems) {
-    //         const data = legendItems.data();
-    //         const legendGroup: d3Selection<any> = d3select(legendItems.node().parentElement);
-    //         const legendIcons: d3Selection<any> = legendGroup.selectAll('circle').data(data);
-    //         const newOptions: ScrollableLegendBehaviorOptions = {
-    //             // legendItems: legendItems,
-    //             // legendIcons: legendIcons,
-    //             // clearCatcher: this.clearCatcher,
-    //             behavior: this,
-    //             dataPoints: this.dataPoints,
-    //         };
-    //         legendBehavior.bindEvents(newOptions, this.selectionHandler);
-    //     }
-    // }
 
     public bindEvents(options: ScrollableLegendBehaviorOptions, selectionHandler: ISelectionHandler): void {
         this.legendItems = options.legendItems;

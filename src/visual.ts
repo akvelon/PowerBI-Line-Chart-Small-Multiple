@@ -588,23 +588,9 @@ export class Visual implements IVisual {
             const legendPosition: string = this.model.settings.legend.position;
             const is = this.interactivityService;
             if (legendPosition == 'Top' || legendPosition == 'TopCenter' || legendPosition == 'Bottom' || legendPosition == 'BottomCenter') {
-                // legendBehavior.leftOrRightClick(true, legendBehavior);
                 const hasSelection: boolean = is.hasSelection();
                 legendBehavior.renderSelection(hasSelection);
             }
-            // let arrowLeft: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomLeft.selectorName);
-            // arrowLeft.on('click', () => {
-            //     legendBehavior.leftOrRightClick(true, legendBehavior);
-            //     let hasSelection: boolean = is.hasSelection();
-            //     legendBehavior.renderSelection(hasSelection);
-            // });
-            // let arrowRight: d3Selection<any> = this.element.select(Visual.NavigationArrowCustomRight.selectorName);
-            // arrowRight.on('click', () => {
-            //     legendBehavior.leftOrRightClick(false, legendBehavior);
-            //     let hasSelection: boolean = is.hasSelection();
-            //     legendBehavior.renderSelection(hasSelection);
-            // });
-            //end legend changing by click
 
             console.log('=== UPDATE END ===');
         } catch (e) {

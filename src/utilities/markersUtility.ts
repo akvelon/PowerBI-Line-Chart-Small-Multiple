@@ -7,39 +7,6 @@ import {Shapes} from '../settings';
 import {LegendIconType} from '../legendIconType';
 
 export class MarkersUtility {
-    // public static initMarker(
-    //     container: d3Selection<any>,
-    //     uniqueName: string,
-    //     markerShape: SeriesMarkerShape,
-    //     markerSize: number,
-    //     markerColor: string): string {
-    //     // set markerD and strokeWidth from markerShape
-    //     const markerD: string = MarkersUtility.getPath(markerShape);
-    //     const strokeWidth: number = MarkersUtility.getStrokeWidth(markerShape);
-    //
-    //     let markerId: string;
-    //     //init marker
-    //     if (markerD !== '') {
-    //         markerId = MarkersUtility.retrieveMarkerName(uniqueName, markerShape);
-    //         const isMarkerNotExists = container.select('#' + markerId).empty();
-    //         if (isMarkerNotExists) {
-    //             const marker = container.append('marker')
-    //                 .attr('id', markerId)
-    //                 .attr('refX', 0)
-    //                 .attr('refY', 0)
-    //                 .attr('viewBox', '-6 -6 12 12')
-    //                 .attr('markerWidth', markerSize)
-    //                 .attr('markerHeight', markerSize);
-    //             marker.append('path')
-    //                 .attr('d', markerD)
-    //                 .attr('stroke', markerColor)
-    //                 .attr('stroke-width', strokeWidth)
-    //                 .attr('fill', markerColor);
-    //         }
-    //     }
-    //     return markerId;
-    // }
-
     public static getPath(markerShape: SeriesMarkerShape): string {
         switch (markerShape) {
             case SeriesMarkerShape.circle : {
@@ -193,19 +160,4 @@ export class MarkersUtility {
 
         return markerNames;
     }
-
-    //
-    // public static drawMarkersForSteppedLineChart(container: d3Selection<SVGElement>, lineD: string, markerPathId: string, markerId: string, strokeWidth: number) {
-    //     const markerAttr = 'url(#' + markerId + ')';
-    //     container.append('path')
-    //         .classed(Visual.MarkerLineSelector.className, true)
-    //         .attr('id', markerPathId)
-    //         .attr('d', lineD)
-    //         .attr('stroke-width', strokeWidth)
-    //         .attr('fill', 'none')
-    //         .attr('marker-start', markerAttr)
-    //         .attr('marker-mid', markerAttr)
-    //         .attr('marker-end', markerAttr);
-    // }
-
 }

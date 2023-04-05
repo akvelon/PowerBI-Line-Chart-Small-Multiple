@@ -1210,7 +1210,7 @@ export class RenderVisual {
     // eslint-disable-next-line max-lines-per-function
     private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<SimplePoint>) {
         //Trend lines
-        const svgLinesContainerE: d3Selection<SVGElement> = svgContainer
+        const svgLinesContainer: d3Selection<SVGElement> = svgContainer
             .append('svg')
             .attr('width', width)
             .attr('height', height);
@@ -1229,7 +1229,7 @@ export class RenderVisual {
         const markerNames = MarkersUtility.appendMarkerDefsForLines(svgContainer, lines, shapes);
 
         // Render lines
-        svgLinesContainerE
+        svgLinesContainer
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(lines)
             .join('path')
@@ -1258,7 +1258,7 @@ export class RenderVisual {
         const getMarker = (d: LineDataPoint) => d.showMarkers ?? shapes.showMarkers
             ? `url(#${markerNames[d.name]})`
             : null;
-        svgLinesContainerE
+        svgLinesContainer
             .selectAll(Visual.MarkerLineSelector.selectorName)
             .data(lines)
             .join('path')
@@ -1273,47 +1273,47 @@ export class RenderVisual {
             .style('opacity', (dataPoint: LineDataPoint) =>
                 getOpacity(dataPoint.selected, hasSelection));
 
-        // const dots: LineDataPoint[] = [];
-        // for (let i = 0; i < lines.length; i++) {
-        //     if (lines[i].points && lines[i].points.length == 1)
-        //         dots.push(lines[i]);
-        // }
+        // Render dots for lines with only single point.
+        const dots: LineDataPoint[] = [];
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].points && lines[i].points.length == 1)
+                dots.push(lines[i]);
+        }
 
-        // svgLinesContainerE.append("g")
-        //     .selectAll(Visual.SimpleLineSelector.selectorName)
-        //     .data(dots)
-        //     .join("circle")
-        //     .classed(Visual.DotSelector.className, true)
-        //     .attr('cx', (dataPoint: LineDataPoint) => {
-        //         let points: any = dataPoint.points;
-        //         let lineD: string = line(points);
-        //         let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
-        //         return data[0];
-        //     })
-        //     .attr('cy', (dataPoint: LineDataPoint) => {
-        //         let points: any = dataPoint.points;
-        //         let lineD: string = line(points);
-        //         let data: string[] = lineD.replace("M", "").replace("Z", "").split(",");
-        //         return data[1];
-        //     })
-        //     .attr('r', (dataPoint: LineDataPoint) => {
-        //         let strokeWidth: number = dataPoint.strokeWidth == undefined
-        //             ? shapes.strokeWidth
-        //             : dataPoint.strokeWidth;
-        //         return 2.5 + 0.5 * strokeWidth;
-        //     })
-        //     .style('fill', (dataPoint: LineDataPoint) => {
-        //         return dataPoint.color;
-        //     })
-        //     .style('fill-opacity', (dataPoint: LineDataPoint) => {
-        //         let showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
-        //         return showMarkers ? 0 : 1;
-        //     })
-        //     .style('opacity', (dataPoint: LineDataPoint) => {
-        //         let opacity: number = getOpacity(dataPoint.selected, hasSelection);
-        //         return opacity;
-        //     });
-        //
+        svgLinesContainer
+            .append('g')
+            .selectAll(Visual.SimpleLineSelector.selectorName)
+            .data(dots)
+            .join('circle')
+            .classed(Visual.DotSelector.className, true)
+            .attr('cx', (dataPoint: LineDataPoint) => {
+                const points: any = dataPoint.points;
+                const lineD: string = line(points);
+                const data: string[] = lineD.replace('M', '').replace('Z', '').split(',');
+                return data[0];
+            })
+            .attr('cy', (dataPoint: LineDataPoint) => {
+                const points: any = dataPoint.points;
+                const lineD: string = line(points);
+                const data: string[] = lineD.replace('M', '').replace('Z', '').split(',');
+                return data[1];
+            })
+            .attr('r', (dataPoint: LineDataPoint) => {
+                const strokeWidth: number = dataPoint.strokeWidth == undefined
+                    ? shapes.strokeWidth
+                    : dataPoint.strokeWidth;
+                return 2.5 + 0.5 * strokeWidth;
+            })
+            .style('fill', (dataPoint: LineDataPoint) =>
+                dataPoint.color)
+            .style('fill-opacity', (dataPoint: LineDataPoint) => {
+                const showMarkers: boolean = (dataPoint.showMarkers == undefined) ? this.settings.shapes.showMarkers : dataPoint.showMarkers;
+                return showMarkers ? 0 : 1;
+            })
+            .style('opacity', (dataPoint: LineDataPoint) =>
+                getOpacity(dataPoint.selected, hasSelection));
+
+        // TODO Fix interactivity line selector
         // svgLinesContainerE.selectAll(Visual.InteractivityLineSelector.selectorName)
         //     .data(lines)
         //     .join("path")
@@ -1500,42 +1500,6 @@ export class RenderVisual {
             (!((item.bgY + item.bgHeight - DataLabelEps < coord.bgY) || (coord.bgY + coord.bgHeight - DataLabelEps < item.bgY)));
         return result;
     }
-
-    // public static retrieveLineNamesWithMarkers(container: d3Selection<any>, svgLinesContainer: d3Selection<any>, lineDD: string[], shapes: Shapes, lines: LineDataPoint[]): {} {
-    //     //init markers
-    //     let lineNamesWithMarkers = {};
-    //     let defsContainer = container.append('defs');
-    //     let shapesShowMarkers: boolean = shapes.showMarkers;
-    //     for (let i = 0; i < lines.length; i++) {
-    //         let lineDataPoint: LineDataPoint = lines[i];
-    //         //Marker
-    //         let showMarkers: boolean = (lineDataPoint.showMarkers == undefined) ? shapesShowMarkers : lineDataPoint.showMarkers;
-    //         if (!showMarkers) {
-    //             continue;
-    //         }
-    //
-    //         let markerShape: SeriesMarkerShape = (lineDataPoint.seriesMarkerShape == undefined) ? shapes.markerShape : lineDataPoint.seriesMarkerShape;
-    //         let markerSize: number = (lineDataPoint.markerSize == undefined) ? shapes.markerSize : lineDataPoint.markerSize;
-    //         let markerColor: string = (lineDataPoint.markerColor == undefined)
-    //             ? (shapes.markerColor == "") ? lineDataPoint.color : shapes.markerColor
-    //             : lineDataPoint.markerColor;
-    //         let markerId: string = MarkersUtility.initMarker(defsContainer, lineDataPoint.name, markerShape, markerSize, markerColor);
-    //         if (!markerId) {
-    //             continue;
-    //         }
-    //
-    //         let stepped: boolean = (lineDataPoint.stepped == undefined) ? shapes.stepped : lineDataPoint.stepped;
-    //         if (stepped) {
-    //             let lineD = lineDD[i];
-    //             let strokeWidth: number = (lineDataPoint.strokeWidth == undefined) ? shapes.strokeWidth : lineDataPoint.strokeWidth;
-    //             let markerPathId: string = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-    //             MarkersUtility.drawMarkersForSteppedLineChart(svgLinesContainer, lineD, markerPathId, markerId, strokeWidth);
-    //         } else {
-    //             lineNamesWithMarkers[lineDataPoint.name] = 'url(#' + markerId + ')';
-    //         }
-    //     }
-    //     return lineNamesWithMarkers;
-    // }
 
     public renderRowTitleForMatrixView(rowContainer: d3Selection<any>, titleHeight: number, maxTextWidth: number, separatorSize: number, titleX: string, i: number, separatorIndex: number) {
         const rowText: d3Selection<any> = rowContainer.append('g');
