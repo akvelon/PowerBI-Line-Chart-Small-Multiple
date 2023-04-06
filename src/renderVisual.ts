@@ -42,7 +42,7 @@ import {curveLinear as d3curveLinear, line as d3line, Line as d3Line} from 'd3-s
 import {Axis as d3Axis, axisBottom as d3axisBottom, AxisDomain, axisLeft as d3axisLeft, AxisScale} from 'd3-axis';
 import {MarkersUtility} from './utilities/markersUtility';
 import {getOpacity} from './behavior';
-import {select as d3select} from 'd3-selection';
+import {pointer as d3pointer, select as d3select} from 'd3-selection';
 import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
 import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
@@ -654,9 +654,9 @@ export class RenderVisual {
         this.renderLines(svgContainer, lines, plotSize.width, yRangeMax, line);
 
         this.renderDataLabels(lines, xMouseMin, xMouseMax, yRangeMax + axisPadding, line, svgContainer);
+
         //Render vertical line
         if (!showVerticalLine || !hoverContainer) return;
-
 
         const hoverLine: d3Selection<SVGElement> = hoverContainer.append('path') // this is the vertical line to follow mouse
             .classed(Visual.HoverLineSelector.className, true)
@@ -680,15 +680,14 @@ export class RenderVisual {
         });
         const is: IInteractivityService<any> = this.interactivityService;
         svgContainer.on('click', function (e: MouseEvent) {
-            const mouseX: number = e.x;
-            const mouseY: number = e.y;
+            const [mouseX, mouseY] = d3pointer(e, this);
             if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
                 is.clearSelection();
             }
         });
+
         svgContainer.on('mousemove', function (e: MouseEvent) {
-            const mouseX: number = e.x;
-            const mouseY: number = e.y;
+            const [mouseX, mouseY] = d3pointer(e, this);
             if (mouseX < xMouseMin || xMouseMax < mouseX || mouseY > yRangeMax) {
                 tooltipServiceWrapper.hide();
                 hoverLine.style('opacity', 0);

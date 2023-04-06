@@ -284,6 +284,7 @@ export class Visual implements IVisual {
                         const rowHeight: number = itemHeight + separatorSize;
                         const matrixWidth: number = itemWidth * columnsNumber + separatorSize * (columnsNumber - 1);
                         const rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
+
                         const smContainer: d3Selection<any> = container.append('svg')
                             .attr('width', matrixWidth + titleHeight * titleIndex)
                             .attr('height', rowHeight * rowNumber + titleHeight * columnTitleIndex);
