@@ -60,6 +60,7 @@ import ISelectionId = powerbi.extensibility.ISelectionId;
 import DataViewObjects = powerbi.DataViewObjects;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
+import {implementLassoSelection} from './lasso';
 
 function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
     let format = category.source.format;
@@ -581,9 +582,9 @@ export class Visual implements IVisual {
                 behavior.clearCather();
             });
             //lasso
-            // let lassoColor: string = this.model.settings.selectionColor.fill;
-            // implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
-            //     this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
+            const lassoColor: string = this.model.settings.selectionColor.fill;
+            implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
+                this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
             //start legend changing by click
             const legendBehavior = this.legendBehavior;
             const legendPosition: string = this.model.settings.legend.position;

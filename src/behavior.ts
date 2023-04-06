@@ -181,19 +181,19 @@ export class WebBehavior implements IInteractiveBehavior {
         this.hasLasso = hasSelection;
     }
 
-//         public hasLassoSelection(): boolean {
-//             return this.hasLasso;
-//         }
-//
-//         public customLassoSelect(dataPoints: VisualDataPoint[]) {
-//             this.selectionHandler.handleClearSelection();
-//             this.selectionHandler.handleSelection(dataPoints, false);
-//             let selectedLegendNames: string[] = [];
-//             for(let i=0;i<dataPoints.length;i++) {
-//                 selectedLegendNames.push(dataPoints[i].tooltips[0].displayName);
-//             }
-//             this.legendBehavior.renderLassoSelection(selectedLegendNames, true, false);
-//         }
+    public hasLassoSelection(): boolean {
+        return this.hasLasso;
+    }
+
+    public customLassoSelect(dataPoints: VisualDataPoint[]) {
+        this.selectionHandler.handleClearSelection();
+        this.selectionHandler.handleSelection(dataPoints, false);
+        const selectedLegendNames: string[] = [];
+        for (let i = 0; i < dataPoints.length; i++) {
+            selectedLegendNames.push(dataPoints[i].tooltips[0].displayName);
+        }
+        this.legendBehavior.renderLassoSelection(selectedLegendNames, true, false);
+    }
 
     public clearCather() {
         this.selectionHandler.handleClearSelection();
