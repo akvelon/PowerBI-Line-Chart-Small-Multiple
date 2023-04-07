@@ -15,7 +15,7 @@ import {
 } from './visualInterfaces';
 import {IInteractivityService} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
-import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from './settings';
+import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, VisualSettings} from './settings';
 import {IValueFormatter, ValueFormatterOptions} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
 import {Formatter, getLineStyleParam} from './utilities/vizUtility';
 import {
@@ -45,10 +45,10 @@ import {getOpacity} from './behavior';
 import {pointer as d3pointer, select as d3select} from 'd3-selection';
 import {drawPointsForVerticalLine, findNearestVerticalLineIndex, generateVerticalLineData} from './verticalLine';
 import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
+import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
-import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
 
 const markersContainerSelector = createClassAndSelector('markers');
 
@@ -1330,25 +1330,28 @@ export class RenderVisual {
             .style('opacity', (dataPoint: LineDataPoint) =>
                 getOpacity(dataPoint.selected, hasSelection));
 
-        // TODO Fix interactivity line selector
-        // svgLinesContainerE.selectAll(Visual.InteractivityLineSelector.selectorName)
-        //     .data(lines)
-        //     .join("path")
-        //     .classed(Visual.InteractivityLineSelector.className, true)
-        //     .attr("d", (dataPoint: LineDataPoint) => {
-        //         let points: any = dataPoint.points;
-        //         let lineD: string = line(points);
-        //         let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
-        //         let dataLine: string = (stepped)
-        //             ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
-        //             : lineD
-        //         return dataLine;
-        //     })
-        //     .attr('stroke-width', '10')
-        //     .attr("stroke-linejoin", "round")
-        //     .attr('stroke', 'red')
-        //     .attr('stroke-opacity', '0')
-        //     .attr('fill', 'none');
+        const interactivityLineData = svgLinesContainer
+            .selectAll(Visual.InteractivityLineSelector.selectorName)
+            .data(lines);
+
+        interactivityLineData.exit().remove();
+
+        interactivityLineData.enter()
+            .append('path')
+            .classed(Visual.InteractivityLineSelector.className, true)
+            .attr('d', (dataPoint: LineDataPoint) => {
+                let points: any = dataPoint.points;
+                let lineD: string = line(points);
+                let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                return (stepped)
+                    ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
+                    : lineD;
+            })
+            .attr('stroke-width', '10')
+            .attr('stroke-linejoin', 'round')
+            .attr('stroke', 'red')
+            .attr('stroke-opacity', '0')
+            .attr('fill', 'none');
     }
 
     // eslint-disable-next-line max-lines-per-function
