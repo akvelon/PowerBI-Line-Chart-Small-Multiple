@@ -870,7 +870,7 @@ export class RenderVisual {
                 break;
             }
             case LabelsAction.Rotate35: {
-                labels.attr('transform', function (d) {
+                labels.attr('transform', function () {
                     return 'translate(' + (<any>this).getBBox().height * -2 + ',' + (<any>this).getBBox().height + ')rotate(-35)';
                 }).attr('dy', '0').attr('dx', '2.5em').style('text-anchor', 'end')
                     .call(truncateAxis, plotSize.height * this.settings.xAxis.maximumSize / 100, {

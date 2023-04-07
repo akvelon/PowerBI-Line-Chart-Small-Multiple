@@ -7,7 +7,7 @@ import {LegendPosition} from 'powerbi-visuals-utils-chartutils/lib/legend/legend
 import {ColorHelper} from 'powerbi-visuals-utils-colorutils';
 import {fromPixelToPoint, fromPointToPixel, measureTextWidth, TextProperties} from './textUtility';
 import {getTailoredTextOrDefault} from 'powerbi-visuals-utils-formattingutils/lib/src/textMeasurementService';
-import {select as d3select, selectAll as d3selectAll} from 'd3-selection';
+import {select as d3select} from 'd3-selection';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
 import {LegendIconType} from '../legendIconType';
 import {IMargin} from 'powerbi-visuals-utils-svgutils';

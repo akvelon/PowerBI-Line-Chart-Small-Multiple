@@ -5,7 +5,7 @@ import {valueFormatter} from 'powerbi-visuals-utils-formattingutils';
 
 export class Formatter {
     private static _instance: Formatter = new Formatter();
-    private _cachedFormatters: {} = {};
+    private _cachedFormatters: object = {};
 
     constructor() {
         if (Formatter._instance) {
