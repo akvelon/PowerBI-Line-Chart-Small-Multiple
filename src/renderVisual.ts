@@ -48,6 +48,9 @@ import {ISize} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces'
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
+
+const markersContainerSelector = createClassAndSelector('markers');
 
 export class RenderVisual {
     private categories: PrimitiveValue[];
@@ -1230,11 +1233,11 @@ export class RenderVisual {
         }
 
         // Append marker defs used to show markers on the lines.
-        MarkersUtility.appendMarkerDefsForLines(svgContainer, lines, shapes);
+        MarkersUtility.appendMarkerDefs(svgContainer, lines, shapes, markersContainerSelector, false);
 
         // Render lines
         const getMarker = (d: LineDataPoint) => d.showMarkers ?? shapes.showMarkers
-            ? MarkersUtility.getMarkerUrl(d, shapes)
+            ? MarkersUtility.getMarkerUrl(d, shapes, false)
             : null;
         const getRegularLineMarker = (d: LineDataPoint) => d.stepped ?? shapes.stepped
             ? null

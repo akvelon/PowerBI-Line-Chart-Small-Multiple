@@ -3,6 +3,7 @@
 import {d3Selection, LineDataPoint} from '../visualInterfaces';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
 import {Shapes} from '../settings';
+import {ClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
 
 export class MarkersUtility {
     public static getPath(markerShape: SeriesMarkerShape): string {
@@ -53,12 +54,12 @@ export class MarkersUtility {
         }
     }
 
-    public static getMarkerNameFromDataPoint(d: LineDataPoint, shapes: Shapes) {
-        return MarkersUtility.retrieveMarkerName(d.name, d.seriesMarkerShape || shapes.markerShape);
+    public static getMarkerNameFromDataPoint(d: LineDataPoint, shapes: Shapes, isSelection: boolean) {
+        return MarkersUtility.retrieveMarkerName(d.name, d.seriesMarkerShape || shapes.markerShape, isSelection);
     }
 
-    public static retrieveMarkerName(uniqueName: string, markerShape: string): string {
-        let markerId: string = markerShape + uniqueName;
+    public static retrieveMarkerName(uniqueName: string, markerShape: string, isSelection: boolean): string {
+        let markerId: string = (isSelection ? 'selection' : '') + markerShape + uniqueName;
         markerId = markerId.replace(/\+/g, 'plus');
         markerId = markerId.replace(/[^0-9a-zA-Z]/g, '');
         return markerId;
@@ -117,18 +118,30 @@ export class MarkersUtility {
         return newDataLine;
     }
 
-    public static appendMarkerDefsForLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], shapes: Shapes): void {
-        const markerDefs = svgContainer
+    public static appendMarkerDefs(
+        svgContainer: d3Selection<SVGElement>,
+        lines: LineDataPoint[],
+        shapes: Shapes,
+        containerClassAndSelector: ClassAndSelector,
+        isSelection: boolean) {
+        const selectionDefsData = svgContainer
+            .selectAll(containerClassAndSelector.selectorName)
+            .data([lines]);
+
+        selectionDefsData.exit().remove();
+
+        const enter = selectionDefsData.enter()
             .append('defs')
-            .selectAll('path')
-            .data(lines);
+            .classed(containerClassAndSelector.className, true);
 
-        markerDefs.exit()
-            .remove();
+        const linesData = enter.selectAll('path')
+            .data(d => d);
 
-        markerDefs.enter()
+        linesData.exit().remove();
+
+        linesData.enter()
             .append('marker')
-            .attr('id', (d) => MarkersUtility.getMarkerNameFromDataPoint(d, shapes))
+            .attr('id', (d) => MarkersUtility.getMarkerNameFromDataPoint(d, shapes, isSelection))
             .attr('refX', 0)
             .attr('refY', 0)
             .attr('viewBox', '-6 -6 12 12')
@@ -158,8 +171,8 @@ export class MarkersUtility {
             .style('stroke-linejoin', 'round');
     }
 
-    public static getMarkerUrl(d: LineDataPoint, shapes: Shapes): string {
-        const markerName = MarkersUtility.getMarkerNameFromDataPoint(d, shapes);
+    public static getMarkerUrl(d: LineDataPoint, shapes: Shapes, isSelection: boolean): string {
+        const markerName = MarkersUtility.getMarkerNameFromDataPoint(d, shapes, isSelection);
         return `url(#${markerName})`;
     }
 }

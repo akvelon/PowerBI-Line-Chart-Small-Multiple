@@ -20,6 +20,9 @@ import powerbi from 'powerbi-visuals-api';
 import {MarkersUtility} from './utilities/markersUtility';
 import {getLineStyleParam} from './utilities/vizUtility';
 import PrimitiveValue = powerbi.PrimitiveValue;
+import {createClassAndSelector} from 'powerbi-visuals-utils-svgutils/lib/cssConstants';
+
+const selectionMarkersContainerSelector = createClassAndSelector('selectionMarkers');
 
 export function implementLassoSelection(
     mainCont: d3Selection<any>,
@@ -281,6 +284,9 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
         }
     }
 
+    MarkersUtility.appendMarkerDefs(cont, newLines, shapes, selectionMarkersContainerSelector, true);
+
+    // Render selection lines with markers
     const linesCont = cont.append('svg');
     const lineGroupSelection = linesCont
         .selectAll(Visual.SimpleLineSelector.selectorName)
@@ -290,6 +296,9 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
         .append('path')
         .classed(Visual.SimpleLineSelector.className, true);
 
+    const getMarker = (d: LineDataPoint) => !(d.stepped ?? shapes.stepped) && (d.showMarkers ?? shapes.showMarkers)
+        ? MarkersUtility.getMarkerUrl(d, shapes, false)
+        : null;
     lineGroupSelectionEnter
         .attr('d', (dataPoint: LineDataPoint, index: number) => {
             const lineD: string = lineDD[index];
@@ -308,53 +317,31 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
                 ? getLineStyleParam(shapes.lineStyle)
                 : getLineStyleParam(dataPoint.lineStyle))
         .attr('fill', 'none')
+        .attr('marker-start', getMarker)
+        .attr('marker-mid', getMarker)
+        .attr('marker-end', getMarker)
         .style('opacity', 1);
 
-//         // TODO Fix showing markers on selection line
-//         let lineNamesWithMarkers = retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
-//         for(let i=0;i<newLines.length;i++) {
-//             let ldp: LineDataPoint = newLines[i];
-//             let marker: string = lineNamesWithMarkers[ldp.name];
-//             if (marker) {
-//                 // TODO Fix selection array to nodes()
-//                 let item: Selection<any> = d3.select(lineGroupSelection[0][i]);
-//                 item.attr('marker-start', marker);
-//                 item.attr('marker-mid', marker);
-//                 item.attr('marker-end', marker);
-//             }
-//         }
-//
-//         // TODO Fix rendering dots for selection with only one point
-//         let dotsGroupSelection: Update<LineDataPoint> = linesCont
-//             .append("g")
-//             .selectAll(Visual.SimpleLineSelector.selectorName)
-//             .data(dots);
-//
-//         dotsGroupSelection
-//             .enter()
-//             .append("circle")
-//             .classed(Visual.DotSelector.className, true);
-//
-//         dotsGroupSelection
-//             .attr({
-//                 'cx': (dataPoint: LineDataPoint) => {
-//                     return +dataPoint.points[0].x;
-//                 },
-//                 'cy': (dataPoint: LineDataPoint) => {
-//                     return dataPoint.points[0].y;
-//                 },
-//                 'r': (dataPoint: LineDataPoint) => {
-//                     let strokeWidth: number = dataPoint.strokeWidth == undefined
-//                         ? shapes.strokeWidth
-//                         : dataPoint.strokeWidth;
-//                     return 2.5 + 0.5*strokeWidth;
-//                 }
-//             })
-//             .style({
-//                 'fill': (dataPoint: LineDataPoint) => {
-//                     return dataPoint.color;
-//                 }
-//             }).style('opacity', 1);
+    let dotsGroupSelection: d3Selection<LineDataPoint> = linesCont
+        .selectAll(Visual.DotSelector.selectorName)
+        .data(dots);
+
+    dotsGroupSelection.exit().remove();
+
+    dotsGroupSelection
+        .enter()
+        .append('circle')
+        .classed(Visual.DotSelector.className, true)
+        .attr('cx', (dataPoint: LineDataPoint) => +dataPoint.points[0].x)
+        .attr('cy', (dataPoint: LineDataPoint) => dataPoint.points[0].y)
+        .attr('r', (dataPoint: LineDataPoint) => {
+            let strokeWidth: number = dataPoint.strokeWidth == undefined
+                ? shapes.strokeWidth
+                : dataPoint.strokeWidth;
+            return 2.5 + 0.5 * strokeWidth;
+        })
+        .style('fill', (dataPoint: LineDataPoint) => dataPoint.color)
+        .style('opacity', 1);
 }
 
 function retrieveLineDForLasso(points: SimplePoint[]) {
