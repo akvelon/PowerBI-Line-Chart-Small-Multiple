@@ -48,7 +48,7 @@ export class LegendBehavior implements IInteractiveBehavior {
         this.selectionHandler = selectionHandler;
 
         options.legendItems.on('click', (e: MouseEvent, d: ScrollableLegendDataPoint) => {
-            const multiSelect: boolean = e.ctrlKey /* Ctrl on Windows */ || e.metaKey /* Cmd on Mac*/;
+            const multiSelect: boolean = e.ctrlKey;
             const label = d.tooltip ?? d.label;
             const index: number = this.selectedLegendNames.indexOf(label);
             if (index == -1) {
