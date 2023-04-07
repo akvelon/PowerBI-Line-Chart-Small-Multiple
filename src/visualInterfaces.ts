@@ -2,18 +2,13 @@
 
 import powerbi from 'powerbi-visuals-api';
 import PrimitiveValue = powerbi.PrimitiveValue;
-import {LegendDataPoint, MarkerShape} from 'powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces';
-import DataViewObjects = powerbi.DataViewObjects;
 import {IValueFormatter} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
 import {Selection} from 'd3-selection';
 import {VisualSettings} from './settings';
 import {BoundingRect} from 'powerbi-visuals-utils-svgutils/lib/shapes/shapesInterfaces';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import {SelectableDataPoint} from 'powerbi-visuals-utils-interactivityutils/lib/interactivitySelectionService';
-import {BaseDataPoint, IBehaviorOptions} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 import {SeriesMarkerShape} from './seriesMarkerShape';
-import {LegendIconType} from './legendIconType';
-import {NumberValue, ScaleOrdinal} from 'd3-scale';
 import {AxisDomain, AxisScale} from 'd3-axis';
 import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 
@@ -52,12 +47,6 @@ export enum CategoryType {
 export interface LineKeyIndex {
     [lineKey: string]: number;
 }
-
-// export interface LegendBehaviorOptions extends IBehaviorOptions<ScrollableLegendDataPoint> {
-//     legendItems: d3Selection<any>;
-//     legendIcons: d3Selection<any>;
-//     clearCatcher: d3Selection<any>;
-// }
 
 export interface LassoData {
     lassoData: BoundingRect;

@@ -23,8 +23,6 @@ import ISelectionId = powerbi.visuals.ISelectionId;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IViewport = powerbi.IViewport;
 
-const paddingText: number = 10;
-const arrowWidth: number = 7.5;
 const lineLen: number = 30;
 const circleD: number = 10;
 

@@ -167,14 +167,6 @@ export const enum AxisPosition {
     Right = 'right'
 }
 
-export const enum LabelPosition {
-    Auto = 'auto',
-    InsideEnd = 'end',
-    OutsideEnd = 'outside',
-    InsideBase = 'base',
-    InsideCenter = 'center'
-}
-
 export class DataLabelsSettings {
     // Show category axis
     public show: boolean = false;

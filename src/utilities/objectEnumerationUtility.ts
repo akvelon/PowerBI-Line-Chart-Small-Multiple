@@ -8,7 +8,6 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import {ScrollableLegendDataPoint} from './scrollableLegend';
 
 export class EnumerateObject {
-
     // eslint-disable-next-line max-lines-per-function
     public static setInstances(
         settings: VisualSettings,

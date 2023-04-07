@@ -149,11 +149,6 @@ export class Visual implements IVisual {
     public static LineChartRectSelector = createClassAndSelector('line-chart-rect');
     public static SmallMultipleNameSelector = createClassAndSelector('sm-name');
     public static Label = createClassAndSelector('data-label');
-    public static NavigationArrow = createClassAndSelector('navArrow');
-    public static NavigationArrowCustomLeft = createClassAndSelector('navArrowCustomLeft');
-    public static NavigationArrowCustomRight = createClassAndSelector('navArrowCustomRight');
-    public static AxisGraphicsContextSelector = createClassAndSelector('axisGraphicsContext');
-    public static AxisLabelSelector = createClassAndSelector('axisLabel');
     public static LassoDataSelectorId: string = 'lasso-data';
 
     constructor(options: VisualConstructorOptions) {
