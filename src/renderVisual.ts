@@ -1340,9 +1340,9 @@ export class RenderVisual {
             .append('path')
             .classed(Visual.InteractivityLineSelector.className, true)
             .attr('d', (dataPoint: LineDataPoint) => {
-                let points: any = dataPoint.points;
-                let lineD: string = line(points);
-                let stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
+                const points: any = dataPoint.points;
+                const lineD: string = line(points);
+                const stepped: boolean = (dataPoint.stepped == undefined) ? this.settings.shapes.stepped : dataPoint.stepped;
                 return (stepped)
                     ? MarkersUtility.getDataLineForForSteppedLineChart(lineD)
                     : lineD;

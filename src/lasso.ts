@@ -322,7 +322,7 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
         .attr('marker-end', getMarker)
         .style('opacity', 1);
 
-    let dotsGroupSelection: d3Selection<LineDataPoint> = linesCont
+    const dotsGroupSelection: d3Selection<LineDataPoint> = linesCont
         .selectAll(Visual.DotSelector.selectorName)
         .data(dots);
 
@@ -335,7 +335,7 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
         .attr('cx', (dataPoint: LineDataPoint) => +dataPoint.points[0].x)
         .attr('cy', (dataPoint: LineDataPoint) => dataPoint.points[0].y)
         .attr('r', (dataPoint: LineDataPoint) => {
-            let strokeWidth: number = dataPoint.strokeWidth == undefined
+            const strokeWidth: number = dataPoint.strokeWidth == undefined
                 ? shapes.strokeWidth
                 : dataPoint.strokeWidth;
             return 2.5 + 0.5 * strokeWidth;
