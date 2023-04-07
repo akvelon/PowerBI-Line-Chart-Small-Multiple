@@ -15,7 +15,7 @@ import {
 } from './visualInterfaces';
 import {IInteractivityService} from 'powerbi-visuals-utils-interactivityutils/lib/interactivityBaseService';
 import {ITooltipServiceWrapper} from 'powerbi-visuals-utils-tooltiputils';
-import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, VisualSettings} from './settings';
+import {AxisPosition, DataLabelEps, DataLabelR, NiceDateFormat, Shapes, VisualSettings} from './settings';
 import {IValueFormatter, ValueFormatterOptions} from 'powerbi-visuals-utils-formattingutils/lib/src/valueFormatter';
 import {Formatter, getLineStyleParam} from './utilities/vizUtility';
 import {
@@ -1207,7 +1207,12 @@ export class RenderVisual {
     }
 
     // eslint-disable-next-line max-lines-per-function
-    private renderLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], width: number, height: number, line: d3Line<SimplePoint>) {
+    private renderLines(
+        svgContainer: d3Selection<SVGElement>,
+        lines: LineDataPoint[],
+        width: number,
+        height: number,
+        line: d3Line<SimplePoint>) {
         //Trend lines
         const svgLinesContainer: d3Selection<SVGElement> = svgContainer
             .append('svg')
@@ -1225,9 +1230,15 @@ export class RenderVisual {
         }
 
         // Append marker defs used to show markers on the lines.
-        const markerNames = MarkersUtility.appendMarkerDefsForLines(svgContainer, lines, shapes);
+        MarkersUtility.appendMarkerDefsForLines(svgContainer, lines, shapes);
 
         // Render lines
+        const getMarker = (d: LineDataPoint) => d.showMarkers ?? shapes.showMarkers
+            ? MarkersUtility.getMarkerUrl(d, shapes)
+            : null;
+        const getRegularLineMarker = (d: LineDataPoint) => d.stepped ?? shapes.stepped
+            ? null
+            : getMarker(d);
         svgLinesContainer
             .selectAll(Visual.SimpleLineSelector.selectorName)
             .data(lines)
@@ -1250,12 +1261,16 @@ export class RenderVisual {
                     ? getLineStyleParam(this.settings.shapes.lineStyle)
                     : getLineStyleParam(dataPoint.lineStyle))
             .attr('fill', 'none')
+            .attr('marker-start', getRegularLineMarker)
+            .attr('marker-mid', getRegularLineMarker)
+            .attr('marker-end', getRegularLineMarker)
             .style('opacity', (dataPoint: LineDataPoint) =>
                 getOpacity(dataPoint.selected, hasSelection));
 
-        // Render markers above the lines.
-        const getMarker = (d: LineDataPoint) => d.showMarkers ?? shapes.showMarkers
-            ? `url(#${markerNames[d.name]})`
+        // Render markers above the stepped lines.
+        // For regular lines markers are rendered directly on the lines.
+        const getSteppedLineMarker = (d: LineDataPoint) => d.stepped ?? shapes.stepped
+            ? getMarker(d)
             : null;
         svgLinesContainer
             .selectAll(Visual.MarkerLineSelector.selectorName)
@@ -1266,9 +1281,9 @@ export class RenderVisual {
             .attr('stroke-width', (dataPoint: LineDataPoint) =>
                 (dataPoint.strokeWidth == undefined) ? this.settings.shapes.strokeWidth : dataPoint.strokeWidth)
             .attr('fill', 'none')
-            .attr('marker-start', getMarker)
-            .attr('marker-mid', getMarker)
-            .attr('marker-end', getMarker)
+            .attr('marker-start', getSteppedLineMarker)
+            .attr('marker-mid', getSteppedLineMarker)
+            .attr('marker-end', getSteppedLineMarker)
             .style('opacity', (dataPoint: LineDataPoint) =>
                 getOpacity(dataPoint.selected, hasSelection));
 

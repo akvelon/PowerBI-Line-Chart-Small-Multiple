@@ -23,10 +23,12 @@ import powerbi from 'powerbi-visuals-api';
 import {ScrollableLegendDataPoint} from './utilities/scrollableLegend';
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import PrimitiveValue = powerbi.PrimitiveValue;
+import {MarkersUtility} from './utilities/markersUtility';
 
 export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
     selectionLines: LineDataPoint[];
     lineGroupSelection: d3Selection<LineDataPoint>;
+    markerLineGroupSelection: d3Selection<LineDataPoint>;
     interactiveLineGroupSelection: d3Selection<LineDataPoint>;
     dotsSelection: d3Selection<LineDataPoint>;
     container: d3Selection<any>;
@@ -42,6 +44,7 @@ export interface WebBehaviorOptions extends IBehaviorOptions<BaseDataPoint> {
 export class WebBehavior implements IInteractiveBehavior {
     private dataPoints: VisualDataPoint[];
     private lineGroupSelection: d3Selection<LineDataPoint>;
+    private markerLineGroupSelection: d3Selection<LineDataPoint>;
     private interactiveLineGroupSelection: d3Selection<LineDataPoint>;
     private dotsSelection: d3Selection<LineDataPoint>;
     private container: d3Selection<any>;
@@ -58,6 +61,7 @@ export class WebBehavior implements IInteractiveBehavior {
 
         this.dataPoints = options.dataPoints as VisualDataPoint[];
         this.lineGroupSelection = options.lineGroupSelection;
+        this.markerLineGroupSelection = options.markerLineGroupSelection;
         this.interactiveLineGroupSelection = options.interactiveLineGroupSelection;
         this.dotsSelection = options.dotsSelection;
         this.container = options.container;
@@ -156,24 +160,13 @@ export class WebBehavior implements IInteractiveBehavior {
             return getOpacity(selected, hasSelection);
         };
 
-        this.lineGroupSelection.style('opacity', (lineDataPoint: LineDataPoint) => {
-            const opacity: number = getSelectionOpacity(lineDataPoint);
-            const showMarkers: boolean = lineDataPoint.showMarkers != null
-                ? lineDataPoint.showMarkers
-                : this.shapes.showMarkers;
-            const stepped: boolean = lineDataPoint.stepped != null
-                ? lineDataPoint.stepped
-                : this.shapes.stepped;
-            // if (showMarkers && stepped) {
-            //     const markerPathId = MarkersUtility.retrieveMarkerName(lineDataPoint.lineKey, Visual.MarkerLineSelector.className);
-            //     const markers = this.container.select("#" + markerPathId);
-            //     markers.style("opacity", opacity);
-            // }
-            return opacity;
-        });
+        this.lineGroupSelection.style('opacity', getSelectionOpacity);
+        this.markerLineGroupSelection.style('opacity', getSelectionOpacity);
         this.dotsSelection.style('opacity', getSelectionOpacity);
-        if (hasSelection)
+
+        if (hasSelection) {
             this.legendBehavior.renderLassoSelection(selectedLegendNames, hasSelection, false);
+        }
     }
 
     public renderLassoSelection(hasSelection: boolean): void {

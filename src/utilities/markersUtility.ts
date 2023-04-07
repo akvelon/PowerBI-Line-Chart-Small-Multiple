@@ -1,10 +1,8 @@
 'use strict';
 
 import {d3Selection, LineDataPoint} from '../visualInterfaces';
-import {Visual} from '../visual';
 import {SeriesMarkerShape} from '../seriesMarkerShape';
 import {Shapes} from '../settings';
-import {LegendIconType} from '../legendIconType';
 
 export class MarkersUtility {
     public static getPath(markerShape: SeriesMarkerShape): string {
@@ -55,6 +53,10 @@ export class MarkersUtility {
         }
     }
 
+    public static getMarkerNameFromDataPoint(d: LineDataPoint, shapes: Shapes) {
+        return MarkersUtility.retrieveMarkerName(d.name, d.seriesMarkerShape || shapes.markerShape);
+    }
+
     public static retrieveMarkerName(uniqueName: string, markerShape: string): string {
         let markerId: string = markerShape + uniqueName;
         markerId = markerId.replace(/\+/g, 'plus');
@@ -63,8 +65,12 @@ export class MarkersUtility {
     }
 
     public static getDataLineForForSteppedLineChart(dataLine: string): string {
-        let newDataLine: string = dataLine.replace(/\M/, '').replace(/\V/g, '!V').replace(/\H/g, '!H').replace(/\L/g, '!L');
-        const markedPoints: string[] = newDataLine.replace(/\M/g, '!M').split('!');
+        let newDataLine: string = dataLine
+            .replace(/M/, '')
+            .replace(/\V/g, '!V')
+            .replace(/H/g, '!H')
+            .replace(/L/g, '!L');
+        const markedPoints: string[] = newDataLine.replace(/M/g, '!M').split('!');
 
         newDataLine = 'M' + markedPoints[0];
         const firstItem: string[] = markedPoints[0].split(',');
@@ -76,7 +82,7 @@ export class MarkersUtility {
             const action: string = markedPoints[j][0];
             switch (action) {
                 case 'H': {
-                    const newX: number = +markedPoints[j].replace(/\H/, '');
+                    const newX: number = +markedPoints[j].replace(/H/, '');
                     const newDelta: number = newX - currentX;
                     currentX = newX;
                     newDataLine = newDataLine + markedPoints[j];
@@ -89,14 +95,14 @@ export class MarkersUtility {
                     break;
                 }
                 case 'M': {
-                    const data: string[] = markedPoints[j].replace(/\M/, '').split(',');
+                    const data: string[] = markedPoints[j].replace(/M/, '').split(',');
                     currentX = +data[0];
                     currentY = +data[1];
                     newDataLine = newDataLine + markedPoints[j];
                     break;
                 }
                 case 'L': {
-                    const data: string[] = markedPoints[j].replace(/\L/, '').split(',');
+                    const data: string[] = markedPoints[j].replace(/L/, '').split(',');
                     const newX: number = +data[0];
                     const newY: number = +data[1];
                     const newX1: number = (newX + currentX) / 2;
@@ -111,31 +117,24 @@ export class MarkersUtility {
         return newDataLine;
     }
 
-    public static appendMarkerDefsForLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], shapes: Shapes) {
+    public static appendMarkerDefsForLines(svgContainer: d3Selection<SVGElement>, lines: LineDataPoint[], shapes: Shapes): void {
         const markerDefs = svgContainer
             .append('defs')
             .selectAll('path')
             .data(lines);
-
-        const markerNames = lines.reduce<{
-            [key: string]: string
-        }>((previousValue, currentValue) => {
-            const markerShape = currentValue.seriesMarkerShape || shapes.markerShape;
-            previousValue[currentValue.name] = MarkersUtility.retrieveMarkerName(currentValue.name, markerShape);
-            return previousValue;
-        }, {});
 
         markerDefs.exit()
             .remove();
 
         markerDefs.enter()
             .append('marker')
-            .attr('id', (d) => markerNames[d.name])
+            .attr('id', (d) => MarkersUtility.getMarkerNameFromDataPoint(d, shapes))
             .attr('refX', 0)
             .attr('refY', 0)
             .attr('viewBox', '-6 -6 12 12')
             .attr('markerWidth', (d) => d.markerSize ?? shapes.markerSize)
             .attr('markerHeight', (d) => d.markerSize ?? shapes.markerSize)
+
             .append('path')
             .attr('d', (dataPoint) => {
                 return MarkersUtility.getPath(dataPoint.seriesMarkerShape ?? shapes.markerShape ?? SeriesMarkerShape.circle);
@@ -157,7 +156,10 @@ export class MarkersUtility {
                 return null;
             })
             .style('stroke-linejoin', 'round');
+    }
 
-        return markerNames;
+    public static getMarkerUrl(d: LineDataPoint, shapes: Shapes): string {
+        const markerName = MarkersUtility.getMarkerNameFromDataPoint(d, shapes);
+        return `url(#${markerName})`;
     }
 }

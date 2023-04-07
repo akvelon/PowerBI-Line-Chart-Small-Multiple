@@ -561,6 +561,7 @@ export class Visual implements IVisual {
                 dataPoints: this.model.dataPoints,
                 selectionLines,
                 lineGroupSelection: container.selectAll(Visual.SimpleLineSelector.selectorName).data(selectionLines),
+                markerLineGroupSelection: container.selectAll(Visual.MarkerLineSelector.selectorName).data(selectionLines),
                 interactiveLineGroupSelection: container.selectAll(Visual.InteractivityLineSelector.selectorName).data(selectionLines),
                 dotsSelection: container.selectAll(Visual.DotSelector.selectorName).data(dots),
                 container,

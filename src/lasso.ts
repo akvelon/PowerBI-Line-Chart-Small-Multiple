@@ -310,12 +310,13 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
         .attr('fill', 'none')
         .style('opacity', 1);
 
-//         let lineNamesWithMarkers = renderVisual.retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
+//         // TODO Fix showing markers on selection line
+//         let lineNamesWithMarkers = retrieveLineNamesWithMarkers(cont, linesCont, lineDD, shapes, newLines);
 //         for(let i=0;i<newLines.length;i++) {
 //             let ldp: LineDataPoint = newLines[i];
 //             let marker: string = lineNamesWithMarkers[ldp.name];
 //             if (marker) {
-//                 // TODO Fix selection
+//                 // TODO Fix selection array to nodes()
 //                 let item: Selection<any> = d3.select(lineGroupSelection[0][i]);
 //                 item.attr('marker-start', marker);
 //                 item.attr('marker-mid', marker);
@@ -323,6 +324,7 @@ function drawLines(cont: d3Selection<any>, lines: LineDataPointForLasso[], globa
 //             }
 //         }
 //
+//         // TODO Fix rendering dots for selection with only one point
 //         let dotsGroupSelection: Update<LineDataPoint> = linesCont
 //             .append("g")
 //             .selectAll(Visual.SimpleLineSelector.selectorName)
