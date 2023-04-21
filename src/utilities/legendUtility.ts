@@ -147,9 +147,9 @@ function buildLegendData(
         for (let i: number = 0, len: number = grouped.length; i < len; i++) {
             const grouping = grouped[i];
 
-            const color = (grouping.objects && grouping.name && colorHelper.getColorForSeriesValue(
+            let color: string = colorHelper.getColorForSeriesValue(
                 grouping.objects,
-                grouping.name)) || undefined;
+                grouping.name);
 
             const selectionId: ISelectionId = host.createSelectionIdBuilder()
                 .withSeries(dataValues, grouping)
@@ -178,9 +178,9 @@ function buildLegendData(
                     const object = legendColumn.objects && legendColumn.objects.length > i
                         ? legendColumn.objects[i]
                         : null;
-                    const color = (object && colorHelper.getColorForSeriesValue(
+                    let color: string = colorHelper.getColorForSeriesValue(
                         object,
-                        name)) || undefined;
+                        name);
 
                     const selectionId: ISelectionId = host.createSelectionIdBuilder()
                         .withCategory(legendColumn, i)
