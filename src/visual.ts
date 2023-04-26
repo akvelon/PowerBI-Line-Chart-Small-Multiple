@@ -62,585 +62,8 @@ import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInst
 import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 import {implementLassoSelection} from './lasso';
 
-function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
-    let format = category.source.format;
-    let categoryValue: PrimitiveValue;
-    if (category.source.type && category.source.type.dateTime) {
-        format = format ? format : NiceDateFormat;
-        categoryValue = new Date(category.values[i].toString());
-    } else {
-        categoryValue = category.values[i];
-    }
-    const formatter: IValueFormatter = Formatter.getFormatter({
-        format: format,
-        cultureSelector: locale,
-    });
-
-    return formatter.format(categoryValue);
-}
-
-function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean): CategoryType {
-    if ((categoryIsBoolean && categoryIsScalar) || (categoryIsBoolean && categoryIsDate) || (categoryIsScalar && categoryIsDate)) {
-        return CategoryType.Error;
-    }
-
-    return (categoryIsScalar)
-        ? CategoryType.Number
-        : ((categoryIsDate)
-            ? CategoryType.Date
-            : ((categoryIsBoolean)
-                ? CategoryType.Boolean
-                : CategoryType.String));
-}
-
-function sortNumberLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
-    return sortNumber(+(a.tooltip ?? 0), +(b.tooltip ?? 0));
-}
-
-function sortDateLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
-    const a1: Date = new Date(a.tooltip ?? '');
-    const b1: Date = new Date(b.tooltip ?? '');
-    return a1.getTime() - b1.getTime();
-}
-
-function sortNumber(a, b) {
-    const a1: number = +a;
-    const b1: number = +b;
-    return a1 - b1;
-}
-
-function sortDate(a, b) {
-    const a1: Date = new Date(a.toString());
-    const b1: Date = new Date(b.toString());
-    return a1.getTime() - b1.getTime();
-}
-
-function get_sorted(array: any[], type: ValueTypeDescriptor | undefined): PrimitiveValue[] {
-    let result: PrimitiveValue[] = [];
-    if (array) {
-        result = (type && type.numeric)
-            ? array.sort(sortNumber)
-            : ((type && type.dateTime)
-                ? array.sort(sortDate)
-                : array.sort());
-    }
-    return result;
-}
-
-export class Visual implements IVisual {
-    private host: IVisualHost;
-    private model: VisualViewModel;
-    private element: d3Selection<any>;
-    private interactivityService: IInteractivityService<any>;
-    private legend: IScrollableLegend;
-    private tooltipServiceWrapper: ITooltipServiceWrapper;
-    private behavior: WebBehavior;
-    private legendBehavior: LegendBehavior;
-
-    public static SmallMultipleSelector = createClassAndSelector('customSM');
-    public static SimpleLineSelector = createClassAndSelector('simpleLine');
-    public static InteractivityLineSelector = createClassAndSelector('interactivity-line');
-    public static DotSelector = createClassAndSelector('dot');
-    public static MarkerLineSelector = createClassAndSelector('markerLine');
-    public static CircleSelector = createClassAndSelector('circle-item');
-    public static HoverLineSelector = createClassAndSelector('hover-line');
-    public static LassoRectSelector = createClassAndSelector('lasso-rect');
-    public static LassoSvgSelector = createClassAndSelector('lasso-svg');
-    public static LineChartRectSelector = createClassAndSelector('line-chart-rect');
-    public static SmallMultipleNameSelector = createClassAndSelector('sm-name');
-    public static Label = createClassAndSelector('data-label');
-    public static LassoDataSelectorId: string = 'lasso-data';
-
-    constructor(options: VisualConstructorOptions) {
-        this.host = options.host;
-        this.model = {
-            rows: [],
-            columns: [],
-            rowsFormat: '',
-            columnsFormat: '',
-            categories: [],
-            dataPoints: [],
-            legendDataPoint: [],
-            lines: [],
-            lineKeyIndex: {},
-            categoryName: '',
-            valuesName: '',
-            categoryIsDate: false,
-            categoryFormat: '',
-            valueFormat: '',
-            legendFormatter: null,
-            legendType: CategoryType.String,
-            categoryIsScalar: false,
-            domain: {startForced: false, endForced: false},
-            settings: VisualSettings.getDefault() as VisualSettings,
-        };
-        this.element = d3select(options.element);
-        this.interactivityService = createInteractivitySelectionService(options.host);
-        this.legendBehavior = new LegendBehavior();
-        this.legend = createLegend(options.element, this.interactivityService, true, LegendPosition.Top, this.legendBehavior);
-        this.tooltipServiceWrapper = createTooltipServiceWrapper(
-            options.host.tooltipService,
-            options.element);
-        this.behavior = new WebBehavior();
-    }
-
-    // eslint-disable-next-line max-lines-per-function
-    public update(options: VisualUpdateOptions) {
-        this.model = visualTransform(options, this.host);
-        this.element.selectAll('div, svg:not(.legend)').remove();
-        if (this.model.categories.length == 0) return;
-        this.legendBehavior.addLegendData(this.model.settings.legend, this.model.legendDataPoint);
-        let margin: IMargin = {top: 0, left: 0, bottom: 0, right: 0};
-
-        //Legend
-        renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
-        let containerSize = {
-            width: options.viewport.width - margin.left - margin.right,
-            height: options.viewport.height - margin.top - margin.bottom,
-        };
-
-        let container: d3Selection<any> = this.element
-            .append('div')
-            .classed('chart', true)
-            .style('width', containerSize.width + 'px')
-            .style('height', containerSize.height + 'px');
-
-        positionChartArea(container, this.legend);
-        this.interactivityService.applySelectionStateToData(this.model.lines);
-
-        const renderSimpleVisual = new RenderVisual(this.host, this.element, this.model, this.model.domain, this.interactivityService, this.tooltipServiceWrapper);
-
-        const rowNumber: number = (this.model.rows.length == 0) ? 1 : this.model.rows.length;
-        const columnsNumber: number = (this.model.columns.length == 0) ? 1 : this.model.columns.length;
-
-        this.model.settings.smallMultiple.enable = rowNumber > 1 || columnsNumber > 1;
-        if (!this.model.settings.smallMultiple.enable)
-            if ((this.model.settings.xAxis.minCategoryWidth ?? 0) < this.model.settings.xAxis.fontSize)
-                this.model.settings.xAxis.minCategoryWidth = this.model.settings.xAxis.fontSize;
-
-        const titleHeight: number = this.model.settings.smallMultiple.fontSize * 2;
-        const separatorSize = 20;
-
-        const separatorIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showSeparators) ? 1 : 0;
-        const titleIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showChartTitle) ? 1 : 0;
-        const matrixFlowIndex = (this.model.settings.smallMultiple.enable) ? 1 : 0;
-
-        const minItemWidth: number = matrixFlowIndex
-            ? this.model.settings.smallMultiple.minUnitWidth
-            : containerSize.width;
-        const matrixIndex: number = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.layoutMode == 'Matrix') ? 1 : 0;
-        let itemWidth: number = Math.max((containerSize.width - titleHeight * matrixIndex * titleIndex) / columnsNumber - separatorSize * matrixFlowIndex, minItemWidth);
-
-        if (!matrixFlowIndex && !this.model.settings.general.responsive) {
-            container.style('overflow-x', 'auto')
-                .style('overflow-y', 'hidden');
-            const MinWidhtForNotResponsive: number = 200;
-            if (itemWidth < MinWidhtForNotResponsive) {
-                containerSize.height = containerSize.height - 20;
-                itemWidth = MinWidhtForNotResponsive;
-            }
-        }
-
-        const minItemHeight: number = matrixFlowIndex ? this.model.settings.smallMultiple.minUnitHeigth : containerSize.height;
-        const columnTitleIndex: number = (this.model.columns.length > 0) ? titleIndex : 0;
-        let itemHeight: number = matrixIndex
-            ? Math.max((containerSize.height - separatorSize - titleHeight * columnTitleIndex) / rowNumber - separatorSize, minItemHeight)
-            : Math.max((containerSize.height - separatorSize - 5) / rowNumber - titleHeight * titleIndex - separatorSize, minItemHeight);
-
-        let selectionLines: LineDataPoint[] = [];
-        const dots: LineDataPoint[] = [];
-
-        if (matrixFlowIndex)
-            this.model.settings.xAxis.minCategoryWidth = null;
-        if (this.model.settings.xAxis.axisType === 'categorical' && !matrixFlowIndex) {
-            const maxCountOfXAxis: number = renderSimpleVisual.retrieveMaxCountOfXAxis(this.model.lines);
-            const maxWidth: number = maxCountOfXAxis * (this.model.settings.xAxis.minCategoryWidth ?? 0);
-            itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
-        }
-
-        let lassoContainer: d3Selection<any>;
-
-        if (this.model.settings.smallMultiple.enable) {
-            container.style('overflow', 'auto');
-            switch (this.model.settings.smallMultiple.layoutMode) {
-                case 'Matrix': {
-                    const rowHeight: number = itemHeight + separatorSize;
-                    const matrixWidth: number = itemWidth * columnsNumber + separatorSize * (columnsNumber - 1);
-                    const rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
-
-                    const smContainer: d3Selection<any> = container.append('svg')
-                        .attr('width', matrixWidth + titleHeight * titleIndex)
-                        .attr('height', rowHeight * rowNumber + titleHeight * columnTitleIndex);
-                    smContainer.append('rect')
-                        .classed('clearCatcher', true)
-                        .attr('width', '100%')
-                        .attr('height', '100%');
-                    lassoContainer = smContainer;
-                    lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
-                    for (let i = 0; i < rowNumber; i++) {
-                        const translateY: number = (i == 0)
-                            ? 0
-                            : i * rowHeight + titleHeight * columnTitleIndex;
-                        const matrixTitleIndex = (i == 0) && (columnTitleIndex == 1) ? 1 : 0;
-                        const rowContainer: d3Selection<any> = smContainer
-                            .append('g')
-                            .attr('width', matrixWidth + titleIndex * rowTitleIndex)
-                            .attr('height', rowHeight + titleHeight * matrixTitleIndex)
-                            .attr('transform', 'translate(0,' + translateY + ')');
-                        if (titleIndex == 1 && this.model.rows.length > 0) {
-                            const maxTextWidth: number = rowHeight + titleHeight * matrixTitleIndex;
-                            const titleX: string = this.formatSmallMultipleTitle(this.model.rows[i], this.model.rowsFormat, this.host.locale);
-                            renderSimpleVisual.renderRowTitleForMatrixView(rowContainer, titleHeight, maxTextWidth, separatorSize, titleX, i, separatorIndex);
-                        }
-
-                        for (let j = 0; j < columnsNumber; j++) {
-                            const lineKey: string = this.retrieveLineKey(i, j);
-                            const lines: LineDataPoint[] = this.retrieveLines(lineKey);
-                            for (let k = 0; k < lines.length; k++) {
-                                selectionLines.push(lines[k]);
-                                if (lines[k].points && lines[k].points.length == 1)
-                                    dots.push(lines[k]);
-                            }
-
-                            const titleY: string = (this.model.columns.length > 0)
-                                ? this.formatSmallMultipleTitle(this.model.columns[j], this.model.columnsFormat, this.host.locale)
-                                : '';
-
-                            const translateX: number = (itemWidth + separatorSize) * j + titleHeight * rowTitleIndex;
-                            const rowItemHeight: number = (i == rowNumber - 1) ? rowHeight - separatorSize : rowHeight + titleHeight * matrixTitleIndex;
-                            const itemContainer: d3Selection<SVGElement> = rowContainer
-                                .append('g')
-                                .attr('width', itemWidth)
-                                .attr('height', rowItemHeight)
-                                .attr('transform', 'translate(' + translateX + ',0)');
-
-                            if (i == 0 && titleY != '') {
-                                renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, titleY, lines, lineKey, translateX, translateY);
-                            } else {
-                                renderSimpleVisual.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, translateX, translateY);
-                            }
-
-                            //show row separator
-                            if (i < rowNumber - 1) {
-                                const columnSeparatorY: number = itemHeight + titleHeight * matrixTitleIndex;
-                                const rowSeparator: d3Selection<any> = itemContainer.append('g')
-                                    .attr('width', itemWidth)
-                                    .attr('height', separatorSize)
-                                    .attr('transform', 'translate(0,' + columnSeparatorY + ')');
-                                RenderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize / 2, itemWidth, separatorSize / 2, separatorIndex);
-                            }
-
-                            //show column separator
-                            if (j < columnsNumber - 1) {
-                                const columnSeparatorX: number = translateX + itemWidth;
-                                const columnSeparator: d3Selection<any> = rowContainer.append('g')
-                                    .attr('width', separatorSize)
-                                    .attr('height', rowHeight + titleHeight * matrixTitleIndex)
-                                    .attr('transform', 'translate(' + columnSeparatorX + ',0)');
-                                RenderVisual.renderSeparatorLine(columnSeparator, separatorSize / 2, 0, separatorSize / 2, rowHeight + titleHeight * matrixTitleIndex, separatorIndex);
-                                if (i < rowNumber - 1) {
-                                    const separatorY = itemHeight + titleHeight * matrixTitleIndex + separatorSize / 2;
-                                    RenderVisual.renderSeparatorLine(columnSeparator, 0, separatorY, separatorSize, separatorY, separatorIndex);
-                                }
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                case 'Flow': {
-                    const containerDevideCount = Math.floor((containerSize.width + separatorSize) / (itemWidth + separatorSize));
-                    let itemCountForRow: number = (containerDevideCount < this.model.settings.smallMultiple.minRowWidth)
-                        ? this.model.settings.smallMultiple.minRowWidth
-                        : containerDevideCount;
-                    itemCountForRow = Math.floor(columnsNumber / itemCountForRow)
-                        ? itemCountForRow
-                        : columnsNumber % itemCountForRow;
-                    const rowHeight: number = (columnsNumber % itemCountForRow)
-                        ? (itemHeight + titleHeight * titleIndex + separatorSize) * (Math.floor(columnsNumber / itemCountForRow) + 1)
-                        : (itemHeight + titleHeight * titleIndex + separatorSize) * Math.floor(columnsNumber / itemCountForRow);
-                    const rowHeights: number[] = [];
-                    let rowSumHeight: number = 0;
-                    let rowItemHeight: number;
-                    const showEmptySmallMultiples: boolean = this.model.settings.smallMultiple.showEmptySmallMultiples;
-                    let maxColumnsNumber: number = showEmptySmallMultiples ? columnsNumber : 0;
-                    for (let i = 0; i < rowNumber; i++) {
-                        if (showEmptySmallMultiples) {
-                            rowItemHeight = rowHeight;
-                        } else {
-                            let columnsNumber1: number = 0;
-                            for (let j = 0; j < columnsNumber; j++) {
-                                const lineKey: string = this.retrieveLineKey(i, j);
-                                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
-                                if (lines.length > 0)
-                                    columnsNumber1 = columnsNumber1 + 1;
-                            }
-                            if (maxColumnsNumber < columnsNumber1)
-                                maxColumnsNumber = columnsNumber1;
-                            rowItemHeight = (columnsNumber1 % itemCountForRow)
-                                ? (itemHeight + titleHeight * titleIndex + separatorSize) * (Math.floor(columnsNumber1 / itemCountForRow) + 1)
-                                : (itemHeight + titleHeight * titleIndex + separatorSize) * Math.floor(columnsNumber1 / itemCountForRow);
-                        }
-                        rowHeights.push(rowItemHeight);
-                        rowSumHeight = rowSumHeight + rowItemHeight + separatorSize;
-                    }
-
-                    if (itemCountForRow < maxColumnsNumber) {
-                        maxColumnsNumber = itemCountForRow;
-                    }
-
-                    itemWidth = Math.max(itemWidth, (containerSize.width - separatorSize) / maxColumnsNumber - separatorSize);
-                    const flowWidth: number = Math.max(containerSize.width, (itemWidth + separatorSize) * maxColumnsNumber - separatorSize);
-                    const smContainer: d3Selection<any> = container.append('svg')
-                        .attr('width', flowWidth)
-                        .attr('height', rowSumHeight - separatorSize);
-                    smContainer.append('rect')
-                        .classed('clearCatcher', true)
-                        .attr('width', '100%')
-                        .attr('height', '100%');
-                    lassoContainer = smContainer;
-                    lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
-                    let oldRowItemHeight: number = 0;
-                    for (let i = 0; i < rowNumber; i++) {
-                        rowItemHeight = rowHeights[i];
-                        const translateY = oldRowItemHeight;
-                        oldRowItemHeight = translateY + rowItemHeight + separatorSize;
-                        const rowContainer: d3Selection<any> = smContainer
-                            .append('g')
-                            .attr('width', flowWidth)
-                            .attr('height', rowItemHeight)
-                            .attr('transform', 'translate(0,' + translateY + ')');
-                        let j1: number = -1;
-                        for (let j = 0; j < columnsNumber; j++) {
-                            const lineKey: string = this.retrieveLineKey(i, j);
-                            const lines: LineDataPoint[] = this.retrieveLines(lineKey);
-                            if (lines.length == 0 && !showEmptySmallMultiples) {
-                                continue;
-                            }
-
-                            j1 = j1 + 1;
-                            const j2: number = showEmptySmallMultiples ? j : j1;
-                            for (let k = 0; k < lines.length; k++) {
-                                selectionLines.push(lines[k]);
-                                if (lines[k].points && lines[k].points.length == 1) {
-                                    dots.push(lines[k]);
-                                }
-                            }
-
-                            const title: string = this.getTitle(i, j, this.model.rowsFormat, this.model.columnsFormat, this.host.locale);
-
-                            const translateItemX: number = (j2 % itemCountForRow) * (itemWidth + separatorSize);
-                            const translateItemY: number = Math.floor(j2 / itemCountForRow) * (itemHeight + titleHeight * titleIndex + separatorSize);
-                            const itemContainer: d3Selection<SVGElement> = rowContainer
-                                .append('g')
-                                .attr('width', itemWidth)
-                                .attr('height', itemHeight + titleHeight * titleIndex)
-                                .attr('transform', 'translate(' + translateItemX + ',' + translateItemY + ')');
-                            renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, title, lines, lineKey, translateItemX, translateY + translateItemY);
-                        }
-
-                        if (separatorIndex && i < rowNumber - 1) {
-                            const translateSeparatorY: number = translateY + rowItemHeight;
-                            const rowSeparator: d3Selection<any> = smContainer.append('g')
-                                .attr('width', flowWidth)
-                                .attr('height', separatorSize)
-                                .attr('transform', 'translate(0,' + translateSeparatorY + ')');
-                            RenderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize / 2, (itemWidth + separatorSize) * itemCountForRow, separatorSize / 2, separatorIndex);
-                        }
-                    }
-                    break;
-                }
-            }
-        } else {
-            //simple view
-            const scrollbarMargin: number = 25;
-            if (itemWidth > containerSize.width)
-                itemHeight = itemHeight - scrollbarMargin;
-            let svgContainer: d3Selection<SVGElement> = container
-                .append('svg')
-                .attr('width', itemWidth)
-                .attr('height', itemHeight);
-            const lineKey: string = this.retrieveLineKey(0, 0);
-            const lines: LineDataPoint[] = this.retrieveLines(lineKey);
-            selectionLines = lines;
-            for (let k = 0; k < lines.length; k++) {
-                if (lines[k].points && lines[k].points.length == 1)
-                    dots.push(lines[k]);
-            }
-
-            let legendPosition: string = this.model.settings.legend.position;
-            let legendHeight: number = margin.top;
-            let newLegendPosition: string | null = null;
-            let svgContainerWidth: number = itemWidth;
-            let svgContainerHeight: number = itemHeight;
-            let stepCount: number = 0;
-            const maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
-            while (stepCount < maxStepCount && legendPosition != 'None') {
-                newLegendPosition = renderSimpleVisual.retrieveNewLegendPosition(svgContainer, lines, svgContainerWidth, svgContainerHeight, legendPosition, legendHeight);
-                const legendSettings: LegendSettings = {
-                    show: this.model.settings.legend.show,
-                    position: newLegendPosition,
-                    showTitle: this.model.settings.legend.showTitle,
-                    legendName: this.model.settings.legend.legendName,
-                    legendNameColor: this.model.settings.legend.legendNameColor,
-                    fontFamily: this.model.settings.legend.fontFamily,
-                    fontSize: this.model.settings.legend.fontSize,
-                    style: this.model.settings.legend.style,
-                    matchLineColor: this.model.settings.legend.matchLineColor,
-                    circleDefaultIcon: this.model.settings.legend.circleDefaultIcon,
-                };
-                if (newLegendPosition == 'None') {
-                    this.model.settings.legend.position = 'None';
-                }
-
-                margin = {top: 0, left: 0, bottom: 0, right: 0};
-                renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
-                legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
-                containerSize = {
-                    width: options.viewport.width - margin.left - margin.right,
-                    height: options.viewport.height - margin.top - margin.bottom,
-                };
-                this.element.selectAll('.chart').remove();
-                svgContainerWidth = Math.max(itemWidth, containerSize.width);
-                svgContainerHeight = Math.max(itemHeight, containerSize.height);
-                container = this.element
-                    .append('div')
-                    .classed('chart', true)
-                    .style('width', containerSize.width + 'px')
-                    .style('height', containerSize.height + 'px');
-                positionChartArea(container, this.legend);
-                container
-                    .style('overflow-x', 'auto')
-                    .style('overflow-y', 'hidden');
-                if (svgContainerWidth > containerSize.width)
-                    svgContainerHeight = svgContainerHeight - scrollbarMargin;
-
-                svgContainer = container
-                    .append('svg')
-                    .attr('width', svgContainerWidth)
-                    .attr('height', svgContainerHeight);
-
-                if (legendPosition == newLegendPosition) {
-                    break;
-                }
-
-                legendPosition = newLegendPosition;
-                stepCount = stepCount + 1;
-            }
-
-            const isLegendHidden: boolean = (legendPosition == 'None');
-            svgContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
-            renderSimpleVisual.renderSmallMultiple(svgContainer, lines, svgContainerWidth, svgContainerHeight, lineKey,
-                this.model.settings.general.responsive, legendHeight, isLegendHidden, 0, 0);
-            lassoContainer = svgContainer;
-        }
-
-        //selection
-        const legendContainer: d3Selection<any> = this.element.select('.legend');
-        const verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey = renderSimpleVisual.verticalLineDataItemsGlobal;
-
-        const behaviorOptions: WebBehaviorOptions = {
-            dataPoints: this.model.dataPoints,
-            selectionLines,
-            lineGroupSelection: container.selectAll(Visual.SimpleLineSelector.selectorName).data(selectionLines),
-            markerLineGroupSelection: container.selectAll(Visual.MarkerLineSelector.selectorName).data(selectionLines),
-            interactiveLineGroupSelection: container.selectAll(Visual.InteractivityLineSelector.selectorName).data(selectionLines),
-            dotsSelection: container.selectAll(Visual.DotSelector.selectorName).data(dots),
-            container,
-            tooltipServiceWrapper: this.tooltipServiceWrapper,
-            verticalLineDataItemsGlobal,
-            legendBehavior: this.legendBehavior,
-            legendDataPoints: this.model.legendDataPoint,
-            legendFormatter: this.model.legendFormatter,
-            legendType: this.model.legendType,
-            shapes: this.model.settings.shapes,
-            behavior: this.behavior,
-        };
-
-        this.interactivityService.bind(behaviorOptions);
-
-        const clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
-        const behavior: WebBehavior = this.behavior;
-        clearContainer.on('click', function () {
-            behavior.clearCather();
-        });
-        //lasso
-        const lassoColor: string = this.model.settings.selectionColor.fill;
-        implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
-            this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
-        //start legend changing by click
-        const legendBehavior = this.legendBehavior;
-        const legendPosition: string = this.model.settings.legend.position;
-        const is = this.interactivityService;
-        if (legendPosition == 'Top' || legendPosition == 'TopCenter' || legendPosition == 'Bottom' || legendPosition == 'BottomCenter') {
-            const hasSelection: boolean = is.hasSelection();
-            legendBehavior.renderSelection(hasSelection);
-        }
-    }
-
-    private formatSmallMultipleTitle(value: PrimitiveValue, format: string, locale: string): string {
-        const isDate: boolean = !isNaN(+Date.parse(value.toString()));
-        if (isDate) {
-            format = format ? format : NiceDateFormat;
-            value = new Date(value.toString());
-        }
-        const formatter: IValueFormatter = Formatter.getFormatter({
-            format: format,
-            cultureSelector: locale,
-        });
-
-        return formatter.format(value);
-    }
-
-    private retrieveLegendHeight(legendHeight: number, legendPosition: string, margin: any) {
-        if (legendPosition == 'Top' || legendPosition == 'TopCenter')
-            legendHeight = margin.top;
-        if (legendPosition == 'Bottom' || legendPosition == 'BottomCenter')
-            legendHeight = margin.bottom;
-        return legendHeight;
-    }
-
-    private retrieveLineKey(i: number, j: number): string {
-        return i + DefaultSeparator + j + DefaultSeparator;
-    }
-
-    private retrieveLines(lineKey: string): LineDataPoint[] {
-        const lines: LineDataPoint[] = [];
-        for (let k = 0; k < this.model.legendDataPoint.length; k++) {
-            const key: string = lineKey + this.model.legendDataPoint[k].tooltip;
-            const lineIndex: number = this.model.lineKeyIndex[key];
-            const lineDataPoint: LineDataPoint = this.model.lines[lineIndex];
-            if (lineDataPoint)
-                lines.push(lineDataPoint);
-        }
-
-        return lines;
-    }
-
-    private getTitle(i: number, j: number, rowsFormat: string, columnsFormat: string, locale: string): string {
-        const title: string = (this.model.rows.length > 0)
-            ? ((this.model.columns.length > 0)
-                ? this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale) + ', ' + this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
-                : this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale))
-            : ((this.model.columns.length > 0)
-                ? this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
-                : '');
-        return title;
-    }
-
-    public static parseSettings(dataView: DataView): VisualSettings {
-        return VisualSettings.parse(dataView) as VisualSettings;
-    }
-
-    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
-        const instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
-        EnumerateObject.setInstances(this.model.settings, instanceEnumeration, this.model);
-        return instanceEnumeration;
-    }
-}
-
 // eslint-disable-next-line max-lines-per-function
-function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel | null {
+function visualTransform(options: VisualUpdateOptions, host: IVisualHost): VisualViewModel {
     //Get DataViews
     const dataViews = options.dataViews;
     const hasDataViews = (dataViews && dataViews[0]);
@@ -648,7 +71,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
 
     const dataView: DataView = options && options.dataViews && options.dataViews[0];
     if (!dataView || options.type === VisualUpdateType.ResizeEnd) {
-        return null;
+        return;
     }
 
     const settings = Visual.parseSettings(dataView);
@@ -666,7 +89,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     if (settings.xAxis.minCategoryWidth > MinCategoryWidthEndValue) settings.xAxis.minCategoryWidth = MinCategoryWidthEndValue;
 
     //Get DataPoints
-    const domain: VisualDomain = {startForced: false, endForced: false, start: 0, end: 0};
+    const domain: VisualDomain = {startForced: false, endForced: false};
     if (settings.yAxis.chartRangeType == 'custom') {
         if (settings.yAxis.start !== null) {
             domain.start = settings.yAxis.start;
@@ -690,17 +113,17 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
     const lines: LineDataPoint[] = [];
     const lineKeyIndex: LineKeyIndex = {};
     let categoryIsDate: boolean = false;
-    let categoryFormat: string | undefined = undefined;
-    let valueFormat: string | null = null;
-    let legendFormatter: IValueFormatter | null = null;
+    let categoryFormat: string = null;
+    let valueFormat: string = null;
+    let legendFormatter: IValueFormatter = null;
     let legendType: CategoryType = CategoryType.String;
     let categoryIsScalar: boolean = false;
 
     if (hasCategoricalData) {
         const dataCategorical = dataViews[0].categorical;
         const category: DataViewCategoryColumn[] = [];
-        let row: DataViewCategoryColumn | null = null;
-        let column: DataViewCategoryColumn | null = null;
+        let row: DataViewCategoryColumn = null;
+        let column: DataViewCategoryColumn = null;
         let categoryLength: number = 0;
         if (dataCategorical?.categories) {
             for (let i = 0; i < dataCategorical.categories.length; i++) {
@@ -711,11 +134,11 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                     category.push(item);
                 }
                 if (item.source.roles?.['Row']) {
-                    rowsFormat = item.source.format ?? rowsFormat;
+                    rowsFormat = item.source.format;
                     row = item;
                 }
                 if (item.source.roles?.['Column']) {
-                    columnsFormat = item.source.format ?? columnsFormat;
+                    columnsFormat = item.source.format;
                     column = item;
                 }
             }
@@ -727,9 +150,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             let categoryIsBoolean: boolean = false;
             const type = category[0].source.type;
             if (type) {
-                categoryIsDate = type.dateTime ?? false;
-                categoryIsScalar = type.numeric ?? false;
-                categoryIsBoolean = type.bool ?? false;
+                categoryIsDate = type.dateTime;
+                categoryIsScalar = type.numeric;
+                categoryIsBoolean = type.bool;
             }
 
             categorySourceType = retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean);
@@ -759,7 +182,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         item = item + formattedValue + ' ';
                     }
                 }
-                key = item.toString();
+                key = item?.toString();
                 if (categoryDataKeys.indexOf(key) == -1) {
                     categoryDataKeys.push(key);
                     categoryData.push(item);
@@ -768,7 +191,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
 
             if (row != null) {
                 item = row.values[i];
-                key = item.toString();
+                key = item?.toString();
                 if (rowKeys.indexOf(key) == -1) {
                     rowKeys.push(key);
                     rowsData.push(item);
@@ -777,7 +200,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
 
             if (column != null) {
                 item = column.values[i];
-                key = item.toString();
+                key = item?.toString();
                 if (columnKeys.indexOf(key) == -1) {
                     columnKeys.push(key);
                     columnsData.push(item);
@@ -877,7 +300,7 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
             }
         }
 
-        const legendItemIndexForNameKey: object = {};
+        const legendItemIndexForNameKey = {};
         for (let i = 0; i < legendDataPoint.length; i++) {
             legendItemIndexForNameKey[legendDataPoint[i].tooltip] = i;
         }
@@ -908,9 +331,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                     if (highlights) {
                         value = +value;
                         const displayName: string = dataValue.source.groupName != null
-                            ? dataValue.source.groupName.toString()
+                            ? dataValue.source.groupName?.toString()
                             : (legendColumn && legendColumn.values
-                                ? legendColumn.values[i].toString()
+                                ? legendColumn.values[i]?.toString()
                                 : dataValue.source.displayName);
                         //generate key
                         let rowIndex = 0;
@@ -990,14 +413,14 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                         for (let k = 0; k < tooltipsDataViewValueColumns.length; k++) {
                             const tooltipDataValueColumn: DataViewValueColumn = tooltipsDataViewValueColumns[k];
                             const tooltipName: string = tooltipDataValueColumn.source.groupName != null
-                                ? tooltipDataValueColumn.source.groupName.toString()
+                                ? tooltipDataValueColumn.source.groupName?.toString()
                                 : displayName;
                             if (tooltipName == displayName) {
                                 let tooltipValue: PrimitiveValue = tooltipDataValueColumn.values[i];
-                                const tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue.toString()));
+                                const tooltipValueIsDate: boolean = !isNaN(+Date.parse(tooltipValue?.toString()));
                                 let format: string = tooltipDataValueColumn.source.format;
                                 if (tooltipValueIsDate) {
-                                    tooltipValue = new Date(tooltipValue.toString());
+                                    tooltipValue = new Date(tooltipValue?.toString());
                                     format = format ? format : NiceDateFormat;
                                 }
                                 const formatter = Formatter.getFormatter({
@@ -1055,9 +478,9 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
                                 if (object.shapes.seriesStrokeWidth != undefined)
                                     lineDataPoint.strokeWidth = +object.shapes.seriesStrokeWidth;
                                 if (object.shapes.seriesStrokeLineJoin != undefined)
-                                    lineDataPoint.strokeLineJoin = object.shapes.seriesStrokeLineJoin.toString();
+                                    lineDataPoint.strokeLineJoin = object.shapes.seriesStrokeLineJoin?.toString();
                                 if (object.shapes.seriesLineStyle != undefined)
-                                    lineDataPoint.lineStyle = object.shapes.seriesLineStyle.toString();
+                                    lineDataPoint.lineStyle = object.shapes.seriesLineStyle?.toString();
                                 if (object.shapes.seriesStepped != undefined)
                                     lineDataPoint.stepped = object.shapes.seriesStepped == true;
                                 if (object.shapes.seriesShowMarkers != undefined)
@@ -1125,10 +548,10 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         const points: any[] = lines[i].points;
         const newPoints: any[] = [];
         for (let j = 0; j < categoryData.length; j++) {
-            const categoryString: string = categoryData[j].toString();
+            const categoryString: string = categoryData[j]?.toString();
             let k: number = 0;
             while (k < points.length) {
-                const pointCategoryString: string = points[k].x.toString();
+                const pointCategoryString: string = points[k].x?.toString();
                 if (categoryString == pointCategoryString) {
                     newPoints.push(points[k]);
                     break;
@@ -1173,3 +596,587 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): Visua
         settings: settings,
     };
 }
+
+function formatDrillDownXAxisValue(category: DataViewCategoryColumn, i: number, locale: string): string {
+    let format = category.source.format;
+    let categoryValue: PrimitiveValue;
+    if (category.source.type && category.source.type.dateTime) {
+        format = format ? format : NiceDateFormat;
+        categoryValue = new Date(category.values[i].toString());
+    } else {
+        categoryValue = category.values[i];
+    }
+    const formatter: IValueFormatter = Formatter.getFormatter({
+        format: format,
+        cultureSelector: locale,
+    });
+
+    return formatter.format(categoryValue);
+}
+
+function retrieveCategoryType(categoryIsScalar, categoryIsDate, categoryIsBoolean): CategoryType {
+    if ((categoryIsBoolean && categoryIsScalar) || (categoryIsBoolean && categoryIsDate) || (categoryIsScalar && categoryIsDate)) {
+        return CategoryType.Error;
+    }
+
+    return (categoryIsScalar)
+        ? CategoryType.Number
+        : ((categoryIsDate)
+            ? CategoryType.Date
+            : ((categoryIsBoolean)
+                ? CategoryType.Boolean
+                : CategoryType.String));
+}
+
+function sortNumberLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
+    return sortNumber(+(a.tooltip), +(b.tooltip));
+}
+
+function sortDateLegend(a: ScrollableLegendDataPoint, b: ScrollableLegendDataPoint) {
+    const a1: Date = new Date(a.tooltip);
+    const b1: Date = new Date(b.tooltip);
+    return a1.getTime() - b1.getTime();
+}
+
+function sortNumber(a, b) {
+    const a1: number = +a;
+    const b1: number = +b;
+    return a1 - b1;
+}
+
+function sortDate(a, b) {
+    const a1: Date = new Date(a.toString());
+    const b1: Date = new Date(b.toString());
+    return a1.getTime() - b1.getTime();
+}
+
+function get_sorted(array: any[], type: ValueTypeDescriptor): PrimitiveValue[] {
+    let result: PrimitiveValue[] = [];
+    if (array) {
+        result = (type && type.numeric)
+            ? array.sort(sortNumber)
+            : ((type && type.dateTime)
+                ? array.sort(sortDate)
+                : array.sort());
+    }
+    return result;
+}
+
+export class Visual implements IVisual {
+    private host: IVisualHost;
+    private model: VisualViewModel;
+    private element: d3Selection<any>;
+    private interactivityService: IInteractivityService<any>;
+    private legend: IScrollableLegend;
+    private tooltipServiceWrapper: ITooltipServiceWrapper;
+    private behavior: WebBehavior;
+    private legendBehavior: LegendBehavior;
+
+    public static SmallMultipleSelector = createClassAndSelector('customSM');
+    public static SimpleLineSelector = createClassAndSelector('simpleLine');
+    public static InteractivityLineSelector = createClassAndSelector('interactivity-line');
+    public static DotSelector = createClassAndSelector('dot');
+    public static MarkerLineSelector = createClassAndSelector('markerLine');
+    public static CircleSelector = createClassAndSelector('circle-item');
+    public static HoverLineSelector = createClassAndSelector('hover-line');
+    public static LassoRectSelector = createClassAndSelector('lasso-rect');
+    public static LassoSvgSelector = createClassAndSelector('lasso-svg');
+    public static LineChartRectSelector = createClassAndSelector('line-chart-rect');
+    public static SmallMultipleNameSelector = createClassAndSelector('sm-name');
+    public static Label = createClassAndSelector('data-label');
+    public static LassoDataSelectorId: string = 'lasso-data';
+
+    constructor(options: VisualConstructorOptions) {
+        this.host = options.host;
+        this.model = {
+            rows: [],
+            columns: [],
+            rowsFormat: '',
+            columnsFormat: '',
+            categories: [],
+            dataPoints: [],
+            legendDataPoint: [],
+            lines: [],
+            lineKeyIndex: {},
+            categoryName: '',
+            valuesName: '',
+            categoryIsDate: false,
+            categoryFormat: '',
+            valueFormat: '',
+            legendFormatter: null,
+            legendType: CategoryType.String,
+            categoryIsScalar: false,
+            domain: {startForced: false, endForced: false},
+            settings: VisualSettings.getDefault() as VisualSettings,
+        };
+        this.element = d3select(options.element);
+        this.interactivityService = createInteractivitySelectionService(options.host);
+        this.legendBehavior = new LegendBehavior();
+        this.legend = createLegend(options.element, this.interactivityService, true, LegendPosition.Top, this.legendBehavior);
+        this.tooltipServiceWrapper = createTooltipServiceWrapper(
+            options.host.tooltipService,
+            options.element);
+        this.behavior = new WebBehavior();
+    }
+
+    // eslint-disable-next-line max-lines-per-function
+    public update(options: VisualUpdateOptions) {
+        try {
+            this.model = visualTransform(options, this.host);
+            this.element.selectAll('div, svg:not(.legend)').remove();
+            if (this.model.categories.length == 0) return;
+            this.legendBehavior.addLegendData(this.model.settings.legend, this.model.legendDataPoint);
+            let margin: IMargin = {top: 0, left: 0, bottom: 0, right: 0};
+
+            //Legend
+            renderLegend(this.model.settings.legend, this.model.legendDataPoint, this.legend, options, margin);
+            let containerSize = {
+                width: options.viewport.width - margin.left - margin.right,
+                height: options.viewport.height - margin.top - margin.bottom,
+            };
+
+            let container: d3Selection<any> = this.element
+                .append('div')
+                .classed('chart', true)
+                .style('width', containerSize.width + 'px')
+                .style('height', containerSize.height + 'px');
+
+            positionChartArea(container, this.legend);
+            this.interactivityService.applySelectionStateToData(this.model.lines);
+
+            const renderSimpleVisual = new RenderVisual(this.host, this.element, this.model, this.model.domain, this.interactivityService, this.tooltipServiceWrapper);
+
+            const rowNumber: number = (this.model.rows.length == 0) ? 1 : this.model.rows.length;
+            const columnsNumber: number = (this.model.columns.length == 0) ? 1 : this.model.columns.length;
+
+            this.model.settings.smallMultiple.enable = rowNumber > 1 || columnsNumber > 1;
+            if (!this.model.settings.smallMultiple.enable)
+                if (this.model.settings.xAxis.minCategoryWidth < this.model.settings.xAxis.fontSize)
+                    this.model.settings.xAxis.minCategoryWidth = this.model.settings.xAxis.fontSize;
+
+            const titleHeight: number = this.model.settings.smallMultiple.fontSize * 2;
+            const separatorSize = 20;
+
+            const separatorIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showSeparators) ? 1 : 0;
+            const titleIndex = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.showChartTitle) ? 1 : 0;
+            const matrixFlowIndex = (this.model.settings.smallMultiple.enable) ? 1 : 0;
+
+            const minItemWidth: number = matrixFlowIndex
+                ? this.model.settings.smallMultiple.minUnitWidth
+                : containerSize.width;
+            const matrixIndex: number = (this.model.settings.smallMultiple.enable && this.model.settings.smallMultiple.layoutMode == 'Matrix') ? 1 : 0;
+            let itemWidth: number = Math.max((containerSize.width - titleHeight * matrixIndex * titleIndex) / columnsNumber - separatorSize * matrixFlowIndex, minItemWidth);
+
+            if (!matrixFlowIndex && !this.model.settings.general.responsive) {
+                container.style('overflow-x', 'auto')
+                    .style('overflow-y', 'hidden');
+                const MinWidhtForNotResponsive: number = 200;
+                if (itemWidth < MinWidhtForNotResponsive) {
+                    containerSize.height = containerSize.height - 20;
+                    itemWidth = MinWidhtForNotResponsive;
+                }
+            }
+
+            const minItemHeight: number = matrixFlowIndex ? this.model.settings.smallMultiple.minUnitHeigth : containerSize.height;
+            const columnTitleIndex: number = (this.model.columns.length > 0) ? titleIndex : 0;
+            let itemHeight: number = matrixIndex
+                ? Math.max((containerSize.height - separatorSize - titleHeight * columnTitleIndex) / rowNumber - separatorSize, minItemHeight)
+                : Math.max((containerSize.height - separatorSize - 5) / rowNumber - titleHeight * titleIndex - separatorSize, minItemHeight);
+
+            let selectionLines: LineDataPoint[] = [];
+            const dots: LineDataPoint[] = [];
+
+            if (matrixFlowIndex)
+                this.model.settings.xAxis.minCategoryWidth = null;
+            if (this.model.settings.xAxis.axisType === 'categorical' && !matrixFlowIndex) {
+                const maxCountOfXAxis: number = renderSimpleVisual.retrieveMaxCountOfXAxis(this.model.lines);
+                const maxWidth: number = maxCountOfXAxis * (this.model.settings.xAxis.minCategoryWidth);
+                itemWidth = (itemWidth > maxWidth) ? itemWidth : maxWidth;
+            }
+
+            let lassoContainer: d3Selection<any>;
+
+            if (this.model.settings.smallMultiple.enable) {
+                container.style('overflow', 'auto');
+                switch (this.model.settings.smallMultiple.layoutMode) {
+                    case 'Matrix': {
+                        const rowHeight: number = itemHeight + separatorSize;
+                        const matrixWidth: number = itemWidth * columnsNumber + separatorSize * (columnsNumber - 1);
+                        const rowTitleIndex: number = (this.model.rows.length > 0) ? titleIndex : 0;
+
+                        const smContainer: d3Selection<any> = container.append('svg')
+                            .attr('width', matrixWidth + titleHeight * titleIndex)
+                            .attr('height', rowHeight * rowNumber + titleHeight * columnTitleIndex);
+                        smContainer.append('rect')
+                            .classed('clearCatcher', true)
+                            .attr('width', '100%')
+                            .attr('height', '100%');
+                        lassoContainer = smContainer;
+                        lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
+                        for (let i = 0; i < rowNumber; i++) {
+                            const translateY: number = (i == 0)
+                                ? 0
+                                : i * rowHeight + titleHeight * columnTitleIndex;
+                            const matrixTitleIndex = (i == 0) && (columnTitleIndex == 1) ? 1 : 0;
+                            const rowContainer: d3Selection<any> = smContainer
+                                .append('g')
+                                .attr('width', matrixWidth + titleIndex * rowTitleIndex)
+                                .attr('height', rowHeight + titleHeight * matrixTitleIndex)
+                                .attr('transform', 'translate(0,' + translateY + ')');
+                            if (titleIndex == 1 && this.model.rows.length > 0) {
+                                const maxTextWidth: number = rowHeight + titleHeight * matrixTitleIndex;
+                                const titleX: string = this.formatSmallMultipleTitle(this.model.rows[i], this.model.rowsFormat, this.host.locale);
+                                renderSimpleVisual.renderRowTitleForMatrixView(rowContainer, titleHeight, maxTextWidth, separatorSize, titleX, i, separatorIndex);
+                            }
+
+                            for (let j = 0; j < columnsNumber; j++) {
+                                const lineKey: string = this.retrieveLineKey(i, j);
+                                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                for (let k = 0; k < lines.length; k++) {
+                                    selectionLines.push(lines[k]);
+                                    if (lines[k].points && lines[k].points.length == 1)
+                                        dots.push(lines[k]);
+                                }
+
+                                const titleY: string = (this.model.columns.length > 0)
+                                    ? this.formatSmallMultipleTitle(this.model.columns[j], this.model.columnsFormat, this.host.locale)
+                                    : '';
+
+                                const translateX: number = (itemWidth + separatorSize) * j + titleHeight * rowTitleIndex;
+                                const rowItemHeight: number = (i == rowNumber - 1) ? rowHeight - separatorSize : rowHeight + titleHeight * matrixTitleIndex;
+                                const itemContainer: d3Selection<SVGElement> = rowContainer
+                                    .append('g')
+                                    .attr('width', itemWidth)
+                                    .attr('height', rowItemHeight)
+                                    .attr('transform', 'translate(' + translateX + ',0)');
+
+                                if (i == 0 && titleY != '') {
+                                    renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, titleY, lines, lineKey, translateX, translateY);
+                                } else {
+                                    renderSimpleVisual.renderSmallMultiple(itemContainer, lines, itemWidth, itemHeight, lineKey, false, 0, false, translateX, translateY);
+                                }
+
+                                //show row separator
+                                if (i < rowNumber - 1) {
+                                    const columnSeparatorY: number = itemHeight + titleHeight * matrixTitleIndex;
+                                    const rowSeparator: d3Selection<any> = itemContainer.append('g')
+                                        .attr('width', itemWidth)
+                                        .attr('height', separatorSize)
+                                        .attr('transform', 'translate(0,' + columnSeparatorY + ')');
+                                    RenderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize / 2, itemWidth, separatorSize / 2, separatorIndex);
+                                }
+
+                                //show column separator
+                                if (j < columnsNumber - 1) {
+                                    const columnSeparatorX: number = translateX + itemWidth;
+                                    const columnSeparator: d3Selection<any> = rowContainer.append('g')
+                                        .attr('width', separatorSize)
+                                        .attr('height', rowHeight + titleHeight * matrixTitleIndex)
+                                        .attr('transform', 'translate(' + columnSeparatorX + ',0)');
+                                    RenderVisual.renderSeparatorLine(columnSeparator, separatorSize / 2, 0, separatorSize / 2, rowHeight + titleHeight * matrixTitleIndex, separatorIndex);
+                                    if (i < rowNumber - 1) {
+                                        const separatorY = itemHeight + titleHeight * matrixTitleIndex + separatorSize / 2;
+                                        RenderVisual.renderSeparatorLine(columnSeparator, 0, separatorY, separatorSize, separatorY, separatorIndex);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    case 'Flow': {
+                        const containerDevideCount = Math.floor((containerSize.width + separatorSize) / (itemWidth + separatorSize));
+                        let itemCountForRow: number = (containerDevideCount < this.model.settings.smallMultiple.minRowWidth)
+                            ? this.model.settings.smallMultiple.minRowWidth
+                            : containerDevideCount;
+                        itemCountForRow = Math.floor(columnsNumber / itemCountForRow)
+                            ? itemCountForRow
+                            : columnsNumber % itemCountForRow;
+                        const rowHeight: number = (columnsNumber % itemCountForRow)
+                            ? (itemHeight + titleHeight * titleIndex + separatorSize) * (Math.floor(columnsNumber / itemCountForRow) + 1)
+                            : (itemHeight + titleHeight * titleIndex + separatorSize) * Math.floor(columnsNumber / itemCountForRow);
+                        const rowHeights: number[] = [];
+                        let rowSumHeight: number = 0;
+                        let rowItemHeight: number;
+                        const showEmptySmallMultiples: boolean = this.model.settings.smallMultiple.showEmptySmallMultiples;
+                        let maxColumnsNumber: number = showEmptySmallMultiples ? columnsNumber : 0;
+                        for (let i = 0; i < rowNumber; i++) {
+                            if (showEmptySmallMultiples) {
+                                rowItemHeight = rowHeight;
+                            } else {
+                                let columnsNumber1: number = 0;
+                                for (let j = 0; j < columnsNumber; j++) {
+                                    const lineKey: string = this.retrieveLineKey(i, j);
+                                    const lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                    if (lines.length > 0)
+                                        columnsNumber1 = columnsNumber1 + 1;
+                                }
+                                if (maxColumnsNumber < columnsNumber1)
+                                    maxColumnsNumber = columnsNumber1;
+                                rowItemHeight = (columnsNumber1 % itemCountForRow)
+                                    ? (itemHeight + titleHeight * titleIndex + separatorSize) * (Math.floor(columnsNumber1 / itemCountForRow) + 1)
+                                    : (itemHeight + titleHeight * titleIndex + separatorSize) * Math.floor(columnsNumber1 / itemCountForRow);
+                            }
+                            rowHeights.push(rowItemHeight);
+                            rowSumHeight = rowSumHeight + rowItemHeight + separatorSize;
+                        }
+
+                        if (itemCountForRow < maxColumnsNumber) {
+                            maxColumnsNumber = itemCountForRow;
+                        }
+
+                        itemWidth = Math.max(itemWidth, (containerSize.width - separatorSize) / maxColumnsNumber - separatorSize);
+                        const flowWidth: number = Math.max(containerSize.width, (itemWidth + separatorSize) * maxColumnsNumber - separatorSize);
+                        const smContainer: d3Selection<any> = container.append('svg')
+                            .attr('width', flowWidth)
+                            .attr('height', rowSumHeight - separatorSize);
+                        smContainer.append('rect')
+                            .classed('clearCatcher', true)
+                            .attr('width', '100%')
+                            .attr('height', '100%');
+                        lassoContainer = smContainer;
+                        lassoContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
+                        let oldRowItemHeight: number = 0;
+                        for (let i = 0; i < rowNumber; i++) {
+                            rowItemHeight = rowHeights[i];
+                            const translateY = oldRowItemHeight;
+                            oldRowItemHeight = translateY + rowItemHeight + separatorSize;
+                            const rowContainer: d3Selection<any> = smContainer
+                                .append('g')
+                                .attr('width', flowWidth)
+                                .attr('height', rowItemHeight)
+                                .attr('transform', 'translate(0,' + translateY + ')');
+                            let j1: number = -1;
+                            for (let j = 0; j < columnsNumber; j++) {
+                                const lineKey: string = this.retrieveLineKey(i, j);
+                                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                                if (lines.length == 0 && !showEmptySmallMultiples) {
+                                    continue;
+                                }
+
+                                j1 = j1 + 1;
+                                const j2: number = showEmptySmallMultiples ? j : j1;
+                                for (let k = 0; k < lines.length; k++) {
+                                    selectionLines.push(lines[k]);
+                                    if (lines[k].points && lines[k].points.length == 1) {
+                                        dots.push(lines[k]);
+                                    }
+                                }
+
+                                const title: string = this.getTitle(i, j, this.model.rowsFormat, this.model.columnsFormat, this.host.locale);
+
+                                const translateItemX: number = (j2 % itemCountForRow) * (itemWidth + separatorSize);
+                                const translateItemY: number = Math.floor(j2 / itemCountForRow) * (itemHeight + titleHeight * titleIndex + separatorSize);
+                                const itemContainer: d3Selection<SVGElement> = rowContainer
+                                    .append('g')
+                                    .attr('width', itemWidth)
+                                    .attr('height', itemHeight + titleHeight * titleIndex)
+                                    .attr('transform', 'translate(' + translateItemX + ',' + translateItemY + ')');
+                                renderSimpleVisual.renderSmallMultipleWithTitle(itemContainer, itemWidth, itemHeight, titleHeight, title, lines, lineKey, translateItemX, translateY + translateItemY);
+                            }
+
+                            if (separatorIndex && i < rowNumber - 1) {
+                                const translateSeparatorY: number = translateY + rowItemHeight;
+                                const rowSeparator: d3Selection<any> = smContainer.append('g')
+                                    .attr('width', flowWidth)
+                                    .attr('height', separatorSize)
+                                    .attr('transform', 'translate(0,' + translateSeparatorY + ')');
+                                RenderVisual.renderSeparatorLine(rowSeparator, 0, separatorSize / 2, (itemWidth + separatorSize) * itemCountForRow, separatorSize / 2, separatorIndex);
+                            }
+                        }
+                        break;
+                    }
+                }
+            } else {
+                //simple view
+                const scrollbarMargin: number = 25;
+                if (itemWidth > containerSize.width)
+                    itemHeight = itemHeight - scrollbarMargin;
+                let svgContainer: d3Selection<SVGElement> = container
+                    .append('svg')
+                    .attr('width', itemWidth)
+                    .attr('height', itemHeight);
+                const lineKey: string = this.retrieveLineKey(0, 0);
+                const lines: LineDataPoint[] = this.retrieveLines(lineKey);
+                selectionLines = lines;
+                for (let k = 0; k < lines.length; k++) {
+                    if (lines[k].points && lines[k].points.length == 1)
+                        dots.push(lines[k]);
+                }
+
+                let legendPosition: string = this.model.settings.legend.position;
+                let legendHeight: number = margin.top;
+                let newLegendPosition: string | null = null;
+                let svgContainerWidth: number = itemWidth;
+                let svgContainerHeight: number = itemHeight;
+                let stepCount: number = 0;
+                const maxStepCount: number = this.model.settings.general.responsive ? 2 : 0;
+                while (stepCount < maxStepCount && legendPosition != 'None') {
+                    newLegendPosition = renderSimpleVisual.retrieveNewLegendPosition(svgContainer, lines, svgContainerWidth, svgContainerHeight, legendPosition, legendHeight);
+                    const legendSettings: LegendSettings = {
+                        show: this.model.settings.legend.show,
+                        position: newLegendPosition,
+                        showTitle: this.model.settings.legend.showTitle,
+                        legendName: this.model.settings.legend.legendName,
+                        legendNameColor: this.model.settings.legend.legendNameColor,
+                        fontFamily: this.model.settings.legend.fontFamily,
+                        fontSize: this.model.settings.legend.fontSize,
+                        style: this.model.settings.legend.style,
+                        matchLineColor: this.model.settings.legend.matchLineColor,
+                        circleDefaultIcon: this.model.settings.legend.circleDefaultIcon,
+                    };
+                    if (newLegendPosition == 'None') {
+                        this.model.settings.legend.position = 'None';
+                    }
+
+                    margin = {top: 0, left: 0, bottom: 0, right: 0};
+                    renderLegend(legendSettings, this.model.legendDataPoint, this.legend, options, margin);
+                    legendHeight = this.retrieveLegendHeight(legendHeight, legendPosition, margin);
+                    containerSize = {
+                        width: options.viewport.width - margin.left - margin.right,
+                        height: options.viewport.height - margin.top - margin.bottom,
+                    };
+                    this.element.selectAll('.chart').remove();
+                    svgContainerWidth = Math.max(itemWidth, containerSize.width);
+                    svgContainerHeight = Math.max(itemHeight, containerSize.height);
+                    container = this.element
+                        .append('div')
+                        .classed('chart', true)
+                        .style('width', containerSize.width + 'px')
+                        .style('height', containerSize.height + 'px');
+                    positionChartArea(container, this.legend);
+                    container
+                        .style('overflow-x', 'auto')
+                        .style('overflow-y', 'hidden');
+                    if (svgContainerWidth > containerSize.width)
+                        svgContainerHeight = svgContainerHeight - scrollbarMargin;
+
+                    svgContainer = container
+                        .append('svg')
+                        .attr('width', svgContainerWidth)
+                        .attr('height', svgContainerHeight);
+
+                    if (legendPosition == newLegendPosition) {
+                        break;
+                    } else {
+                        legendPosition = newLegendPosition;
+                    }
+
+                    stepCount = stepCount + 1;
+                }
+
+                const isLegendHidden: boolean = (legendPosition == 'None');
+                svgContainer.append('svg').attr('id', Visual.LassoDataSelectorId);
+                renderSimpleVisual.renderSmallMultiple(svgContainer, lines, svgContainerWidth, svgContainerHeight, lineKey,
+                    this.model.settings.general.responsive, legendHeight, isLegendHidden, 0, 0);
+                lassoContainer = svgContainer;
+            }
+
+            //selection
+            const legendContainer: d3Selection<any> = this.element.select('.legend');
+            const verticalLineDataItemsGlobal: VerticalLineDataItemsGlobalWithKey = renderSimpleVisual.verticalLineDataItemsGlobal;
+
+            const behaviorOptions: WebBehaviorOptions = {
+                dataPoints: this.model.dataPoints,
+                selectionLines,
+                lineGroupSelection: container.selectAll(Visual.SimpleLineSelector.selectorName).data(selectionLines),
+                markerLineGroupSelection: container.selectAll(Visual.MarkerLineSelector.selectorName).data(selectionLines),
+                interactiveLineGroupSelection: container.selectAll(Visual.InteractivityLineSelector.selectorName).data(selectionLines),
+                dotsSelection: container.selectAll(Visual.DotSelector.selectorName).data(dots),
+                container,
+                tooltipServiceWrapper: this.tooltipServiceWrapper,
+                verticalLineDataItemsGlobal,
+                legendBehavior: this.legendBehavior,
+                legendDataPoints: this.model.legendDataPoint,
+                legendFormatter: this.model.legendFormatter,
+                legendType: this.model.legendType,
+                shapes: this.model.settings.shapes,
+                behavior: this.behavior,
+            };
+
+            this.interactivityService.bind(behaviorOptions);
+
+            const clearContainer: d3Selection<any> = lassoContainer.selectAll('.clearCatcher,' + Visual.SmallMultipleNameSelector.selectorName);
+            const behavior: WebBehavior = this.behavior;
+            clearContainer.on('click', function () {
+                behavior.clearCather();
+            });
+            //lasso
+            const lassoColor: string = this.model.settings.selectionColor.fill;
+            implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
+                this.interactivityService, this.behavior, verticalLineDataItemsGlobal, this.model.settings.shapes, this.model.legendFormatter, this.model.legendType);
+            //start legend changing by click
+            const legendBehavior = this.legendBehavior;
+            const legendPosition: string = this.model.settings.legend.position;
+            const is = this.interactivityService;
+            if (legendPosition == 'Top' || legendPosition == 'TopCenter' || legendPosition == 'Bottom' || legendPosition == 'BottomCenter') {
+                const hasSelection: boolean = is.hasSelection();
+                legendBehavior.renderSelection(hasSelection);
+            }
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    }
+
+    private formatSmallMultipleTitle(value: PrimitiveValue, format: string, locale: string): string {
+        const isDate: boolean = !isNaN(+Date.parse(value.toString()));
+        if (isDate) {
+            format = format ? format : NiceDateFormat;
+            value = new Date(value.toString());
+        }
+        const formatter: IValueFormatter = Formatter.getFormatter({
+            format: format,
+            cultureSelector: locale,
+        });
+
+        return formatter.format(value);
+    }
+
+    private retrieveLegendHeight(legendHeight: number, legendPosition: string, margin: any) {
+        if (legendPosition == 'Top' || legendPosition == 'TopCenter')
+            legendHeight = margin.top;
+        if (legendPosition == 'Bottom' || legendPosition == 'BottomCenter')
+            legendHeight = margin.bottom;
+        return legendHeight;
+    }
+
+    private retrieveLineKey(i: number, j: number): string {
+        return i + DefaultSeparator + j + DefaultSeparator;
+    }
+
+    private retrieveLines(lineKey: string): LineDataPoint[] {
+        const lines: LineDataPoint[] = [];
+        for (let k = 0; k < this.model.legendDataPoint.length; k++) {
+            const key: string = lineKey + this.model.legendDataPoint[k].tooltip;
+            const lineIndex: number = this.model.lineKeyIndex[key];
+            const lineDataPoint: LineDataPoint = this.model.lines[lineIndex];
+            if (lineDataPoint)
+                lines.push(lineDataPoint);
+        }
+
+        return lines;
+    }
+
+    private getTitle(i: number, j: number, rowsFormat: string, columnsFormat: string, locale: string): string {
+        const title: string = (this.model.rows.length > 0)
+            ? ((this.model.columns.length > 0)
+                ? this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale) + ', ' + this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
+                : this.formatSmallMultipleTitle(this.model.rows[i], rowsFormat, locale))
+            : ((this.model.columns.length > 0)
+                ? this.formatSmallMultipleTitle(this.model.columns[j], columnsFormat, locale)
+                : '');
+        return title;
+    }
+
+    public static parseSettings(dataView: DataView): VisualSettings {
+        return VisualSettings.parse(dataView) as VisualSettings;
+    }
+
+    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+        const instanceEnumeration: VisualObjectInstanceEnumeration = VisualSettings.enumerateObjectInstances(this.model.settings, options);
+        EnumerateObject.setInstances(this.model.settings, instanceEnumeration, this.model);
+        return instanceEnumeration;
+    }
+}
+
