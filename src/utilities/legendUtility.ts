@@ -42,7 +42,7 @@ export function renderLegend(
 
     legend.changeOrientation(<any>LegendPosition[legendSettings.position]);
 
-    let legendName: string = (legendSettings.showTitle && legendSettings.legendName) || '';
+    let legendName: string = (legendSettings.showTitle) ? legendSettings.legendName : '';
     if (legendSettings.position == 'Top'
         || legendSettings.position == 'TopCenter'
         || legendSettings.position == 'Bottom'
@@ -66,6 +66,7 @@ export function renderLegend(
         fontSize: legendSettings.fontSize,
         fontFamily: legendSettings.fontFamily,
     };
+
     legend.drawLegend(legendData, options.viewport);
 
     appendLegendMargins(legend, margin);

@@ -59,7 +59,7 @@ export class LegendSettings {
     // Show title
     public showTitle: boolean = true;
     // Legend Name
-    public legendName: string = '';
+    public legendName: string | null = null;
     // Legend Name Fill
     public legendNameColor: string = '#666';
     // Legend Font Family
@@ -104,7 +104,7 @@ export class XAxisSettings {
     // Display Units
     public displayUnits: number = 0;
     // valueDecimalPlaces
-    public precision: number = 0;
+    public precision: number | null = null;
     // Show Title
     public showTitle: boolean = false;
 
@@ -144,7 +144,7 @@ export class YAxisSettings {
     // Display Units
     public displayUnits: number = 0;
     // valueDecimalPlaces
-    public precision: number = 0;
+    public precision: number | null = null;
     // Show Title
     public showTitle: boolean = false;
 
@@ -175,7 +175,7 @@ export class DataLabelsSettings {
     // Display Units
     public displayUnits: number = 0;
     // Value decimal places
-    public precision: number = 0;
+    public precision: number | null = null;
     // Axis Font Size
     public fontSize: number = 9;
     // Axis Font Family
