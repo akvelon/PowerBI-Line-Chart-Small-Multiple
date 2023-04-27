@@ -1,4 +1,11 @@
-.api
-.tmp
+typings
 node_modules
+.DS_Store
+.tmp
+dist
+.api
+.vscode
 package-lock.json
+.idea/
+dist/
+/webpack.statistics.html
