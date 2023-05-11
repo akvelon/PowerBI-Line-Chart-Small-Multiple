@@ -189,6 +189,10 @@ export class WebBehavior implements IInteractiveBehavior {
         this.selectionHandler.handleClearSelection();
         this.legendBehavior.renderLassoSelection([], false, false);
     }
+
+    public contextMenu(dataPoint: BaseDataPoint, point: powerbi.extensibility.IPoint) {
+        this.selectionHandler.handleContextMenu(dataPoint, point);
+    }
 }
 
 export function getOpacity(selected: boolean, hasSelection: boolean): number {
