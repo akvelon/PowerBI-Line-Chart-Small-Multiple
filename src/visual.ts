@@ -1101,6 +1101,26 @@ export class Visual implements IVisual {
             clearContainer.on('click', function () {
                 behavior.clearCather();
             });
+            clearContainer
+                .on('contextmenu', (e: MouseEvent) => {
+                    behavior.contextMenu(null, {
+                        x: e.clientX,
+                        y: e.clientY
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+
+            container
+                .selectAll(Visual.InteractivityLineSelector.selectorName)
+                .on('contextmenu', (e: MouseEvent) => {
+                    behavior.contextMenu(null, {
+                        x: e.clientX,
+                        y: e.clientY
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
             //lasso
             const lassoColor: string = this.model.settings.selectionColor.fill;
             implementLassoSelection(this.element, lassoContainer, this.model.dataPoints, this.model.lines, matrixFlowIndex, lassoColor, legendContainer,
